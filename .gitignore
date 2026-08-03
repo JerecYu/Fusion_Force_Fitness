@@ -1,0 +1,17 @@
+# 道具倉庫 — 靠 package.json 就能重新叫貨，不需要上傳
+node_modules/
+
+# 裝箱區產出 — 由原始碼產生，不需要進版本控制
+dist/
+build/
+
+# 金鑰與環境變數 — 絕對不能上傳
+.env
+.env.local
+*.key
+
+# 作業系統與編輯器產生的雜物
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
