@@ -2,6 +2,8 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
+<meta name="fff-version" content="1.3.0">
+<!-- ===== 諧動空間官網 v1.3.0 | 2026-08-06 | 關於頁重排、場館錨點、段落寬度修正 ===== -->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>諧動空間 Fusion Force Fitness｜抗老化體適能中心</title>
 <meta name="description" content="諧動空間抗老化中心：整合醫師、教練與營養師的抗老化體適能訓練。私人教練課、私人團體班、主題式團體課，位於台北市信義路。">
@@ -30,20 +32,20 @@
   --beg:#2F6B54; --int:#2C4E7D; --adv:#DE7A38;
   --beg-s:#E6F1EC; --int-s:#E5ECF5; --adv-s:#FCEBDD;
   /* type scale — fluid */
-  --fs-hero:clamp(2.05rem,5.6vw,3.5rem);
-  --fs-h1:clamp(1.7rem,4.4vw,2.6rem);
-  --fs-h2:clamp(1.3rem,3vw,1.85rem);
-  --fs-h3:clamp(1.06rem,2vw,1.22rem);
-  --fs-body:clamp(.96rem,1.4vw,1.03rem);
-  --fs-sm:clamp(.84rem,1.2vw,.9rem);
-  --fs-xs:.78rem;
+  --fs-hero:clamp(2.161rem,5.6vw,3.689rem);
+  --fs-h1:clamp(1.792rem,4.4vw,2.74rem);
+  --fs-h2:clamp(1.794rem,3.2vw,2.596rem);
+  --fs-h3:clamp(1.416rem,2.1vw,1.676rem);
+  --fs-body:clamp(1.274rem,1.55vw,1.44rem);
+  --fs-sm:clamp(1.156rem,1.3vw,1.263rem);
+  --fs-xs:.9rem;
   /* shape */
   --r-lg:22px; --r:16px; --r-sm:12px;
   --sh-1:0 2px 10px -5px rgba(14,42,59,.16);
   --sh-2:0 14px 38px -18px rgba(14,42,59,.34);
   --sh-blue:0 12px 28px -12px rgba(46,134,171,.6);
   --pad:clamp(18px,4vw,34px);
-  --nav-h:66px;
+  --nav-h:90px;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -52,7 +54,8 @@ html,body{overflow-x:hidden;width:100%}
 body{
   background:var(--bg); color:var(--ink);
   font-family:'Noto Sans TC',system-ui,sans-serif;
-  font-size:var(--fs-body); line-height:1.95;
+  font-size:var(--fs-body); line-height:1.78;
+  text-wrap:pretty;  /* 避免段落末行只剩一個字 */
   -webkit-font-smoothing:antialiased;
   padding-top:var(--nav-h);
 }
@@ -63,9 +66,9 @@ a{color:inherit}
 /* ── shared bits ─────────────────────────────────────────── */
 .mono{font-family:'JetBrains Mono',monospace}
 .lat{font-family:'Saira Condensed',sans-serif;font-style:italic}
-.wrap{max-width:1080px;margin:0 auto;padding-left:var(--pad);padding-right:var(--pad)}
-.wrap-narrow{max-width:760px;margin:0 auto;padding-left:var(--pad);padding-right:var(--pad)}
-.sec{padding:clamp(46px,8vw,86px) 0}
+.wrap{max-width:1440px;margin:0 auto;padding-left:var(--pad);padding-right:var(--pad)}
+.wrap-narrow{max-width:1040px;margin:0 auto;padding-left:var(--pad);padding-right:var(--pad)}
+.sec{padding:clamp(38px,6vw,64px) 0}
 .sec-alt{background:var(--surface)}
 .sec-ink{background:linear-gradient(115deg,var(--ink) 0%,var(--ink-3) 100%);color:#fff;position:relative;overflow:hidden}
 .sec-ink::after{content:'';position:absolute;inset:0 0 0 auto;width:44%;pointer-events:none;
@@ -88,13 +91,13 @@ a{color:inherit}
 .rule.center{justify-content:center}
 
 .eyebrow{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:600;
-  font-size:.8rem;letter-spacing:.28em;text-transform:uppercase;color:var(--blue)}
+  font-size:1.278rem;letter-spacing:.28em;text-transform:uppercase;color:var(--blue)}
 .sec-ink .eyebrow{color:var(--teal)}
 
-.sec-head{margin-bottom:clamp(26px,4vw,44px)}
+.sec-head{margin-bottom:clamp(20px,3vw,30px)}
 .sec-head .top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .sec-head h2{font-size:var(--fs-h2);font-weight:900;letter-spacing:.05em;line-height:1.35}
-.sec-head p{color:var(--dim);font-size:var(--fs-sm);max-width:60ch;margin-top:10px}
+.sec-head p{color:var(--dim);font-size:var(--fs-sm);max-width:44em;margin-top:10px}
 .sec-ink .sec-head p{color:var(--aqua)}
 .sec-head.center{text-align:center}
 .sec-head.center .top{justify-content:center}
@@ -104,26 +107,26 @@ a{color:inherit}
 .nav{position:fixed;top:0;left:0;right:0;z-index:60;height:var(--nav-h);
   background:rgba(244,248,250,.9);backdrop-filter:saturate(1.6) blur(16px);
   border-bottom:1px solid var(--line)}
-.nav-in{max-width:1080px;margin:0 auto;padding:0 var(--pad);height:100%;
+.nav-in{max-width:1440px;margin:0 auto;padding:0 var(--pad);height:100%;
   display:flex;align-items:center;gap:16px}
-.nav-logo{display:flex;align-items:center;gap:9px;text-decoration:none;flex:0 0 auto}
-.nav-logo img{height:34px;width:auto}
-.nav-links{display:flex;align-items:center;gap:2px;margin-left:auto}
-.nav-links a{text-decoration:none;color:var(--dim);font-size:.86rem;font-weight:500;
-  padding:9px 13px;border-radius:9px;letter-spacing:.04em;transition:all .18s ease;white-space:nowrap}
+.nav-logo{display:flex;align-items:center;gap:11px;text-decoration:none;flex:0 0 auto}
+.nav-logo img{height:50px;width:auto}
+.nav-links{display:flex;align-items:center;gap:4px;margin-left:auto}
+.nav-links a{text-decoration:none;color:var(--dim);font-size:1.168rem;font-weight:500;
+  padding:11px 16px;border-radius:10px;letter-spacing:.04em;transition:all .18s ease;white-space:nowrap}
 .nav-links a:hover{color:var(--ink);background:var(--surface-2)}
 .nav-links a.on{color:var(--blue);font-weight:700}
 .nav-cta{flex:0 0 auto}
-.nav-toggle{display:none;flex:0 0 auto;margin-left:auto;width:44px;height:44px;border:none;
-  background:var(--surface);border:1px solid var(--line);border-radius:11px;cursor:pointer;
-  align-items:center;justify-content:center;flex-direction:column;gap:4px}
-.nav-toggle span{display:block;width:18px;height:2px;background:var(--ink);border-radius:1px;
+.nav-toggle{display:none;flex:0 0 auto;margin-left:auto;width:54px;height:54px;border:none;
+  background:var(--surface);border:1.5px solid var(--line-2);border-radius:14px;cursor:pointer;
+  align-items:center;justify-content:center;flex-direction:column;gap:5px}
+.nav-toggle span{display:block;width:26px;height:2.5px;background:var(--ink);border-radius:2px;
   transition:transform .22s ease,opacity .22s ease}
-.nav.open .nav-toggle span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.nav.open .nav-toggle span:nth-child(1){transform:translateY(7.5px) rotate(45deg)}
 .nav.open .nav-toggle span:nth-child(2){opacity:0}
-.nav.open .nav-toggle span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+.nav.open .nav-toggle span:nth-child(3){transform:translateY(-7.5px) rotate(-45deg)}
 
-@media (max-width:940px){
+@media (max-width:1050px){
   .nav-toggle{display:flex}
   .nav-links{position:fixed;top:var(--nav-h);left:0;right:0;flex-direction:column;
     align-items:stretch;gap:0;background:var(--surface);border-bottom:1px solid var(--line);
@@ -131,15 +134,15 @@ a{color:inherit}
     transform:translateY(-12px);opacity:0;pointer-events:none;transition:all .22s ease;
     box-shadow:var(--sh-2);max-height:calc(100dvh - var(--nav-h));overflow-y:auto}
   .nav.open .nav-links{transform:none;opacity:1;pointer-events:auto}
-  .nav-links a{padding:14px 12px;font-size:.95rem;border-bottom:1px solid var(--surface-2)}
+  .nav-links a{padding:17px 14px;font-size:1.286rem;border-bottom:1px solid var(--surface-2)}
   .nav-links .nav-cta{margin-top:12px;border-bottom:none}
   .nav-links .btn{width:100%}
 }
 
 /* ── buttons ─────────────────────────────────────────────── */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;
-  font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:.92rem;letter-spacing:.07em;
-  padding:13px 22px;min-height:50px;border:none;border-radius:13px;cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:1.239rem;letter-spacing:.07em;
+  padding:16px 27px;min-height:63px;border:none;border-radius:14px;cursor:pointer;
   text-decoration:none;transition:transform .12s ease,box-shadow .2s ease,background .2s ease}
 .btn:active{transform:scale(.985)}
 .btn-1{background:linear-gradient(105deg,var(--blue),var(--blue-l));color:#fff;
@@ -154,8 +157,8 @@ a{color:inherit}
 .btn-w{background:var(--adv);color:#fff;box-shadow:0 12px 28px -12px rgba(222,122,56,.6)}
 .btn-ghost-light{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.4)}
 .btn-ghost-light:hover{background:rgba(255,255,255,.12)}
-.btn-sm{min-height:42px;padding:10px 16px;font-size:.82rem;border-radius:11px}
-.ar{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:1.12rem;
+.btn-sm{min-height:42px;padding:10px 16px;font-size:1.168rem;border-radius:11px}
+.ar{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:1.322rem;
   transform:skewX(-12deg);display:inline-block}
 .btn-row{display:flex;gap:12px;flex-wrap:wrap}
 .btn-row.center{justify-content:center}
@@ -171,20 +174,20 @@ a{color:inherit}
 @media (max-width:860px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:560px){.g2,.g3,.g4{grid-template-columns:1fr}}
 
-.tag{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:500;
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:1.157rem;font-weight:500;
   padding:5px 12px;border-radius:999px;background:var(--surface-2);color:var(--dim);
   letter-spacing:.05em;border:1px solid var(--line)}
 .tag-blue{background:#E4F1F7;color:var(--blue);border-color:#BFDEEA}
-.lv{display:inline-flex;font-size:.7rem;padding:3px 10px;border-radius:999px;font-weight:500;letter-spacing:.05em}
+.lv{display:inline-flex;font-size:1.13rem;padding:3px 10px;border-radius:999px;font-weight:500;letter-spacing:.05em}
 .lv.beg{background:var(--beg-s);color:var(--beg)}
 .lv.int{background:var(--int-s);color:var(--int)}
 .lv.adv{background:var(--adv-s);color:var(--adv)}
 
 /* ── forms ───────────────────────────────────────────────── */
 .f{margin-bottom:14px}
-.f label{display:block;font-size:.8rem;color:var(--dim);margin-bottom:8px;letter-spacing:.05em}
+.f label{display:block;font-size:1.278rem;color:var(--dim);margin-bottom:8px;letter-spacing:.05em}
 .f input,.f textarea,.f select{width:100%;background:var(--surface);border:1.5px solid var(--line);
-  color:var(--ink);padding:14px 15px;border-radius:12px;font-size:1rem;
+  color:var(--ink);padding:14px 15px;border-radius:12px;font-size:1.18rem;
   font-family:'Noto Sans TC',sans-serif;transition:border-color .18s ease,box-shadow .18s ease}
 .f textarea{min-height:92px;resize:vertical;line-height:1.8}
 .f input::placeholder,.f textarea::placeholder{color:var(--faint)}
@@ -194,7 +197,7 @@ a{color:inherit}
 @media (max-width:520px){.f2{flex-direction:column;gap:0}}
 
 .note{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);
-  padding:15px 17px;font-size:.82rem;color:var(--dim);line-height:1.95}
+  padding:15px 17px;font-size:1.168rem;color:var(--dim);line-height:1.78}
 .note b{color:var(--ink);font-weight:700}
 .note-warn{background:var(--adv-s);border-color:#F1C79E;color:#8A4A16}
 .note-warn b{color:#6E3A10}
@@ -208,16 +211,16 @@ a{color:inherit}
   animation:rise .26s cubic-bezier(.22,.9,.3,1)}
 @media (min-width:540px){.ov{align-items:center}.sheet{border-radius:22px;padding-bottom:28px}}
 @keyframes rise{from{transform:translateY(28px);opacity:0}to{transform:none;opacity:1}}
-.sheet h3{font-size:1.18rem;font-weight:900;letter-spacing:.05em;line-height:1.45}
-.sheet .sub{color:var(--dim);font-size:.85rem;line-height:1.85;margin-top:7px}
+.sheet h3{font-size:1.392rem;font-weight:900;letter-spacing:.05em;line-height:1.45}
+.sheet .sub{color:var(--dim);font-size:1.156rem;line-height:1.72;margin-top:7px}
 .sheet-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
 .x{width:34px;height:34px;border-radius:50%;background:var(--surface-2);border:none;cursor:pointer;
-  color:var(--dim);font-size:.95rem;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  color:var(--dim);font-size:1.286rem;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 
 /* ── toast ───────────────────────────────────────────────── */
 .toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;
   transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
-  padding:14px 22px;border-radius:13px;font-size:.86rem;font-weight:500;opacity:0;
+  padding:14px 22px;border-radius:13px;font-size:1.168rem;font-weight:500;opacity:0;
   transition:all .25s ease;z-index:200;pointer-events:none;display:flex;align-items:center;gap:10px;
   max-width:calc(100% - 32px);box-shadow:0 16px 36px -14px rgba(14,42,59,.6)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -233,16 +236,16 @@ a{color:inherit}
 @media (max-width:760px){.ft-grid{grid-template-columns:1fr 1fr}.ft-brand{grid-column:1/-1}}
 @media (max-width:460px){.ft-grid{grid-template-columns:1fr}}
 .ft-logo{height:40px;width:auto;filter:brightness(0) invert(1);opacity:.95}
-.ft p,.ft a{color:#A9C6D4;font-size:.84rem;text-decoration:none;line-height:2}
+.ft p,.ft a{color:#A9C6D4;font-size:1.192rem;text-decoration:none;line-height:1.8}
 .ft a:hover{color:#fff}
-.ft h4{font-size:.78rem;font-weight:700;letter-spacing:.18em;color:var(--teal);
+.ft h4{font-size:1.251rem;font-weight:700;letter-spacing:.18em;color:var(--teal);
   text-transform:uppercase;font-family:'Saira Condensed',sans-serif;font-style:italic;margin-bottom:10px}
 .ft ul{list-style:none}
 .ft-bot{margin-top:clamp(30px,5vw,48px);padding:20px 0;border-top:1px solid rgba(255,255,255,.12);
   display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
-.ft-bot p{font-size:.75rem;color:#7E9EB0}
+.ft-bot p{font-size:1.211rem;color:#7E9EB0}
 .ft-slogan{font-family:'Saira Condensed',sans-serif;font-style:italic;color:var(--teal);
-  font-size:.86rem;letter-spacing:.06em}
+  font-size:1.168rem;letter-spacing:.06em}
 
 /* ── a11y ────────────────────────────────────────────────── */
 a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
@@ -262,7 +265,7 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 /* ══ 共用區塊 ══ */
-.ph{padding:clamp(40px,6.5vw,72px) 0 clamp(24px,4vw,40px);position:relative;overflow:hidden;
+.ph{padding:clamp(32px,5vw,54px) 0 clamp(20px,3vw,30px);position:relative;overflow:hidden;
   background:radial-gradient(1000px 460px at 85% -20%,#E1F0F6 0%,transparent 60%),var(--bg)}
 .ph::before{content:'';position:absolute;inset:0;pointer-events:none;
   background:repeating-linear-gradient(66deg,transparent 0 28px,rgba(111,186,201,.11) 28px 32px,transparent 32px 64px);
@@ -270,13 +273,13 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   mask-image:linear-gradient(200deg,#000 0%,transparent 58%)}
 .ph>*{position:relative;z-index:1}
 .ph h1{font-size:var(--fs-h1);font-weight:900;letter-spacing:.05em;margin-top:13px;line-height:1.3}
-.ph p{color:var(--dim);margin-top:13px;max-width:52ch}
+.ph p{color:var(--dim);margin-top:13px;max-width:44em}
 .ph .chip{display:inline-block;font-family:'Saira Condensed',sans-serif;font-style:italic;
-  font-weight:700;font-size:.74rem;letter-spacing:.2em;color:var(--blue);background:var(--surface);
+  font-weight:700;font-size:1.197rem;letter-spacing:.2em;color:var(--blue);background:var(--surface);
   border:1px solid var(--line-2);padding:4px 12px;border-radius:999px;margin-left:10px;vertical-align:middle}
 
 /* ══ 首頁 ══ */
-.hero{position:relative;overflow:hidden;padding:clamp(48px,8vw,96px) 0 clamp(42px,7vw,80px);
+.hero{position:relative;overflow:hidden;padding:clamp(40px,6.5vw,72px) 0 clamp(34px,5.5vw,58px);
   background:radial-gradient(1200px 560px at 82% -12%,#E1F0F6 0%,transparent 60%),
              radial-gradient(900px 460px at -10% 10%,#EDF6F8 0%,transparent 55%),var(--bg)}
 .hero::before{content:'';position:absolute;inset:0;pointer-events:none;
@@ -286,19 +289,39 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .hero .wrap{position:relative;z-index:1}
 .hero h1{font-size:var(--fs-hero);font-weight:900;letter-spacing:.05em;line-height:1.24;margin-top:16px}
 .hero h1 em{font-style:normal;color:var(--blue)}
-.hero .lede{font-size:clamp(1rem,1.9vw,1.15rem);color:var(--dim);max-width:44ch;margin-top:20px;line-height:2}
+.hero .lede{font-size:clamp(1rem,1.9vw,1.15rem);color:var(--dim);max-width:52ch;margin-top:20px;line-height:1.8}
 .hero .btn-row{margin-top:30px}
-.hero-stats{display:flex;gap:clamp(16px,4vw,42px);margin-top:clamp(32px,5vw,52px);flex-wrap:wrap}
+.claim{text-align:center;color:#fff;font-weight:900;letter-spacing:.06em;
+  font-size:clamp(1.55rem,3.6vw,2.7rem);line-height:1.6;margin-top:20px}
+.hero-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);
+  gap:clamp(30px,4vw,60px);align-items:center}
+.hero-media{border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--sh-2);
+  border:1px solid var(--line);background:var(--surface-2)}
+.hero-media img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;display:block}
+@media (max-width:1000px){
+  .hero-in{grid-template-columns:1fr}
+  .hero-media{display:none}
+}
+.hero-stats{display:flex;gap:clamp(16px,4vw,42px);margin-top:clamp(24px,3.6vw,36px);flex-wrap:wrap}
+@media (max-width:520px){.hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:18px clamp(16px,6vw,32px)}}
 .hs .n{font-family:'JetBrains Mono',monospace;font-size:clamp(1.5rem,3.4vw,2.1rem);font-weight:700;line-height:1}
 .hs .n small{font-size:.5em;color:var(--blue);margin-left:2px}
-.hs .k{font-size:.75rem;color:var(--faint);margin-top:7px;letter-spacing:.08em}
-.pains{display:flex;gap:8px;flex-wrap:wrap}
-.pain{font-size:.8rem;padding:9px 15px;border-radius:999px;background:var(--surface);
-  border:1px solid var(--line);color:var(--dim)}
+.hs .k{font-size:1.211rem;color:var(--faint);margin-top:7px;letter-spacing:.08em}
+.pains{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(10px,1.4vw,16px)}
+.pain{position:relative;overflow:hidden;border-radius:var(--r);aspect-ratio:4/3;
+  border:1px solid var(--line);background:var(--surface-2);box-shadow:var(--sh-1)}
+.pain img{width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .55s cubic-bezier(.22,.9,.3,1)}
+.pain:hover img{transform:scale(1.06)}
+.pain b{position:absolute;left:0;right:0;bottom:0;z-index:1;color:#fff;
+  padding:38px 16px 14px;font-size:clamp(1.2rem,1.7vw,1.55rem);font-weight:700;
+  letter-spacing:.06em;line-height:1.3;
+  background:linear-gradient(to top,rgba(14,42,59,.92),rgba(14,42,59,.34) 52%,transparent)}
+@media (max-width:860px){.pains{grid-template-columns:repeat(2,1fr)}}
 .pillar .num{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:700;
-  font-size:2.3rem;color:var(--surface-3);line-height:1;letter-spacing:.04em}
+  font-size:2.424rem;color:var(--surface-3);line-height:1;letter-spacing:.04em}
 .pillar h3{font-size:var(--fs-h3);font-weight:700;letter-spacing:.04em;margin-top:8px}
-.pillar p{color:var(--dim);font-size:.87rem;margin-top:10px;line-height:1.95}
+.pillar p{color:var(--dim);font-size:1.18rem;margin-top:10px;line-height:1.78}
 .prod{display:flex;flex-direction:column;overflow:hidden;transition:transform .2s ease,box-shadow .25s ease}
 .prod:hover{transform:translateY(-3px);box-shadow:var(--sh-2)}
 .prod .bar{height:5px;background:linear-gradient(90deg,var(--teal),var(--blue))}
@@ -306,15 +329,17 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .prod.pgt .bar{background:linear-gradient(90deg,#4271A6,#2C4E7D)}
 .prod .in{padding:clamp(20px,3vw,26px);display:flex;flex-direction:column;flex:1}
 .prod .code{font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:700;
-  font-size:.78rem;letter-spacing:.2em;color:var(--blue)}
+  font-size:1.85rem;letter-spacing:.16em;color:var(--blue);line-height:1.2;
+  width:auto;height:auto;overflow:visible;border-radius:0;justify-content:flex-start}
+.prod .code::before{display:none}
 .prod h3{font-size:var(--fs-h3);font-weight:900;letter-spacing:.04em;margin-top:6px}
-.prod p{color:var(--dim);font-size:.86rem;margin-top:11px;line-height:1.95;flex:1}
-.prod .price{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.9rem;
+.prod p{color:var(--dim);font-size:1.168rem;margin-top:11px;line-height:1.78;flex:1}
+.prod .price{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.215rem;
   margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 .prod .price small{font-family:'Noto Sans TC',sans-serif;font-weight:400;color:var(--faint);
-  font-size:.72rem;display:block;margin-top:3px}
+  font-size:1.157rem;display:block;margin-top:3px}
 .prod .btn{margin-top:16px}
-.cta-box{text-align:center;padding:clamp(34px,6vw,58px) var(--pad)}
+.cta-box{text-align:center;padding:clamp(28px,4.6vw,46px) var(--pad)}
 .cta-box h2{font-size:var(--fs-h2);font-weight:900;letter-spacing:.05em;line-height:1.4}
 .cta-box p{color:var(--aqua);margin-top:14px;font-size:var(--fs-sm);max-width:48ch;margin-left:auto;margin-right:auto}
 .cta-box .btn-row{margin-top:26px}
@@ -323,9 +348,9 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .tt,.week{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tt table,.week table{width:100%;border-collapse:separate;border-spacing:6px}
 .tt table{min-width:660px}.week table{min-width:720px}
-.tt th,.week th{font-family:'Saira Condensed',sans-serif;font-style:italic;font-size:.8rem;
+.tt th,.week th{font-family:'Saira Condensed',sans-serif;font-style:italic;font-size:1.278rem;
   font-weight:700;letter-spacing:.14em;color:var(--dim);padding:11px 4px}
-.week th .zh{display:block;font-family:'Noto Sans TC',sans-serif;font-style:normal;font-size:.72rem;
+.week th .zh{display:block;font-family:'Noto Sans TC',sans-serif;font-style:normal;font-size:1.157rem;
   letter-spacing:.06em;color:var(--faint);margin-top:3px;font-weight:400}
 .week th.today,.week th.today .zh{color:var(--blue)}
 .tt td,.week td{vertical-align:top;width:14.28%}
@@ -334,68 +359,71 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   background:repeating-linear-gradient(66deg,transparent 0 14px,rgba(255,255,255,.07) 14px 17px,transparent 17px 34px)}
 .cell>*{position:relative;z-index:1}
 .cell.beg{background:var(--beg)}.cell.int{background:var(--int)}.cell.adv{background:var(--adv)}
-.cell .n{font-size:.85rem;font-weight:700;line-height:1.5}
-.cell .c{font-size:.72rem;opacity:.87;margin-top:4px}
-.cell .t{font-family:'JetBrains Mono',monospace;font-size:.69rem;opacity:.96;margin-top:6px}
+.cell .n{font-size:1.156rem;font-weight:700;line-height:1.5}
+.cell .c{font-size:1.157rem;opacity:.87;margin-top:4px}
+.cell .t{font-family:'JetBrains Mono',monospace;font-size:1.05rem;opacity:.96;margin-top:6px}
 .week .cell .t{padding-top:6px;border-top:1px solid rgba(255,255,255,.24)}
 .cell.empty{background:var(--surface-2);min-height:0;height:7px;border-radius:4px}
 .legend{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
 .stats{display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}
 .stt{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 16px;
-  font-size:.8rem;color:var(--dim);display:flex;align-items:center;gap:7px}
-.stt b{font-family:'JetBrains Mono',monospace;color:var(--blue);font-weight:700;font-size:.9rem}
+  font-size:1.278rem;color:var(--dim);display:flex;align-items:center;gap:7px}
+.stt b{font-family:'JetBrains Mono',monospace;color:var(--blue);font-weight:700;font-size:1.215rem}
 .daylist{display:none}
 @media(max-width:720px){.week{display:none}.daylist{display:block}}
 .dgroup{margin-bottom:22px}
 .dgroup .dh{display:flex;align-items:center;gap:11px;margin-bottom:11px}
-.dgroup .dh .dz{font-size:1.04rem;font-weight:900;letter-spacing:.06em}
-.dgroup .dh .de{font-family:'Saira Condensed',sans-serif;font-style:italic;font-size:.74rem;
+.dgroup .dh .dz{font-size:1.298rem;font-weight:900;letter-spacing:.06em}
+.dgroup .dh .de{font-family:'Saira Condensed',sans-serif;font-style:italic;font-size:1.197rem;
   letter-spacing:.16em;color:var(--faint)}
-.dgroup .dh .cnt{margin-left:auto;font-size:.72rem;color:var(--faint);font-family:'JetBrains Mono',monospace}
+.dgroup .dh .cnt{margin-left:auto;font-size:1.157rem;color:var(--faint);font-family:'JetBrains Mono',monospace}
 .dgroup.today .dh .dz{color:var(--blue)}
 .drow{display:flex;gap:13px;align-items:center;background:var(--surface);border:1px solid var(--line);
   border-radius:13px;padding:13px 15px;margin-bottom:8px;border-left:4px solid var(--line)}
 .drow.beg{border-left-color:var(--beg)}.drow.int{border-left-color:var(--int)}.drow.adv{border-left-color:var(--adv)}
 .drow .tm{flex:0 0 auto;width:52px}
-.drow .tm .a{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.94rem}
-.drow .tm .b{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--faint);margin-top:2px}
+.drow .tm .a{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.274rem}
+.drow .tm .b{font-family:'JetBrains Mono',monospace;font-size:1.095rem;color:var(--faint);margin-top:2px}
 .drow .mid{flex:1;min-width:0}
-.drow .mid .n{font-size:.94rem;font-weight:700}
+.drow .mid .n{font-size:1.274rem;font-weight:700}
 .drow .mid .meta{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
-.drow .mid .co{font-size:.75rem;color:var(--dim)}
+.drow .mid .co{font-size:1.211rem;color:var(--dim)}
 .cbox{padding:clamp(18px,2.6vw,24px)}
 .cbox .hd{display:flex;align-items:center;gap:11px}
 .cbox .av{width:44px;height:44px;border-radius:50%;flex:0 0 auto;border:1.5px solid var(--line);
   background:linear-gradient(140deg,var(--surface-2),var(--surface-3));display:flex;align-items:center;
   justify-content:center;font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:700;
-  font-size:1rem;color:var(--blue)}
-.cbox h3{font-size:1rem;font-weight:700;letter-spacing:.04em}
-.cbox .cn{font-size:.72rem;color:var(--faint);margin-top:2px;font-family:'JetBrains Mono',monospace}
+  font-size:1.18rem;color:var(--blue)}
+.cbox h3{font-size:1.18rem;font-weight:700;letter-spacing:.04em}
+.cbox .cn{font-size:1.157rem;color:var(--faint);margin-top:2px;font-family:'JetBrains Mono',monospace}
 .cbox .list{margin-top:13px;padding-top:13px;border-top:1px solid var(--line);display:flex;
   flex-direction:column;gap:6px}
-.cbox .li{display:flex;gap:9px;align-items:baseline;font-size:.79rem}
-.cbox .li .d{font-family:'JetBrains Mono',monospace;color:var(--faint);flex:0 0 auto;width:78px}
-.cbox .li .x{color:var(--dim)}
+.cbox .li{display:flex;gap:11px;align-items:baseline;font-size:1.264rem}
+.cbox .li .d{font-family:'JetBrains Mono',monospace;color:var(--faint);
+  flex:0 0 auto;min-width:7.2em;white-space:nowrap}
+.cbox .li .x{color:var(--dim);flex:1 1 auto;min-width:0;
+  width:auto;height:auto;border-radius:0;background:none;border:none;
+  display:inline;font-size:inherit;cursor:default}  /* 覆蓋全域 .x 關閉鈕樣式 */
 
 /* ══ 關於 ══ */
-.quote{font-size:clamp(1.12rem,2.6vw,1.5rem);font-weight:700;line-height:1.85;letter-spacing:.04em;max-width:26ch}
+.quote{font-size:clamp(1.12rem,2.6vw,1.5rem);font-weight:700;line-height:1.72;letter-spacing:.04em;max-width:26ch}
 .quote span{color:var(--blue)}
 .vm h3{font-size:var(--fs-h3);font-weight:900;letter-spacing:.05em;margin-top:10px}
-.vm p{color:var(--dim);font-size:.9rem;margin-top:12px;line-height:2}
+.vm p{color:var(--dim);font-size:1.215rem;margin-top:12px;line-height:1.8}
 .logo-x{display:grid;grid-template-columns:auto 1fr;gap:clamp(16px,3vw,26px);align-items:start;
   padding-bottom:26px;margin-bottom:26px;border-bottom:1px solid var(--line)}
 .logo-x:last-child{border-bottom:none;padding-bottom:0;margin-bottom:0}
-.logo-x .pct{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.5rem;
+.logo-x .pct{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.581rem;
   color:var(--blue);line-height:1.2;min-width:62px}
-.logo-x .pct small{display:block;font-family:'Noto Sans TC',sans-serif;font-size:.68rem;
+.logo-x .pct small{display:block;font-family:'Noto Sans TC',sans-serif;font-size:1.104rem;
   color:var(--faint);font-weight:400;letter-spacing:.08em;margin-top:4px}
-.logo-x h3{font-size:1.06rem;font-weight:700;letter-spacing:.04em}
-.logo-x .sub{font-size:.74rem;color:var(--blue);margin-top:5px;letter-spacing:.06em}
-.logo-x p{color:var(--dim);font-size:.88rem;margin-top:11px;line-height:2}
+.logo-x h3{font-size:1.322rem;font-weight:700;letter-spacing:.04em}
+.logo-x .sub{font-size:1.197rem;color:var(--blue);margin-top:5px;letter-spacing:.06em}
+.logo-x p{color:var(--dim);font-size:1.192rem;margin-top:11px;line-height:1.8}
 .core{display:grid;gap:2px;background:var(--line);border-radius:var(--r);overflow:hidden;border:1px solid var(--line)}
 .core .it{background:var(--surface);padding:clamp(18px,3vw,26px)}
-.core .it h3{font-size:1rem;font-weight:900;letter-spacing:.06em;color:var(--blue)}
-.core .it p{color:var(--dim);font-size:.87rem;margin-top:9px;line-height:2}
+.core .it h3{font-size:1.18rem;font-weight:900;letter-spacing:.06em;color:var(--blue)}
+.core .it p{color:var(--dim);font-size:1.18rem;margin-top:9px;line-height:1.8}
 .tl{position:relative;padding-left:34px}
 .tl::before{content:'';position:absolute;left:9px;top:6px;bottom:6px;width:2px;
   background:linear-gradient(180deg,var(--teal),var(--line))}
@@ -403,68 +431,178 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .tl .ev:last-child{padding-bottom:0}
 .tl .ev::before{content:'';position:absolute;left:-30px;top:7px;width:12px;height:12px;border-radius:3px;
   transform:skewX(-22deg);background:var(--blue);border:2px solid var(--bg)}
-.tl .yr{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.82rem;color:var(--blue)}
-.tl .tx{color:var(--dim);font-size:.87rem;margin-top:5px;line-height:1.95}
-.aud h3{font-size:1.04rem;font-weight:900;letter-spacing:.05em}
-.aud .age{font-family:'JetBrains Mono',monospace;font-size:1.6rem;font-weight:700;color:var(--blue);
+.tl .yr{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.168rem;color:var(--blue)}
+.tl .tx{color:var(--dim);font-size:1.18rem;margin-top:5px;line-height:1.78}
+.aud h3{font-size:1.298rem;font-weight:900;letter-spacing:.05em}
+.aud .age{font-family:'JetBrains Mono',monospace;font-size:1.686rem;font-weight:700;color:var(--blue);
   line-height:1;margin-top:8px}
-.aud p{color:var(--dim);font-size:.85rem;margin-top:12px;line-height:2}
-.cch{padding:clamp(20px,3vw,26px)}
-.cch .hd{display:flex;align-items:center;gap:13px}
-.cch .av{width:56px;height:56px;border-radius:50%;flex:0 0 auto;border:1.5px solid var(--line);
-  background:linear-gradient(140deg,var(--surface-2),var(--surface-3));display:flex;align-items:center;
-  justify-content:center;font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:700;
-  font-size:1.16rem;color:var(--blue)}
-.cch h3{font-size:1.06rem;font-weight:700;letter-spacing:.04em}
-.cch .zh{font-size:.76rem;color:var(--faint);margin-top:2px}
-.cch .role{font-size:.72rem;color:var(--blue);margin-top:4px;letter-spacing:.05em}
-.cch ul{list-style:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
-.cch li{font-size:.81rem;color:var(--dim);line-height:1.95;padding-left:15px;position:relative}
-.cch li::before{content:'';position:absolute;left:0;top:11px;width:6px;height:6px;border-radius:1px;
+.aud p{color:var(--dim);font-size:1.156rem;margin-top:12px;line-height:1.8}
+.cch{padding:0;overflow:hidden;display:flex;flex-direction:column;text-align:left;cursor:pointer;
+  transition:transform .25s cubic-bezier(.22,.9,.3,1),box-shadow .25s ease,border-color .25s ease}
+.cch:hover{transform:translateY(-3px);box-shadow:var(--sh-2);border-color:var(--line-2)}
+.cch:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.cch .ph{position:relative;aspect-ratio:4/5;overflow:hidden;background:var(--surface-2)}
+.cch .ph.noimg{display:flex;align-items:center;justify-content:center;color:var(--blue);
+  font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:700;font-size:2.74rem}
+.cch .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .5s cubic-bezier(.22,.9,.3,1)}
+.cch:hover .ph img{transform:scale(1.045)}
+.cch .bd{padding:15px 17px 17px;display:flex;flex-direction:column;flex:1 1 auto}
+.cch h3{font-size:1.322rem;font-weight:700;letter-spacing:.04em}
+.cch .zh{font-size:1.224rem;color:var(--faint);margin-top:2px}
+.cch .role{font-size:1.157rem;color:var(--blue);margin-top:5px;letter-spacing:.05em}
+.cch ul{list-style:none;margin-top:13px;padding-top:13px;border-top:1px solid var(--line)}
+.cch li{font-size:1.264rem;color:var(--dim);line-height:1.75;padding-left:15px;position:relative}
+.cch li::before{content:'';position:absolute;left:0;top:10px;width:6px;height:6px;border-radius:1px;
   transform:skewX(-22deg);background:var(--teal)}
-.cch .ig{display:inline-flex;align-items:center;gap:5px;margin-top:13px;font-size:.75rem;
-  color:var(--blue);text-decoration:none;font-family:'JetBrains Mono',monospace}
+.cch .more{margin-top:auto;padding-top:13px;font-size:1.197rem;color:var(--blue);font-weight:500;
+  letter-spacing:.04em;display:flex;align-items:center;gap:6px}
+.cch .more span{transition:transform .25s ease}
+.cch:hover .more span{transform:translateX(3px)}
+@media (max-width:560px){
+  #about-team{grid-template-columns:1fr}
+  .cch{flex-direction:row;align-items:stretch}
+  .cch .ph{flex:0 0 40%;aspect-ratio:auto}
+  .cch .bd{flex:1 1 auto;padding:15px 16px 16px}
+}
 .certs{display:flex;gap:7px;flex-wrap:wrap}
+
+/* ── 四項品牌精神 ─────────────────────────────────────────── */
+.about-shot{margin-top:clamp(22px,3vw,34px);border-radius:var(--r-lg);overflow:hidden;
+  border:1px solid var(--line);box-shadow:var(--sh-2);background:var(--surface-2)}
+.about-shot img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;display:block}
+.about-shot figcaption{padding:13px 16px 15px;font-size:var(--fs-sm);color:var(--dim);
+  background:var(--surface);line-height:1.75}
+.spirit{max-width:460px;margin:0 auto clamp(28px,4vw,44px);display:block}
+.spirit .ring{fill:none;stroke:var(--blue);stroke-width:2.4}
+.spirit .dot{fill:var(--teal)}
+.spirit .lb{font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:27px;
+  fill:var(--ink);letter-spacing:.06em}
+.spirit-cap{text-align:center;color:var(--dim);font-size:var(--fs-sm);
+  max-width:52ch;margin:0 auto clamp(24px,4vw,38px);line-height:1.8}
+
+/* ── 場館空間 ─────────────────────────────────────────────── */
+.fac{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(9px,1.5vw,14px)}
+.fac>:nth-child(1){grid-column:span 4;aspect-ratio:2.16/1}
+.fac>:nth-child(2),.fac>:nth-child(3),
+.fac>:nth-child(8),.fac>:nth-child(9){grid-column:span 2}
+.fac-home{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(12px,2vw,18px)}
+.fac-i{position:relative;overflow:hidden;border-radius:var(--r-sm);cursor:pointer;
+  aspect-ratio:3/2;background:var(--surface-2);border:1px solid var(--line)}
+.sec-ink .fac-i{border-color:rgba(255,255,255,.16)}
+.fac-i img{width:100%;height:100%;object-fit:cover;display:block;
+  transition:transform .5s cubic-bezier(.22,.9,.3,1)}
+.fac-i:hover img{transform:scale(1.05)}
+.fac-i:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+.fac-i .cap{position:absolute;left:0;right:0;bottom:0;padding:30px 15px 13px;color:#fff;
+  text-align:left;pointer-events:none;opacity:0;transition:opacity .25s ease;
+  background:linear-gradient(to top,rgba(14,42,59,.88),rgba(14,42,59,.25) 60%,transparent)}
+.fac-i:hover .cap,.fac-i:focus-visible .cap{opacity:1}
+.fac-i .cap b{display:block;font-size:1.192rem;font-weight:700;letter-spacing:.04em}
+.fac-i .cap small{display:block;font-size:1.197rem;font-weight:400;color:var(--aqua);
+  margin-top:4px;line-height:1.65}
+.fac-home .cap{opacity:1}
+.fac-home .cap b{font-size:1.239rem}
+@media (max-width:860px){
+  .fac{grid-template-columns:repeat(2,1fr)}
+  .fac>:nth-child(1){grid-column:span 2}
+  .fac>:nth-child(8),.fac>:nth-child(9){grid-column:span 1}
+}
+@media (max-width:640px){.fac-home{grid-template-columns:1fr}}
+
+/* ── 照片燈箱 ─────────────────────────────────────────────── */
+#ov-photo{align-items:center}
+.lbox{width:100%;max-width:1060px;padding:0 clamp(14px,4vw,26px)}
+.lbox-fr{position:relative;border-radius:var(--r);overflow:hidden;background:var(--ink);
+  aspect-ratio:3/2;box-shadow:var(--sh-2)}
+.lbox-fr img{width:100%;height:100%;object-fit:contain;display:block}
+.lbox-bar{display:flex;align-items:center;gap:14px;margin-top:14px}
+.lbox-tx{flex:1 1 auto;min-width:0}
+.lbox-tx b{display:block;color:#fff;font-size:1.239rem;font-weight:700;letter-spacing:.04em}
+.lbox-tx span{display:block;color:var(--aqua);font-size:1.251rem;margin-top:4px;line-height:1.7}
+.lbox-nv{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.lbox-nv button{width:42px;height:42px;border-radius:50%;cursor:pointer;color:#fff;
+  border:1.5px solid rgba(255,255,255,.32);background:rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;font-size:1.31rem;
+  transition:background .18s ease,border-color .18s ease}
+.lbox-nv button:hover{background:rgba(255,255,255,.24);border-color:#fff}
+.lbox-n{font-family:'JetBrains Mono',monospace;font-size:1.224rem;color:var(--aqua);flex:0 0 auto}
+@media (max-width:560px){.lbox-bar{flex-wrap:wrap}.lbox-tx{flex:1 1 100%;order:2}}
 .coach-mini{text-align:center;padding:clamp(18px,3vw,24px)}
-.coach-mini .av{width:66px;height:66px;border-radius:50%;margin:0 auto 13px;border:1.5px solid var(--line);
+.coach-mini .av{width:150px;height:150px;border-radius:50%;margin:0 auto 13px;border:1.5px solid var(--line);
   background:linear-gradient(140deg,var(--surface-2),var(--surface-3));display:flex;align-items:center;
   justify-content:center;font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:700;
-  font-size:1.3rem;color:var(--blue)}
-.coach-mini h3{font-size:1.02rem;font-weight:700;letter-spacing:.04em}
-.coach-mini .zh{font-size:.75rem;color:var(--faint);margin-top:3px}
-.coach-mini .sk{font-size:.76rem;color:var(--dim);margin-top:11px;line-height:1.85}
+  font-size:1.37rem;color:var(--blue);overflow:hidden}
+.coach-mini .av img{width:100%;height:100%;object-fit:cover;display:block}
+#home-coaches{grid-template-columns:repeat(3,1fr)}
+@media (max-width:680px){#home-coaches{grid-template-columns:repeat(2,1fr)}}
+.coach-mini h3{font-size:1.274rem;font-weight:700;letter-spacing:.04em}
+.coach-mini .zh{font-size:1.211rem;color:var(--faint);margin-top:3px}
+.coach-mini .sk{font-size:1.224rem;color:var(--dim);margin-top:11px;line-height:1.72}
+
+/* ── 教練詳細資料彈窗 ─────────────────────────────────────── */
+#ov-coach .sheet{max-width:560px}
+.cd-hd{display:flex;gap:15px;align-items:flex-start}
+.cd-av{width:124px;height:124px;border-radius:14px;object-fit:cover;flex:0 0 auto;
+  border:1px solid var(--line);background:var(--surface-2)}
+.cd-ttl{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.cd-ttl span{font-size:1.13rem;color:var(--ink-2);background:var(--surface-2);
+  border:1px solid var(--line);padding:4px 10px;border-radius:99px;line-height:1.6}
+.cd-sec{margin-top:18px;padding-top:17px;border-top:1px solid var(--line)}
+.cd-sec h4{font-size:1.264rem;font-weight:700;letter-spacing:.09em;color:var(--blue);
+  margin-bottom:10px;display:flex;align-items:center;gap:9px}
+.cd-sec h4::before{content:'';width:15px;height:2px;background:var(--teal);
+  transform:skewX(-22deg);flex:0 0 auto}
+.cd-sec ul{list-style:none}
+.cd-sec li{font-size:1.168rem;color:var(--dim);line-height:1.75;padding-left:15px;
+  position:relative;margin-bottom:4px}
+.cd-sec li::before{content:'';position:absolute;left:0;top:11px;width:5px;height:5px;
+  border-radius:1px;transform:skewX(-22deg);background:var(--line-2)}
+.cd-q{margin-top:18px;padding:17px 18px;border-radius:var(--r-sm);background:var(--surface-2)}
+.cd-q p{font-size:1.18rem;color:var(--ink-2);line-height:1.8}
+.cd-q .by{margin-top:11px;font-size:1.211rem;color:var(--faint);text-align:right}
+.cd-ig{display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:1.211rem;
+  color:var(--blue);text-decoration:none;font-family:'JetBrains Mono',monospace}
 
 /* ══ 服務 ══ */
+.hero-band{border-radius:var(--r);overflow:hidden;border:1px solid var(--line);
+  box-shadow:var(--sh-1);background:var(--surface-2)}
+.hero-band img{width:100%;height:auto;aspect-ratio:2.63/1;object-fit:cover;display:block}
 .sv{padding:clamp(20px,3vw,26px);height:100%}
+#svc-five{grid-template-columns:repeat(5,1fr)}
+#svc-five .sv{padding:clamp(15px,2vw,20px)}
+@media (max-width:1000px){#svc-five{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:680px){#svc-five{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:440px){#svc-five{grid-template-columns:1fr}}
 .sv .ic{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;
-  color:#fff;font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:700;font-size:1.05rem;
+  color:#fff;font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:700;font-size:1.31rem;
   position:relative;overflow:hidden;background:linear-gradient(140deg,var(--blue),var(--blue-l))}
 .sv .ic::before{content:'';position:absolute;left:-4px;top:-12%;width:13px;height:124%;
   background:rgba(255,255,255,.2);transform:skewX(-22deg)}
-.sv h3{font-size:1.04rem;font-weight:700;letter-spacing:.04em;margin-top:14px}
-.sv p{color:var(--dim);font-size:.86rem;margin-top:10px;line-height:1.95}
+.sv h3{font-size:1.298rem;font-weight:700;letter-spacing:.04em;margin-top:14px}
+.sv p{color:var(--dim);font-size:1.168rem;margin-top:10px;line-height:1.78}
 .pblock{display:grid;grid-template-columns:auto 1fr;gap:clamp(18px,3vw,34px);align-items:start;
   padding:clamp(22px,3.5vw,34px)}
 @media(max-width:640px){.pblock{grid-template-columns:1fr}}
 .pblock .badge{width:76px;height:76px;border-radius:20px;display:flex;align-items:center;
   justify-content:center;color:#fff;font-family:'Saira Condensed',sans-serif;font-style:italic;
-  font-weight:700;font-size:1.28rem;letter-spacing:.06em;position:relative;overflow:hidden;flex:0 0 auto}
+  font-weight:700;font-size:1.51rem;letter-spacing:.06em;position:relative;overflow:hidden;flex:0 0 auto}
 .pblock .badge::before{content:'';position:absolute;left:-6px;top:-12%;width:20px;height:124%;
   background:rgba(255,255,255,.2);transform:skewX(-22deg)}
 .b-pt{background:linear-gradient(140deg,#2A5570,#0E2A3B)}
 .b-pgt{background:linear-gradient(140deg,#4271A6,#2C4E7D)}
 .b-gt{background:linear-gradient(140deg,var(--blue),var(--blue-l))}
 .pblock h3{font-size:var(--fs-h3);font-weight:900;letter-spacing:.05em}
-.pblock .zh{color:var(--dim);font-size:.86rem;margin-top:10px;line-height:2;max-width:56ch}
+.pblock .zh{color:var(--dim);font-size:1.168rem;margin-top:10px;line-height:1.8;max-width:56ch}
 .spec{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 .kv{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:9px 14px;min-width:98px}
-.kv .k{font-size:.66rem;color:var(--faint);letter-spacing:.06em}
-.kv .v{font-size:.82rem;font-weight:700;margin-top:3px}
+.kv .k{font-size:1.095rem;color:var(--faint);letter-spacing:.06em}
+.kv .v{font-size:1.168rem;font-weight:700;margin-top:3px}
 .kv .v.mono{font-family:'JetBrains Mono',monospace;color:var(--blue)}
 .cmp{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .cmp table{width:100%;min-width:620px;border-collapse:collapse}
-.cmp th,.cmp td{padding:14px;text-align:left;border-bottom:1px solid var(--line);font-size:.85rem;vertical-align:top}
-.cmp thead th{background:var(--surface-2);font-weight:700;letter-spacing:.05em;font-size:.8rem;
+.cmp th,.cmp td{padding:14px;text-align:left;border-bottom:1px solid var(--line);font-size:1.156rem;vertical-align:top}
+.cmp thead th{background:var(--surface-2);font-weight:700;letter-spacing:.05em;font-size:1.278rem;
   border-bottom:2px solid var(--line-2)}
 .cmp tbody th{font-weight:500;color:var(--dim);width:22%}
 .cmp tr:last-child th,.cmp tr:last-child td{border-bottom:none}
@@ -472,41 +610,41 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .th-item{padding:clamp(18px,2.6vw,24px);height:100%;border-left:4px solid var(--line)}
 .th-item.beg{border-left-color:var(--beg)}.th-item.int{border-left-color:var(--int)}
 .th-item.adv{border-left-color:var(--adv)}
-.th-item h3{font-size:1.02rem;font-weight:700;letter-spacing:.04em;margin-top:9px}
-.th-item p{color:var(--dim);font-size:.85rem;margin-top:9px;line-height:1.95}
+.th-item h3{font-size:1.274rem;font-weight:700;letter-spacing:.04em;margin-top:9px}
+.th-item p{color:var(--dim);font-size:1.156rem;margin-top:9px;line-height:1.78}
 .fft{display:flex;gap:9px;flex-wrap:wrap}
 .fft span{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;
-  padding:11px 19px;border-radius:999px;font-size:.87rem;font-weight:500;letter-spacing:.04em}
+  padding:11px 19px;border-radius:999px;font-size:1.18rem;font-weight:500;letter-spacing:.04em}
 .flow{position:relative;padding-left:38px}
 .flow::before{content:'';position:absolute;left:12px;top:8px;bottom:8px;width:2px;background:var(--line)}
 .flow .st{position:relative;padding-bottom:24px}
 .flow .st:last-child{padding-bottom:0}
 .flow .st::before{content:attr(data-n);position:absolute;left:-38px;top:0;width:28px;height:28px;
   border-radius:9px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;
-  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.78rem}
-.flow h3{font-size:1rem;font-weight:700;letter-spacing:.04em}
-.flow p{color:var(--dim);font-size:.86rem;margin-top:7px;line-height:2}
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.251rem}
+.flow h3{font-size:1.18rem;font-weight:700;letter-spacing:.04em}
+.flow p{color:var(--dim);font-size:1.168rem;margin-top:7px;line-height:1.8}
 
 /* ══ 價目表 ══ */
 .jump{display:flex;gap:7px;overflow-x:auto;margin-top:20px;padding-bottom:4px;scrollbar-width:none}
 .jump::-webkit-scrollbar{display:none}
-.jump a{flex:0 0 auto;font-size:.8rem;color:var(--dim);background:var(--surface);border:1px solid var(--line);
+.jump a{flex:0 0 auto;font-size:1.278rem;color:var(--dim);background:var(--surface);border:1px solid var(--line);
   padding:9px 16px;border-radius:999px;text-decoration:none;transition:all .18s ease;white-space:nowrap}
 .jump a:hover{border-color:var(--teal);color:var(--ink)}
 .anch{scroll-margin-top:calc(var(--nav-h) + 16px)}
 .tb{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tb table{width:100%;min-width:520px;border-collapse:collapse}
-.tb th{background:var(--surface-2);color:var(--dim);font-size:.78rem;font-weight:500;padding:14px 10px;
+.tb th{background:var(--surface-2);color:var(--dim);font-size:1.251rem;font-weight:500;padding:14px 10px;
   text-align:center;letter-spacing:.05em;border-bottom:2px solid var(--line-2)}
 .tb th:first-child{text-align:left;padding-left:20px}
-.tb td{padding:16px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:.94rem;
+.tb td{padding:16px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.274rem;
   font-weight:700;color:var(--blue);border-bottom:1px solid var(--line)}
 .tb td:first-child{text-align:left;padding-left:20px;font-family:'Noto Sans TC',sans-serif;
-  font-size:.85rem;color:var(--dim);font-weight:500}
+  font-size:1.156rem;color:var(--dim);font-weight:500}
 .tb tr:last-child td{border-bottom:none}
-.tb td.mute{color:var(--faint);font-family:'Noto Sans TC',sans-serif;font-size:.78rem;font-weight:400}
+.tb td.mute{color:var(--faint);font-family:'Noto Sans TC',sans-serif;font-size:1.251rem;font-weight:400}
 .tb td.hi{color:var(--adv)}.tb td.free{color:var(--beg)}
-.tb td .u{font-family:'Noto Sans TC',sans-serif;font-size:.7rem;color:var(--faint);font-weight:400}
+.tb td .u{font-family:'Noto Sans TC',sans-serif;font-size:1.13rem;color:var(--faint);font-weight:400}
 .hlt{display:flex;align-items:center;gap:18px;padding:clamp(18px,3vw,24px);margin-top:13px;
   background:linear-gradient(115deg,var(--ink),var(--ink-3));border-radius:var(--r);color:#fff;
   position:relative;overflow:hidden;box-shadow:var(--sh-2);flex-wrap:wrap}
@@ -515,32 +653,32 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .hlt>*{position:relative;z-index:1}
 .hlt .big{font-family:'JetBrains Mono',monospace;font-size:clamp(1.7rem,4vw,2.3rem);font-weight:700;
   color:var(--teal);line-height:1;flex:0 0 auto}
-.hlt .t{font-size:.94rem;font-weight:700;letter-spacing:.03em}
-.hlt .d{font-size:.79rem;color:var(--aqua);margin-top:6px;line-height:1.8}
-.marks{margin-top:13px;font-size:.79rem;color:var(--faint);line-height:2.1}
+.hlt .t{font-size:1.274rem;font-weight:700;letter-spacing:.03em}
+.hlt .d{font-size:1.264rem;color:var(--aqua);margin-top:6px;line-height:1.8}
+.marks{margin-top:13px;font-size:1.264rem;color:var(--faint);line-height:1.9}
 .marks div{padding-left:16px;position:relative}
 .marks div::before{content:'※';position:absolute;left:0}
 .calc .stepper{display:flex;align-items:center;justify-content:center;gap:24px}
 .stb{width:52px;height:52px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface-2);
-  color:var(--blue);font-size:1.45rem;font-weight:700;cursor:pointer;display:flex;align-items:center;
+  color:var(--blue);font-size:1.528rem;font-weight:700;cursor:pointer;display:flex;align-items:center;
   justify-content:center;transition:all .16s ease}
 .stb:active{transform:scale(.94)}
 .stb:disabled{color:var(--faint);cursor:not-allowed;opacity:.5}
 .stv{text-align:center;min-width:112px}
-.stv .num{font-family:'JetBrains Mono',monospace;font-size:2.5rem;font-weight:700;line-height:1}
-.stv .lbl{font-size:.76rem;color:var(--faint);margin-top:8px;letter-spacing:.08em}
+.stv .num{font-family:'JetBrains Mono',monospace;font-size:2.635rem;font-weight:700;line-height:1}
+.stv .lbl{font-size:1.224rem;color:var(--faint);margin-top:8px;letter-spacing:.08em}
 .split{display:flex;gap:11px;margin-top:20px}
 .bx{flex:1;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:15px;text-align:center}
-.bx .k{font-size:.68rem;color:var(--faint);letter-spacing:.06em}
-.bx .v{font-family:'JetBrains Mono',monospace;font-size:1.24rem;font-weight:700;color:var(--blue);margin-top:7px}
+.bx .k{font-size:1.104rem;color:var(--faint);letter-spacing:.06em}
+.bx .v{font-family:'JetBrains Mono',monospace;font-size:1.463rem;font-weight:700;color:var(--blue);margin-top:7px}
 .bx.hi{background:linear-gradient(140deg,var(--ink),var(--ink-3));border-color:transparent}
 .bx.hi .k{color:var(--aqua)}.bx.hi .v{color:var(--teal)}
 .avs{display:flex;gap:6px;justify-content:center;margin-top:20px;flex-wrap:wrap}
 .avd{width:29px;height:29px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;
-  justify-content:center;font-size:.72rem;color:var(--faint);transition:all .22s ease}
+  justify-content:center;font-size:1.157rem;color:var(--faint);transition:all .22s ease}
 .avd.on{background:linear-gradient(140deg,var(--blue),var(--blue-l));color:#fff}
 .info .rw{display:flex;justify-content:space-between;gap:16px;padding:11px 0;
-  border-bottom:1px dashed var(--line);font-size:.86rem}
+  border-bottom:1px dashed var(--line);font-size:1.168rem}
 .info .rw:last-child{border-bottom:none}
 .info .rw .k{color:var(--faint);flex:0 0 auto}
 .info .rw .v{text-align:right;font-weight:500}
@@ -555,18 +693,18 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .dd.open .dd-btn{border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,134,171,.12)}
 .code{flex:0 0 auto;width:56px;height:56px;border-radius:16px;display:flex;align-items:center;
   justify-content:center;font-family:'Saira Condensed',sans-serif;font-style:italic;font-weight:700;
-  font-size:1rem;letter-spacing:.06em;color:#fff;position:relative;overflow:hidden}
+  font-size:1.18rem;letter-spacing:.06em;color:#fff;position:relative;overflow:hidden}
 .code::before{content:'';position:absolute;left:-5px;top:-12%;width:17px;height:124%;
   background:rgba(255,255,255,.2);transform:skewX(-22deg)}
 .code.gt{background:linear-gradient(140deg,var(--blue),var(--blue-l))}
 .code.pt{background:linear-gradient(140deg,#2A5570,#0E2A3B)}
 .code.pgt{background:linear-gradient(140deg,#4271A6,#2C4E7D)}
 .dd-txt{flex:1;min-width:0}
-.dd-txt .t{font-size:1.04rem;font-weight:700;letter-spacing:.03em;display:block}
-.dd-txt .d{font-size:.78rem;color:var(--dim);line-height:1.7;margin-top:4px;display:block}
-.dd-txt .p{font-family:'JetBrains Mono',monospace;font-size:.73rem;color:var(--blue);font-weight:700;
+.dd-txt .t{font-size:1.298rem;font-weight:700;letter-spacing:.03em;display:block}
+.dd-txt .d{font-size:1.251rem;color:var(--dim);line-height:1.7;margin-top:4px;display:block}
+.dd-txt .p{font-family:'JetBrains Mono',monospace;font-size:1.171rem;color:var(--blue);font-weight:700;
   margin-top:6px;display:block}
-.caret{flex:0 0 auto;color:var(--faint);font-size:.62rem;transition:transform .25s ease;width:28px;height:28px;
+.caret{flex:0 0 auto;color:var(--faint);font-size:1.095rem;transition:transform .25s ease;width:28px;height:28px;
   border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center}
 .dd.open .caret{transform:rotate(180deg);background:var(--blue);color:#fff}
 .dd-panel{position:absolute;top:calc(100% + 9px);left:0;right:0;z-index:20;background:var(--surface);
@@ -577,8 +715,8 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   transition:background .16s ease}
 .dd-opt:hover{background:var(--surface-2)}
 .dd-opt[aria-selected="true"]{background:#F1F8FB}
-.dd-opt .code{width:48px;height:48px;font-size:.9rem;border-radius:14px}
-.dd-opt .tick{flex:0 0 auto;width:20px;color:var(--blue);font-size:.9rem;opacity:0}
+.dd-opt .code{width:48px;height:48px;font-size:1.215rem;border-radius:14px}
+.dd-opt .tick{flex:0 0 auto;width:20px;color:var(--blue);font-size:1.215rem;opacity:0}
 .dd-opt[aria-selected="true"] .tick{opacity:1}
 .steps{position:relative;padding-left:40px}
 .steps::before{content:'';position:absolute;left:13px;top:8px;bottom:8px;width:2px;background:var(--line)}
@@ -586,9 +724,9 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .steps .st:last-child{padding-bottom:0}
 .steps .st::before{content:attr(data-n);position:absolute;left:-40px;top:0;width:29px;height:29px;
   border-radius:9px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;
-  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.79rem}
-.steps h3{font-size:1rem;font-weight:700;letter-spacing:.04em}
-.steps p{color:var(--dim);font-size:.86rem;margin-top:7px;line-height:2}
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.264rem}
+.steps h3{font-size:1.18rem;font-weight:700;letter-spacing:.04em}
+.steps p{color:var(--dim);font-size:1.168rem;margin-top:7px;line-height:1.8}
 .lvd{display:inline-flex;gap:5px;vertical-align:middle;margin:0 4px}
 .lvd i{width:10px;height:10px;border-radius:2px;transform:skewX(-20deg);display:inline-block}
 .pbar{display:flex;gap:5px;margin-top:18px;max-width:420px}
@@ -599,9 +737,9 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .opt{flex:1;background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:18px 14px;
   cursor:pointer;text-align:center;transition:all .2s ease;box-shadow:var(--sh-1);min-height:108px;
   display:flex;flex-direction:column;justify-content:center;gap:7px}
-.opt .k{font-size:1.02rem;font-weight:700;letter-spacing:.04em}
-.opt .p{font-family:'JetBrains Mono',monospace;font-size:.9rem;color:var(--blue);font-weight:700}
-.opt .sm{font-size:.68rem;color:var(--faint)}
+.opt .k{font-size:1.274rem;font-weight:700;letter-spacing:.04em}
+.opt .p{font-family:'JetBrains Mono',monospace;font-size:1.215rem;color:var(--blue);font-weight:700}
+.opt .sm{font-size:1.104rem;color:var(--faint)}
 .opt.on{border-color:var(--blue);background:#F3FAFC;box-shadow:0 10px 22px -11px rgba(46,134,171,.5)}
 .opt.on .k{color:var(--blue)}
 .coaches{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
@@ -612,20 +750,20 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .co .top{display:flex;align-items:center;gap:10px}
 .co .av{width:38px;height:38px;border-radius:50%;background:var(--surface-2);color:var(--dim);display:flex;
   align-items:center;justify-content:center;font-family:'Saira Condensed',sans-serif;font-style:italic;
-  font-weight:700;font-size:.88rem;flex:0 0 auto;transition:all .2s ease}
+  font-weight:700;font-size:1.192rem;flex:0 0 auto;transition:all .2s ease}
 .co.on .av{background:linear-gradient(140deg,var(--blue),var(--blue-l));color:#fff}
-.co .nm{font-size:.92rem;font-weight:700}
-.co .zh{font-size:.68rem;color:var(--faint);margin-top:2px}
-.co .sk{font-size:.7rem;color:var(--dim);line-height:1.8;margin-top:11px}
+.co .nm{font-size:1.239rem;font-weight:700}
+.co .zh{font-size:1.104rem;color:var(--faint);margin-top:2px}
+.co .sk{font-size:1.13rem;color:var(--dim);line-height:1.8;margin-top:11px}
 .themes{display:flex;gap:9px;flex-wrap:wrap}
 .th{background:var(--surface);border:1.5px solid var(--line);border-radius:999px;padding:11px 18px;
-  font-size:.84rem;cursor:pointer;color:var(--dim);transition:all .18s ease;min-height:44px}
+  font-size:1.192rem;cursor:pointer;color:var(--dim);transition:all .18s ease;min-height:44px}
 .th.on{border-color:transparent;background:linear-gradient(140deg,var(--blue),var(--blue-l));color:#fff;
   font-weight:700;box-shadow:0 7px 16px -7px rgba(46,134,171,.6)}
 .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 @media(min-width:640px){.slots{grid-template-columns:repeat(6,1fr)}}
 .slot{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:12px 4px;
-  cursor:pointer;text-align:center;font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:700;
+  cursor:pointer;text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.168rem;font-weight:700;
   color:var(--dim);transition:all .18s ease;min-height:46px}
 .slot.on{border-color:transparent;background:linear-gradient(140deg,var(--blue),var(--blue-l));color:#fff;
   box-shadow:0 7px 16px -7px rgba(46,134,171,.6)}
@@ -634,18 +772,18 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .sum .stripe{flex:0 0 auto;width:5px;background:linear-gradient(180deg,var(--teal),var(--blue))}
 .sum .body{flex:1;min-width:0;padding:18px 19px}
 .rw{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px dashed var(--line);
-  font-size:.85rem}
+  font-size:1.156rem}
 .rw:last-of-type{border-bottom:none}
 .rw .k{color:var(--faint);flex:0 0 auto}
 .rw .v{font-weight:700;text-align:right}
 .tot{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;padding-top:15px;
   border-top:2px solid var(--line)}
-.tot .k{font-size:.8rem;color:var(--dim)}
-.tot .v{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:700;color:var(--blue)}
+.tot .k{font-size:1.278rem;color:var(--dim)}
+.tot .v{font-family:'JetBrains Mono',monospace;font-size:1.581rem;font-weight:700;color:var(--blue)}
 .tabs{display:flex;gap:4px;margin-top:22px;background:var(--surface);padding:5px;border-radius:999px;
   border:1px solid var(--line);max-width:420px}
 .tab{flex:1;border:none;background:transparent;color:var(--dim);font-family:'Noto Sans TC',sans-serif;
-  font-size:.86rem;font-weight:500;letter-spacing:.05em;padding:12px 10px;border-radius:999px;cursor:pointer;
+  font-size:1.168rem;font-weight:500;letter-spacing:.05em;padding:12px 10px;border-radius:999px;cursor:pointer;
   transition:all .18s ease;min-height:46px}
 .tab.on{background:linear-gradient(105deg,var(--blue),var(--blue-l));color:#fff;font-weight:700;
   box-shadow:0 6px 14px -6px rgba(46,134,171,.6)}
@@ -656,21 +794,21 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   background:repeating-linear-gradient(66deg,transparent 0 18px,rgba(255,255,255,.055) 18px 21px,transparent 21px 42px)}
 .pb>*{position:relative;z-index:1}
 .pb .l{flex:1;min-width:200px}
-.pb .k{font-family:'Saira Condensed',sans-serif;font-style:italic;font-size:.7rem;color:var(--aqua);
+.pb .k{font-family:'Saira Condensed',sans-serif;font-style:italic;font-size:1.13rem;color:var(--aqua);
   letter-spacing:.16em;text-transform:uppercase}
-.pb .v{font-size:.98rem;font-weight:700;margin-top:6px;letter-spacing:.03em}
+.pb .v{font-size:1.322rem;font-weight:700;margin-top:6px;letter-spacing:.03em}
 .pb .v b{font-family:'JetBrains Mono',monospace;color:var(--teal)}
-.pb .v .sm{display:block;font-size:.75rem;color:#B6D6E1;font-weight:400;margin-top:5px}
-.pb a{flex:0 0 auto;font-size:.78rem;color:#fff;text-decoration:none;font-weight:700;
+.pb .v .sm{display:block;font-size:1.211rem;color:#B6D6E1;font-weight:400;margin-top:5px}
+.pb a{flex:0 0 auto;font-size:1.251rem;color:#fff;text-decoration:none;font-weight:700;
   border:1.5px solid rgba(255,255,255,.35);padding:10px 16px;border-radius:999px}
 .pb a:hover{background:rgba(255,255,255,.12)}
 .days{display:flex;gap:7px;overflow-x:auto;padding-bottom:5px;margin-bottom:20px;scrollbar-width:none;
   -webkit-overflow-scrolling:touch}
 .days::-webkit-scrollbar{display:none}
 .day{flex:0 0 auto;background:var(--surface);border:1.5px solid var(--line);color:var(--dim);padding:10px 16px;
-  border-radius:14px;cursor:pointer;text-align:center;min-width:60px;min-height:58px;transition:all .2s ease}
-.day .d{font-size:.92rem;font-weight:500;display:block;letter-spacing:.04em}
-.day .c{font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--faint);margin-top:4px;display:block}
+  border-radius:14px;cursor:pointer;text-align:center;min-width:60px;min-height:63px;transition:all .2s ease}
+.day .d{font-size:1.239rem;font-weight:500;display:block;letter-spacing:.04em}
+.day .c{font-family:'JetBrains Mono',monospace;font-size:1.095rem;color:var(--faint);margin-top:4px;display:block}
 .day.on{background:linear-gradient(140deg,var(--blue),var(--blue-l));border-color:transparent;color:#fff;
   box-shadow:0 8px 18px -7px rgba(46,134,171,.6)}
 .day.on .d{font-weight:700}.day.on .c{color:rgba(255,255,255,.8)}
@@ -684,36 +822,36 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .cc .body{flex:1;min-width:0;padding:17px 18px}
 .cc-top{display:flex;gap:15px;align-items:flex-start}
 .tcol{width:66px;flex:0 0 auto;border-right:1px solid var(--line);padding-right:13px}
-.tcol .t{font-size:1.16rem;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-.03em}
-.tcol .e{font-size:.69rem;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:2px}
-.tcol .du{font-size:.64rem;color:var(--faint);margin-top:6px}
+.tcol .t{font-size:1.369rem;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-.03em}
+.tcol .e{font-size:1.06rem;color:var(--faint);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.tcol .du{font-size:1.0rem;color:var(--faint);margin-top:6px}
 .icol{flex:1;min-width:0}
-.cn{font-size:1.06rem;font-weight:700;letter-spacing:.03em}
+.cn{font-size:1.322rem;font-weight:700;letter-spacing:.03em}
 .meta{display:flex;align-items:center;gap:9px;margin-top:9px;flex-wrap:wrap}
-.cco{display:flex;align-items:center;gap:7px;font-size:.78rem;color:var(--dim)}
+.cco{display:flex;align-items:center;gap:7px;font-size:1.251rem;color:var(--dim)}
 .cav{width:22px;height:22px;border-radius:50%;background:var(--surface-2);color:var(--dim);display:flex;
-  align-items:center;justify-content:center;font-size:.62rem;font-weight:700;flex:0 0 auto;
+  align-items:center;justify-content:center;font-size:1.095rem;font-weight:700;flex:0 0 auto;
   font-family:'Saira Condensed',sans-serif}
 .gz{display:flex;gap:3px;height:8px;margin-top:16px}
 .sg{flex:1;border-radius:2px;background:var(--surface-2);transition:background .25s ease}
 .sg.ok{background:var(--blue)}.sg.wn{background:var(--adv)}
-.gzl{display:flex;justify-content:space-between;margin-top:8px;font-size:.72rem;color:var(--faint)}
+.gzl{display:flex;justify-content:space-between;margin-top:8px;font-size:1.157rem;color:var(--faint)}
 .gzl .n{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--dim)}
-.cc .btn{margin-top:15px;width:100%;min-height:48px;font-size:.88rem}
+.cc .btn{margin-top:15px;width:100%;min-height:48px;font-size:1.192rem}
 .mi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-1);
   overflow:hidden;display:flex;margin-bottom:11px}
 .mi .stripe{flex:0 0 auto;width:5px;background:var(--blue)}
 .mi .body{flex:1;min-width:0;padding:16px 17px;display:flex;align-items:center;justify-content:space-between;
   gap:14px;flex-wrap:wrap}
-.mi .dt{font-size:.72rem;color:var(--faint);font-family:'JetBrains Mono',monospace}
-.mi .nm{font-size:1rem;font-weight:700;margin-top:4px}
-.mi .stt2{font-size:.73rem;margin-top:6px;font-weight:500;color:var(--blue)}
+.mi .dt{font-size:1.157rem;color:var(--faint);font-family:'JetBrains Mono',monospace}
+.mi .nm{font-size:1.18rem;font-weight:700;margin-top:4px}
+.mi .stt2{font-size:1.171rem;margin-top:6px;font-weight:500;color:var(--blue)}
 .mi .acts{display:flex;gap:8px;flex:0 0 auto}
-.mi .btn{width:auto;min-height:42px;padding:10px 16px;font-size:.8rem}
+.mi .btn{width:auto;min-height:42px;padding:10px 16px;font-size:1.278rem}
 .empty{text-align:center;padding:clamp(50px,8vw,78px) 20px;color:var(--faint)}
-.empty .h{font-size:1.08rem;color:var(--dim);margin-bottom:9px;font-weight:700;letter-spacing:.05em}
+.empty .h{font-size:1.345rem;color:var(--dim);margin-bottom:9px;font-weight:700;letter-spacing:.05em}
 .msgbox{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:15px;
-  font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.9;white-space:pre-wrap;
+  font-family:'JetBrains Mono',monospace;font-size:1.251rem;line-height:1.75;white-space:pre-wrap;
   word-break:break-word;max-height:230px;overflow-y:auto}
 .macts{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
 .macts .btn{flex:1;min-width:130px}
@@ -723,14 +861,14 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   color:var(--ink);transition:border-color .2s ease,box-shadow .2s ease;height:100%}
 .ch:hover{border-color:var(--teal);box-shadow:var(--sh-2)}
 .ch .ic{flex:0 0 auto;width:52px;height:52px;border-radius:16px;color:#fff;display:flex;align-items:center;
-  justify-content:center;font-size:1.24rem;position:relative;overflow:hidden}
+  justify-content:center;font-size:1.463rem;position:relative;overflow:hidden}
 .ch .ic::before{content:'';position:absolute;left:-5px;top:-12%;width:16px;height:124%;
   background:rgba(255,255,255,.2);transform:skewX(-22deg)}
 .ch.tel .ic{background:linear-gradient(140deg,var(--blue),var(--blue-l))}
 .ch.line .ic{background:linear-gradient(140deg,#2F6B54,#3E8E6E)}
 .ch.map .ic{background:linear-gradient(140deg,#2C4E7D,#4271A6)}
-.ch h3{font-size:1rem;font-weight:700;letter-spacing:.04em}
-.ch .v{font-size:.84rem;color:var(--dim);margin-top:5px;line-height:1.7}
+.ch h3{font-size:1.18rem;font-weight:700;letter-spacing:.04em}
+.ch .v{font-size:1.192rem;color:var(--dim);margin-top:5px;line-height:1.7}
 .ch .ar{margin-left:auto;color:var(--faint)}
 .hours{overflow:hidden}
 .hours .hd{background:linear-gradient(115deg,var(--ink),var(--ink-3));color:#fff;
@@ -738,13 +876,13 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .hours .hd::after{content:'';position:absolute;inset:0 0 0 auto;width:40%;pointer-events:none;
   background:repeating-linear-gradient(66deg,transparent 0 18px,rgba(255,255,255,.055) 18px 21px,transparent 21px 42px)}
 .hours .hd>*{position:relative;z-index:1}
-.hours .hd h3{font-size:1.04rem;font-weight:900;letter-spacing:.05em}
-.hours .hd .now{font-size:.8rem;margin-top:8px;display:flex;align-items:center;gap:8px}
+.hours .hd h3{font-size:1.298rem;font-weight:900;letter-spacing:.05em}
+.hours .hd .now{font-size:1.278rem;margin-top:8px;display:flex;align-items:center;gap:8px}
 .hours .hd .now .dot{width:8px;height:8px;border-radius:50%;background:#6EE7A8}
 .hours .hd .now.closed .dot{background:#F2A25C}
 .hours .rows{padding:clamp(8px,1.6vw,12px) clamp(18px,2.8vw,24px) clamp(18px,2.8vw,24px)}
 .hours .rw2{display:flex;justify-content:space-between;gap:14px;padding:12px 0;
-  border-bottom:1px dashed var(--line);font-size:.87rem}
+  border-bottom:1px dashed var(--line);font-size:1.18rem}
 .hours .rw2:last-child{border-bottom:none}
 .hours .rw2.on{font-weight:700;color:var(--blue)}
 .hours .rw2 .d{color:var(--dim)}
@@ -753,20 +891,25 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .addr-map{border-radius:var(--r);overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh-1);
   background:var(--surface-2);aspect-ratio:16/10}
 .addr-map iframe{width:100%;height:100%;border:0;display:block}
+.arrive{margin-top:14px;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);
+  box-shadow:var(--sh-1);background:var(--surface)}
+.arrive img{width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;display:block}
+.arrive p{font-size:1.278rem;color:var(--dim);line-height:1.8;padding:12px 15px 14px}
+.arrive p b{color:var(--ink);font-weight:700}
 .soc{display:flex;gap:10px;flex-wrap:wrap}
 .soc a{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--line);
-  border-radius:999px;padding:11px 19px;text-decoration:none;color:var(--dim);font-size:.84rem;
+  border-radius:999px;padding:11px 19px;text-decoration:none;color:var(--dim);font-size:1.192rem;
   font-weight:500;transition:all .18s ease}
 .soc a:hover{border-color:var(--teal);color:var(--ink)}
 .faq .q{border-bottom:1px solid var(--line)}
 .faq .q:last-child{border-bottom:none}
-.faq summary{cursor:pointer;padding:17px 0;font-size:.95rem;font-weight:700;letter-spacing:.03em;
+.faq summary{cursor:pointer;padding:17px 0;font-size:1.286rem;font-weight:700;letter-spacing:.03em;
   list-style:none;display:flex;align-items:center;gap:12px}
 .faq summary::-webkit-details-marker{display:none}
 .faq summary::before{content:'';flex:0 0 auto;width:9px;height:9px;border-radius:2px;transform:skewX(-22deg);
   background:var(--teal);transition:background .2s ease}
 .faq details[open] summary::before{background:var(--blue)}
-.faq p{color:var(--dim);font-size:.86rem;line-height:2;padding:0 0 17px 21px}
+.faq p{color:var(--dim);font-size:1.168rem;line-height:1.8;padding:0 0 17px 21px}
 </style>
 </head>
 <body>
@@ -780,7 +923,7 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
       <span></span><span></span><span></span></button>
     <div class="nav-links">
       <a href="#/">首頁</a><a href="#/about">關於諧動</a><a href="#/services">服務課程</a>
-      <a href="#/schedule">團課課表</a><a href="#/pricing">價目表</a><a href="#/contact">聯絡我們</a>
+      <a href="#/schedule">團體課表</a><a href="#/pricing">價目表</a><a href="#/contact">聯絡我們</a>
       <span class="nav-cta"><a class="btn btn-1 btn-sm" href="#/booking">立即預約</a></span>
     </div>
   </div>
@@ -791,7 +934,7 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 <!-- ══════════ 首頁 ══════════ -->
 <section class="route on" data-route="home">
   <div class="hero">
-    <div class="wrap">
+    <div class="wrap"><div class="hero-in"><div>
       <div class="rule"><i></i><i></i><i></i></div>
       <p class="eyebrow" style="margin-top:18px">Fusion Force Fitness</p>
       <h1>讓運動<br>不再是一件<em>苦差事</em></h1>
@@ -803,11 +946,15 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
       </div>
       <div class="hero-stats">
         <div class="hs"><div class="n">2015</div><div class="k">創立年份</div></div>
-        <div class="hs"><div class="n">6<small>–100</small></div><div class="k">服務年齡層</div></div>
-        <div class="hs"><div class="n">10<small>人</small></div><div class="k">團體課上限</div></div>
-        <div class="hs"><div class="n">14<small>堂</small></div><div class="k">每週團課</div></div>
+        <div class="hs"><div class="n">12<small style="font-size:1em">+</small></div><div class="k">服務年齡層</div></div>
+        <div class="hs"><div class="n">10<small style="font-size:.7em">人</small></div><div class="k">團體課上限</div></div>
+        <div class="hs"><div class="n">14<small style="font-size:.7em">堂</small></div><div class="k">每週團課</div></div>
       </div>
-    </div>
+      </div>
+      <div class="hero-media">
+        <img src="assets/facility/functional-zone.jpg" alt="諧動空間功能訓練區"
+          width="2000" height="1337" decoding="async"></div>
+    </div></div>
   </div>
 
   <div class="sec sec-alt"><div class="wrap">
@@ -815,9 +962,14 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
       <h2>身體正在提醒你的事</h2></div>
       <p>這些不是「老了就這樣」，而是可以被訓練改善的功能退化。</p></div>
     <div class="pains">
-      <span class="pain">高齡跌倒</span><span class="pain">肌少症</span><span class="pain">關節退化</span>
-      <span class="pain">高齡疲倦</span><span class="pain">下背痠痛</span><span class="pain">高齡駝背</span>
-      <span class="pain">動作緩慢</span><span class="pain">老倒勼</span>
+      <div class="pain"><img src="assets/pains/fall.jpg" alt="高齡跌倒" width="900" height="675" loading="lazy" decoding="async"><b>高齡跌倒</b></div>
+      <div class="pain"><img src="assets/pains/sarcopenia.jpg" alt="肌少症" width="900" height="675" loading="lazy" decoding="async"><b>肌少症</b></div>
+      <div class="pain"><img src="assets/pains/joint.jpg" alt="關節退化" width="900" height="675" loading="lazy" decoding="async"><b>關節退化</b></div>
+      <div class="pain"><img src="assets/pains/fatigue.jpg" alt="高齡疲倦" width="900" height="675" loading="lazy" decoding="async"><b>高齡疲倦</b></div>
+      <div class="pain"><img src="assets/pains/backpain.jpg" alt="下背痠痛" width="900" height="675" loading="lazy" decoding="async"><b>下背痠痛</b></div>
+      <div class="pain"><img src="assets/pains/posture.jpg" alt="高齡駝背" width="900" height="675" loading="lazy" decoding="async"><b>高齡駝背</b></div>
+      <div class="pain"><img src="assets/pains/slow.jpg" alt="動作緩慢" width="900" height="675" loading="lazy" decoding="async"><b>動作緩慢</b></div>
+      <div class="pain"><img src="assets/pains/shrink.jpg" alt="老倒勼" width="900" height="675" loading="lazy" decoding="async"><b>老倒勼</b></div>
     </div>
   </div></div>
 
@@ -835,6 +987,11 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
     </div>
   </div></div>
 
+  <div class="sec-ink"><div class="wrap" style="padding-top:clamp(42px,6vw,68px);padding-bottom:clamp(42px,6vw,68px)">
+    <div class="rule center"><i></i><i></i><i></i></div>
+    <p class="claim">抗老化體適能，讓身體找回原廠設定</p>
+  </div></div>
+
   <div class="sec sec-alt"><div class="wrap">
     <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
       <h2>三種上課方式</h2></div>
@@ -843,13 +1000,13 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
       <div class="card prod pt"><div class="bar"></div><div class="in">
         <div class="code">PT</div><h3>私人教練課</h3>
         <p>一對一或一對二，與教練協調時間。採 FFT 評估系統做短中長期的全盤規劃，適合有明確目標或需要處理特定不適的人。</p>
-        <div class="price">體驗 NT$1,000 起<small>單堂 NT$1,500 起・首次含 FMS 評估檢測</small></div>
-        <a class="btn btn-2" href="#/pt">預約 PT<span class="ar">›</span></a></div></div>
+        <div class="price">體驗 NT$1,000 起<small>單堂 NT$1,800 起・首次含 FMS 評估檢測</small></div>
+        <a class="btn btn-2" href="#/pt">預約教練課<span class="ar">›</span></a></div></div>
       <div class="card prod pgt"><div class="bar"></div><div class="in">
         <div class="code">PGT</div><h3>私人團體班</h3>
         <p>三人以上自行成班，與教練詳談課程內容，進度式週期教學。和朋友、同事或家人一起練，人數越多每人均攤越低。</p>
-        <div class="price">單堂 NT$1,800 起<small>一對三每人 NT$600・人數越多越省</small></div>
-        <a class="btn btn-2" href="#/pgt">預約 PGT<span class="ar">›</span></a></div></div>
+        <div class="price">單堂 NT$2,100 起<small>一對三每人 NT$700・人數越多越省</small></div>
+        <a class="btn btn-2" href="#/pgt">預約私人團體班<span class="ar">›</span></a></div></div>
       <div class="card prod"><div class="bar"></div><div class="in">
         <div class="code">GT</div><h3>主題式團體課</h3>
         <p>週間固定時間開課、開放自由參加，每班上限 10 人的精緻小班制。適合想規律運動、又希望有夥伴一起的人。</p>
@@ -879,9 +1036,18 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
     <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
       <h2>諧動團隊</h2></div>
       <p>教練這個職業神聖的地方在於，人們信任並把自己的身體交給你去改變。</p></div>
-    <div class="grid g4" id="home-coaches"></div>
+    <div class="grid" id="home-coaches"></div>
     <div class="btn-row" style="margin-top:26px">
       <a class="btn btn-2" href="#/about">認識完整團隊</a></div>
+  </div></div>
+
+  <div class="sec"><div class="wrap">
+    <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
+      <h2>場館空間</h2></div>
+      <p>信義路二段 74 號 10 樓。重訓區、功能訓練區、藍墊區——一層樓裡三種訓練節奏。</p></div>
+    <div class="fac-home" id="home-fac"></div>
+    <div class="btn-row" style="margin-top:26px">
+      <a class="btn btn-2" href="#/about" data-scroll="about-facility">看完整場館照片</a></div>
   </div></div>
 
   <div class="sec-ink"><div class="cta-box">
@@ -903,73 +1069,16 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
     <p>這世界上沒有最好的訓練方式，而我們也不應被某種運動定義。</p>
   </div></div>
 
-  <div class="sec sec-alt"><div class="wrap">
-    <div class="grid g2" style="align-items:start;gap:clamp(22px,4vw,50px)">
-      <div><p class="quote">FUSION 意味<span>融合</span>，打破現今體適能化整為零的框架。</p></div>
-      <div>
-        <p style="color:var(--dim)">重訓、慢跑、瑜珈、飛輪、拳擊，看似互相牴觸，卻皆含有對身體有益的元素。我們的工作是發覺其中之精髓，利用系統化整合，合理地加以運用。</p>
-        <p style="color:var(--dim);margin-top:16px">深信全人健康的信念不應只是口號，而是更加完整與包容。在倡導不被工具綁架的同時，創造適合自己的健康運動方式。</p>
-        <p style="color:var(--dim);margin-top:16px">運動不只是打造完美體態的途徑，而是拓展身體無限潛能的平台。不需與誰較量，在這裡，你能放心探索並去定義自己的模樣。</p>
-      </div>
-    </div>
-  </div></div>
-
-  <div class="sec"><div class="wrap">
-    <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
-      <h2>願景與使命</h2></div></div>
-    <div class="grid g2 vm">
-      <div class="card card-p"><span class="tag tag-blue">Vision 願景</span>
-        <h3>發揮人體最大潛能</h3>
-        <p>願有一天，每個人都能夠融合多元健康的知識，主動創造自己的運動，發揮人體最大潛能。</p></div>
-      <div class="card card-p"><span class="tag tag-blue">Mission 使命</span>
-        <h3>培育身心靈整合的教練</h3>
-        <p>整合所有體適能知識，並透過教育系統培育具備身心靈整合能力的教練與學員，帶動全人健康。</p></div>
-    </div>
-  </div></div>
-
-  <div class="sec sec-alt"><div class="wrap-narrow">
-    <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
-      <h2>標誌的意象</h2></div>
-      <p>標誌由三種意念構成，也是我們看待身體的三種角度。</p></div>
-    <div class="card card-p">
-      <div class="logo-x"><div class="pct">30<small>水</small></div><div>
-        <h3>水無常形，兵無常勢</h3>
-        <div class="sub">哲學 + 科學 + 匠心 = 靈活與躍進</div>
-        <p>用在體適能上，我們能大量運用不同工具去解決不同問題。不是讓客戶適應我們，而是我們適應客戶，所以我們不挑客戶，也不放棄每個能解決的問題。</p></div></div>
-      <div class="logo-x"><div class="pct">40<small>一為全</small></div><div>
-        <h3>一為全，全為一</h3>
-        <div class="sub">哲學 + 人文 = 太極分化與尊重生命</div>
-        <p>每個人體即為一宇宙，這樣的複雜程度卻常被用極為粗糙的方式對待，導致各種身心失衡與表現失常。醫學上已逐漸認識到人體連鎖反應的重要性，並非頭痛醫頭腳痛醫腳；體適能訓練也需擺脫見樹不見林的方式。</p></div></div>
-      <div class="logo-x"><div class="pct">30<small>交會處</small></div><div>
-        <h3>每個生命歷程的交會處</h3>
-        <div class="sub">哲學 + 人文 = 連結與融合</div>
-        <p>人與人之間，線性的歷程與非線性的交錯，並且在動態平衡中找回自然歸一的活動方式。</p></div></div>
-    </div>
-  </div></div>
-
-  <div class="sec"><div class="wrap">
-    <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
-      <h2>核心思想</h2></div></div>
-    <div class="core grid g2" style="gap:2px">
-      <div class="it"><h3>融合並以終為始</h3><p>一為全、全為一，化零為整，見樹也見林。</p></div>
-      <div class="it"><h3>哲學為科學之母</h3><p>東學為體，西學為用，中西合併，滿足客戶需求而非專業人員期望。</p></div>
-      <div class="it"><h3>科學為依據</h3><p>訓練與學習共存，理論與實務精確整合。所有教材內容皆有科學根據，不給予主觀無根據的內容。</p></div>
-      <div class="it"><h3>人文與遵道</h3><p>順應自然之道，同時充滿關懷、尊重、包容、愛護與同理。</p></div>
-      <div class="it" style="grid-column:1/-1"><h3>匠心與精進</h3>
-        <p>整合所有健康的方式，創造並定義自己的運動，協助體適能職人找到天命。持續成長、學習、反省與突破，多元角度看待逆境，將每一次挑戰化作成長動力。</p></div>
-    </div>
-  </div></div>
-
   <div class="sec-ink"><div class="wrap" style="padding-top:clamp(40px,7vw,72px);padding-bottom:clamp(40px,7vw,72px)">
     <div class="sec-head center"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
       <h2>抗老化，不是抗衰老</h2></div><p>一字之差，是兩種完全不同的態度。</p></div>
     <div class="grid g2" style="max-width:760px;margin:0 auto">
       <div style="padding:clamp(20px,3vw,28px);border:1px solid rgba(255,255,255,.16);border-radius:var(--r)">
         <div class="eyebrow" style="color:#8FA9B8">✕ 抗衰老</div>
-        <p style="color:#B9D3DE;margin-top:12px;line-height:2">狼狽消極的抵抗衰老<br>被動無奈的掙扎退化</p></div>
+        <p style="color:#B9D3DE;margin-top:12px;line-height:1.8">狼狽消極的抵抗衰老<br>被動無奈的掙扎退化</p></div>
       <div style="padding:clamp(20px,3vw,28px);border:1.5px solid var(--teal);border-radius:var(--r);background:rgba(111,186,201,.1)">
         <div class="eyebrow">✓ 抗老化</div>
-        <p style="color:#fff;margin-top:12px;line-height:2;font-weight:500">優雅積極的延緩老化<br>主動樂觀的安穩進步</p></div>
+        <p style="color:#fff;margin-top:12px;line-height:1.8;font-weight:500">優雅積極的延緩老化<br>主動樂觀的安穩進步</p></div>
     </div>
   </div></div>
 
@@ -996,7 +1105,7 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
       <p>教練這個職業神聖的地方在於，人們信任並把自己的身體交給你去改變。職業道德與專業技術是我們最高的信條。</p></div>
     <div class="grid g3" id="about-team"></div>
     <div style="margin-top:clamp(26px,4vw,40px)">
-      <h3 style="font-size:1rem;font-weight:700;letter-spacing:.05em;margin-bottom:14px">團隊專業認證</h3>
+      <h3 style="font-size:1.18rem;font-weight:700;letter-spacing:.05em;margin-bottom:14px">團隊專業認證</h3>
       <div class="certs">
         <span class="tag">ACE-CPT</span><span class="tag">NSCA-CPT</span><span class="tag">NASM-CES</span>
         <span class="tag">FFT 訓練系統</span><span class="tag">FMS 功能性評估矯正</span>
@@ -1005,6 +1114,93 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
         <span class="tag">CPR &amp; AED</span><span class="tag">體育署救生員</span>
         <span class="tag">中華民國 C 級體適能指導員</span></div>
     </div>
+  </div></div>
+
+  <div class="sec"><div class="wrap">
+    <div class="grid g2" style="align-items:start;gap:clamp(22px,4vw,50px)">
+      <div><p class="quote">FUSION 意味<span>融合</span>，打破現今體適能化整為零的框架。</p>
+        <figure class="about-shot">
+          <img src="assets/about/jerec-teaching.jpg" alt="總教練 Jerec 以骨骼模型講解人體結構"
+            width="1600" height="1200" loading="lazy" decoding="async">
+          <figcaption>總教練 Jerec 的課堂：先看懂身體，再開始練。</figcaption>
+        </figure>
+      </div>
+      <div>
+        <p style="color:var(--dim)">重訓、慢跑、瑜珈、飛輪、拳擊，看似互相牴觸，卻皆含有對身體有益的元素。我們的工作是發覺其中之精髓，利用系統化整合，合理地加以運用。</p>
+        <p style="color:var(--dim);margin-top:16px">深信全人健康的信念不應只是口號，而是更加完整與包容。在倡導不被工具綁架的同時，創造適合自己的健康運動方式。</p>
+        <p style="color:var(--dim);margin-top:16px">運動不只是打造完美體態的途徑，而是拓展身體無限潛能的平台。不需與誰較量，在這裡，你能放心探索並去定義自己的模樣。</p>
+      </div>
+    </div>
+  </div></div>
+
+  <div class="sec sec-alt"><div class="wrap">
+    <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
+      <h2>願景與使命</h2></div></div>
+    <div class="grid g2 vm">
+      <div class="card card-p"><span class="tag tag-blue">Vision 願景</span>
+        <h3>發揮人體最大潛能</h3>
+        <p>願有一天，每個人都能夠融合多元健康的知識，主動創造自己的運動，發揮人體最大潛能。</p></div>
+      <div class="card card-p"><span class="tag tag-blue">Mission 使命</span>
+        <h3>培育身心靈整合的教練</h3>
+        <p>整合所有體適能知識，並透過教育系統培育具備身心靈整合能力的教練與學員，帶動全人健康。</p></div>
+    </div>
+  </div></div>
+
+  <div class="sec"><div class="wrap-narrow">
+    <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
+      <h2>標誌的意象</h2></div>
+      <p>標誌由三種意念構成，也是我們看待身體的三種角度。</p></div>
+    <div class="card card-p">
+      <div class="logo-x"><div class="pct">30<small>水</small></div><div>
+        <h3>水無常形，兵無常勢</h3>
+        <div class="sub">哲學 + 科學 + 匠心 = 靈活與躍進</div>
+        <p>用在體適能上，我們能大量運用不同工具去解決不同問題。不是讓客戶適應我們，而是我們適應客戶，所以我們不挑客戶，也不放棄每個能解決的問題。</p></div></div>
+      <div class="logo-x"><div class="pct">40<small>一為全</small></div><div>
+        <h3>一為全，全為一</h3>
+        <div class="sub">哲學 + 人文 = 太極分化與尊重生命</div>
+        <p>每個人體即為一宇宙，這樣的複雜程度卻常被用極為粗糙的方式對待，導致各種身心失衡與表現失常。醫學上已逐漸認識到人體連鎖反應的重要性，並非頭痛醫頭腳痛醫腳；體適能訓練也需擺脫見樹不見林的方式。</p></div></div>
+      <div class="logo-x"><div class="pct">30<small>交會處</small></div><div>
+        <h3>每個生命歷程的交會處</h3>
+        <div class="sub">哲學 + 人文 = 連結與融合</div>
+        <p>人與人之間，線性的歷程與非線性的交錯，並且在動態平衡中找回自然歸一的活動方式。</p></div></div>
+    </div>
+  </div></div>
+
+  <div class="sec sec-alt"><div class="wrap">
+    <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
+      <h2>核心思想</h2></div>
+      <p>四個元素環繞著標誌，標誌本身就是第五項——融合。</p></div>
+
+    <svg class="spirit" viewBox="0 0 440 400" xmlns="http://www.w3.org/2000/svg"
+      role="img" aria-label="四項品牌精神：人文、科學、匠心、哲學，環繞諧動空間標誌">
+      <title>四項品牌精神</title>
+      <circle class="ring" cx="220" cy="200" r="126"/>
+      <circle class="dot" cx="220" cy="74"  r="7.5"/>
+      <circle class="dot" cx="346" cy="200" r="7.5"/>
+      <circle class="dot" cx="220" cy="326" r="7.5"/>
+      <circle class="dot" cx="94"  cy="200" r="7.5"/>
+      <image href="assets/brand/mark.png" x="182" y="135" width="76" height="130"/>
+      <text class="lb" x="220" y="40"  text-anchor="middle">人文</text>
+      <text class="lb" x="372" y="211" text-anchor="start">科學</text>
+      <text class="lb" x="220" y="380" text-anchor="middle">匠心</text>
+      <text class="lb" x="68"  y="211" text-anchor="end">哲學</text>
+    </svg>
+
+    <div class="core grid g2" style="gap:2px">
+      <div class="it"><h3>融合並以終為始</h3><p>一為全、全為一，化零為整，見樹也見林。</p></div>
+      <div class="it"><h3>哲學為科學之母</h3><p>東學為體，西學為用，中西合併，滿足客戶需求而非專業人員期望。</p></div>
+      <div class="it"><h3>科學為依據</h3><p>訓練與學習共存，理論與實務精確整合。所有教材內容皆有科學根據，不給予主觀無根據的內容。</p></div>
+      <div class="it"><h3>人文與遵道</h3><p>順應自然之道，同時充滿關懷、尊重、包容、愛護與同理。</p></div>
+      <div class="it" style="grid-column:1/-1"><h3>匠心與精進</h3>
+        <p>整合所有健康的方式，創造並定義自己的運動，協助體適能職人找到天命。持續成長、學習、反省與突破，多元角度看待逆境，將每一次挑戰化作成長動力。</p></div>
+    </div>
+  </div></div>
+
+  <div class="sec-ink anch" id="about-facility"><div class="wrap" style="padding-top:clamp(40px,7vw,72px);padding-bottom:clamp(40px,7vw,72px)">
+    <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
+      <h2>場館空間</h2></div>
+      <p>重訓區、功能訓練區、藍墊區，一層樓走完三種訓練節奏。點任一張看大圖。</p></div>
+    <div class="fac" id="about-fac"></div>
   </div></div>
 
   <div class="sec"><div class="wrap-narrow">
@@ -1035,18 +1231,26 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
     <p>從一對一的深度客製，到週間固定開課的主題團體班。先了解自己適合哪一種。</p>
   </div></div>
 
+  <div class="wrap" style="margin-top:clamp(-18px,-2vw,-10px)">
+    <div class="hero-band">
+      <img src="assets/banner/services.jpg" alt="諧動空間教練與學員的訓練畫面"
+        width="2000" height="761" loading="lazy" decoding="async"></div>
+  </div>
+
   <div class="sec sec-alt"><div class="wrap">
     <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
-      <h2>四大服務項目</h2></div><p>真正達到健康，不可能只單靠一個專業領域。</p></div>
-    <div class="grid g4">
-      <div class="card sv"><div class="ic">01</div><h3>抗老化體適能</h3>
-        <p>針對中高齡族群設計的漸進式訓練，延緩肌力、平衡與本體感覺的退化，降低跌倒與失能風險。</p></div>
-      <div class="card sv"><div class="ic">02</div><h3>功能運動處方</h3>
-        <p>依個別評估結果開立運動處方，針對日常生活中真正會用到的動作模式做恢復與強化。</p></div>
-      <div class="card sv"><div class="ic">03</div><h3>痠痛運動整復</h3>
-        <p>結合徒手整復與運動訓練，處理下背痛、肩頸緊繃等長期不適，並教你如何不再復發。</p></div>
-      <div class="card sv"><div class="ic">04</div><h3>企業健康講座</h3>
-        <p>為企業與社區提供健康講座與外派教學，將久坐族群的自我照顧方法帶進辦公室。</p></div>
+      <h2>五大服務項目</h2></div><p>真正達到健康，不可能只單靠一個專業領域。</p></div>
+    <div class="grid" id="svc-five">
+      <div class="card sv"><div class="ic">01</div><h3>科學化重訓</h3>
+        <p>以肌力體能科學安排負荷與週期，先評估再定強度，不憑感覺加重。</p></div>
+      <div class="card sv"><div class="ic">02</div><h3>體態雕塑</h3>
+        <p>從整體動作結構調整身形，兼顧肌肉量與體脂，不靠極端節食。</p></div>
+      <div class="card sv"><div class="ic">03</div><h3>功能性訓練</h3>
+        <p>從蹲下、提物、轉身這些日常動作出發，練的是動作品質與神經控制。</p></div>
+      <div class="card sv"><div class="ic">04</div><h3>柔軟體操</h3>
+        <p>處理關節活動度與肌筋膜張力，改善久坐造成的僵硬與代償。</p></div>
+      <div class="card sv"><div class="ic">05</div><h3>運動整復</h3>
+        <p>結合徒手整復與運動訓練，處理下背痛、肩頸緊繃等長期不適。</p></div>
     </div>
   </div></div>
 
@@ -1063,7 +1267,7 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
           <div class="kv"><div class="k">評估</div><div class="v">FFT 系統</div></div>
           <div class="kv"><div class="k">體驗價</div><div class="v mono">NT$1,000 起</div></div></div>
         <div class="btn-row" style="margin-top:20px">
-          <a class="btn btn-1" href="#/pt">預約 PT<span class="ar">›</span></a>
+          <a class="btn btn-1" href="#/pt">預約教練課<span class="ar">›</span></a>
           <a class="btn btn-2" href="#/pricing">看完整價格</a></div></div></div>
 
       <div class="card pblock"><div class="badge b-pgt">PGT</div><div>
@@ -1073,9 +1277,9 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
           <div class="kv"><div class="k">人數</div><div class="v">1對3 ～ 1對多</div></div>
           <div class="kv"><div class="k">排課</div><div class="v">預約制</div></div>
           <div class="kv"><div class="k">評估</div><div class="v">FMS 系統</div></div>
-          <div class="kv"><div class="k">單堂起</div><div class="v mono">NT$1,800</div></div></div>
+          <div class="kv"><div class="k">單堂起</div><div class="v mono">NT$2,100</div></div></div>
         <div class="btn-row" style="margin-top:20px">
-          <a class="btn btn-1" href="#/pgt">預約 PGT<span class="ar">›</span></a>
+          <a class="btn btn-1" href="#/pgt">預約私人團體班<span class="ar">›</span></a>
           <a class="btn btn-2" href="#/pricing">看完整價格</a></div></div></div>
 
       <div class="card pblock"><div class="badge b-gt">GT</div><div>
@@ -1127,14 +1331,16 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
         <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
           <h2>其他服務</h2></div></div>
         <div class="grid" style="gap:10px">
-          <div class="card card-p"><h3 style="font-size:.98rem;font-weight:700">外派教學</h3>
-            <p style="color:var(--dim);font-size:.85rem;margin-top:7px">府上與社區教學，把訓練帶到你方便的地方。</p></div>
-          <div class="card card-p"><h3 style="font-size:.98rem;font-weight:700">講座研習</h3>
-            <p style="color:var(--dim);font-size:.85rem;margin-top:7px">企業與團體的健康講座、教練專業研習活動。</p></div>
-          <div class="card card-p"><h3 style="font-size:.98rem;font-weight:700">微運動</h3>
-            <p style="color:var(--dim);font-size:.85rem;margin-top:7px">20 分鐘套組課程，適合時間破碎的上班族。</p></div>
-          <div class="card card-p"><h3 style="font-size:.98rem;font-weight:700">自主訓練</h3>
-            <p style="color:var(--dim);font-size:.85rem;margin-top:7px">開放場地自主使用，諧動教練客戶免費。</p></div>
+          <div class="card card-p"><h3 style="font-size:1.322rem;font-weight:700">外派教學</h3>
+            <p style="color:var(--dim);font-size:1.156rem;margin-top:7px">府上與社區教學，把訓練帶到你方便的地方。</p></div>
+          <div class="card card-p"><h3 style="font-size:1.322rem;font-weight:700">講座研習</h3>
+            <p style="color:var(--dim);font-size:1.156rem;margin-top:7px">企業與團體的健康講座、教練專業研習活動。</p></div>
+          <div class="card card-p"><h3 style="font-size:1.322rem;font-weight:700">微運動</h3>
+            <p style="color:var(--dim);font-size:1.156rem;margin-top:7px">20 分鐘套組課程，適合時間破碎的上班族。</p></div>
+          <div class="card card-p"><h3 style="font-size:1.322rem;font-weight:700">自由教練場租</h3>
+            <p style="color:var(--dim);font-size:1.156rem;margin-top:7px">自由教練可租借場地帶課，也可包場。費用見價目表。</p></div>
+          <div class="card card-p"><h3 style="font-size:1.322rem;font-weight:700">自主訓練</h3>
+            <p style="color:var(--dim);font-size:1.156rem;margin-top:7px">開放場地自主使用（需預約），諧動教練學員 9am–6pm 免費。</p></div>
         </div>
       </div>
       <div>
@@ -1157,7 +1363,7 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   </div></div>
 </section>
 
-<!-- ══════════ 團課課表 ══════════ -->
+<!-- ══════════ 團體課表 ══════════ -->
 <section class="route" data-route="schedule">
   <div class="ph"><div class="wrap">
     <div class="rule"><i></i><i></i><i></i></div>
@@ -1200,11 +1406,11 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
     <div class="rule"><i></i><i></i><i></i></div>
     <p class="eyebrow" style="margin-top:16px">Pricing</p>
     <h1>價目表與付費說明</h1>
-    <p>四大品項的完整費用。所有款項於現場現金或匯款完成，目前暫無線上支付。</p>
+    <p>四大品項的完整費用，以及自由教練的場地租借方案。所有款項於現場現金或匯款完成，目前暫無線上支付。</p>
     <nav class="jump">
       <a href="#/pricing" data-scroll="pr-pt">私人教練</a><a href="#/pricing" data-scroll="pr-pgt">私人團體班</a>
       <a href="#/pricing" data-scroll="pr-gt">團體課程</a><a href="#/pricing" data-scroll="pr-open">自主訓練</a>
-      <a href="#/pricing" data-scroll="pr-pay">付費方式</a></nav>
+      <a href="#/pricing" data-scroll="pr-rent">自由教練場租</a><a href="#/pricing" data-scroll="pr-pay">付費方式</a></nav>
   </div></div>
 
   <div class="sec sec-alt anch" id="pr-pt"><div class="wrap">
@@ -1213,13 +1419,13 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
     <div class="card tb"><table>
       <tr><th>項目</th><th>一對一</th><th>一對二</th><th>三人以上</th></tr>
       <tr><td>體驗</td><td>NT$1,000</td><td>NT$1,500</td><td rowspan="3" class="mute">請見<br>私人團體班</td></tr>
-      <tr><td>單堂</td><td>NT$1,500</td><td>NT$2,200</td></tr>
-      <tr><td>10 堂</td><td>NT$12,000</td><td>NT$20,000</td></tr></table></div>
+      <tr><td>單堂</td><td>NT$1,800</td><td>NT$2,200</td></tr>
+      <tr><td>10 堂</td><td>NT$15,000</td><td>NT$20,000</td></tr></table></div>
     <div class="hlt"><div class="big">FMS</div><div>
       <div class="t">第一次體驗含 FMS 功能性評估檢測</div>
-      <div class="d">先了解你的動作品質與限制，再決定訓練方向。諧動教練客戶自主訓練免費。</div></div></div>
+      <div class="d">先了解你的動作品質與限制，再決定訓練方向。諧動教練學員自主訓練 9am–6pm 免費。</div></div></div>
     <div class="marks">
-      <div>10 堂方案平均一堂 NT$1,200，比單堂省下 NT$300</div>
+      <div>10 堂方案平均一堂 NT$1,500，比單堂省下 NT$300</div>
       <div>三人以上請查看私人團體班</div></div>
     <div class="btn-row" style="margin-top:20px">
       <a class="btn btn-1" href="#/pt">預約私人教練課<span class="ar">›</span></a></div>
@@ -1229,23 +1435,23 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
     <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
       <h2>私人團體班</h2><span class="en" style="margin-left:auto">Private Group</span></div></div>
     <div class="card tb"><table>
-      <tr><th>項目</th><th>一對三</th><th>一對四</th><th>一對五</th><th>一對多</th></tr>
-      <tr><td>單堂總價</td><td>NT$1,800</td><td>NT$2,100</td><td>NT$2,400</td><td class="mute">以此類推</td></tr>
-      <tr><td>每人均攤</td><td class="hi">NT$600</td><td class="hi">NT$525</td><td class="hi">NT$480</td>
-        <td class="mute">人數越多越低</td></tr></table></div>
+      <tr><th>項目</th><th>一對三</th><th>一對四</th><th>一對五</th><th>六人以上</th></tr>
+      <tr><td>單堂總價</td><td>NT$2,100</td><td>NT$2,400</td><td>NT$2,500</td><td class="mute">內洽</td></tr>
+      <tr><td>每人均攤</td><td class="hi">NT$700</td><td class="hi">NT$600</td><td class="hi">NT$500</td>
+        <td class="mute">請來電詢問</td></tr></table></div>
     <div class="card card-p calc" style="margin-top:13px">
-      <p style="font-size:.82rem;color:var(--dim);text-align:center;margin-bottom:18px">調整人數，看看每個人要分攤多少</p>
+      <p style="font-size:1.168rem;color:var(--dim);text-align:center;margin-bottom:18px">調整人數，看看每個人要分攤多少</p>
       <div class="stepper">
         <button class="stb" id="pr-minus" aria-label="減少人數">−</button>
         <div class="stv"><div class="num" id="pr-num">3</div><div class="lbl" id="pr-lbl">一對三</div></div>
         <button class="stb" id="pr-plus" aria-label="增加人數">＋</button></div>
       <div class="split">
-        <div class="bx"><div class="k">單堂總價</div><div class="v" id="pr-total">NT$1,800</div></div>
-        <div class="bx hi"><div class="k">每人均攤</div><div class="v" id="pr-each">NT$600</div></div></div>
+        <div class="bx"><div class="k">單堂總價</div><div class="v" id="pr-total">NT$2,100</div></div>
+        <div class="bx hi"><div class="k">每人均攤</div><div class="v" id="pr-each">NT$700</div></div></div>
     </div>
     <div class="marks">
       <div>私人團體班與教練詳談課程內容，採進度式週期教學</div>
-      <div>每增加一人約 +NT$300，實際以現場確認為準</div></div>
+      <div>六人以上請來電洽詢 (02) 2356-9462</div></div>
     <div class="btn-row" style="margin-top:20px">
       <a class="btn btn-1" href="#/pgt">預約私人團體班<span class="ar">›</span></a></div>
   </div></div>
@@ -1271,16 +1477,42 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
     <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
       <h2>自主訓練</h2><span class="en" style="margin-left:auto">Open Gym</span></div></div>
     <div class="card tb"><table>
-      <tr><th>時段</th><th>7am–12pm</th><th>12pm–6pm</th><th>6pm–10pm</th><th>教練客戶</th></tr>
+      <tr><th>時段</th><th>9am–12pm</th><th>12pm–6pm</th><th>6pm–9pm</th><th>教練學員</th></tr>
       <tr><td>費用</td><td>NT$100<span class="u"> /hr</span></td><td>NT$100<span class="u"> 不限時</span></td>
-        <td>NT$100<span class="u"> /hr</span></td><td class="free">免收費</td></tr></table></div>
+        <td>NT$100<span class="u"> /hr</span></td><td class="free">9am–6pm 免費</td></tr></table></div>
     <div class="marks">
       <div>中午 12pm–6pm 為單價不限時，最為划算</div>
-      <div>已購買教練課程的客戶免費使用</div>
-      <div>自主訓練開放時段如與場館營業時間不同，請先以電話確認</div></div>
+      <div>已購買教練課程的學員，9am–6pm 免費使用</div>
+      <div>自主訓練需事先預約</div></div>
   </div></div>
 
-  <div class="sec sec-alt anch" id="pr-pay"><div class="wrap">
+  <div class="sec sec-alt anch" id="pr-rent"><div class="wrap">
+    <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
+      <h2>自由教練場租</h2><span class="en" style="margin-left:auto">Venue Rental</span></div>
+      <p>自由教練可租借場地帶課，或包場舉辦課程與活動。</p></div>
+
+    <h3 style="font-size:1.18rem;font-weight:700;letter-spacing:.05em;margin-bottom:12px">教練場租</h3>
+    <div class="card tb"><table>
+      <tr><th>人數</th><th>一對一</th><th>一對二</th><th>一對三</th><th>一對四</th><th>一對五</th><th>一對六</th></tr>
+      <tr><td>每小時</td><td>NT$200</td><td>NT$350</td><td>NT$400</td><td>NT$500</td><td>NT$600</td><td>NT$700</td></tr>
+    </table></div>
+
+    <h3 style="font-size:1.18rem;font-weight:700;letter-spacing:.05em;margin:22px 0 12px">包場租借</h3>
+    <div class="card tb"><table>
+      <tr><th>範圍</th><th>可容納</th><th>下午場</th></tr>
+      <tr><td>整場</td><td class="mute">全區</td><td>NT$2,000</td></tr>
+      <tr><td>重訓區</td><td class="mute">約 20 人</td><td>NT$1,500</td></tr>
+      <tr><td>隔間</td><td class="mute">約 10 人</td><td>NT$1,000</td></tr>
+    </table></div>
+    <div class="marks">
+      <div>一堂即一小時，六人以上場租以此類推</div>
+      <div>包場目前僅開放下午場，上午與晚上場暫不開放</div>
+      <div>整場多次租借的優惠方案請來電洽詢 (02) 2356-9462</div></div>
+    <div class="btn-row" style="margin-top:20px">
+      <a class="btn btn-2" href="tel:0223569462">來電洽詢場租<span class="ar">›</span></a></div>
+  </div></div>
+
+  <div class="sec anch" id="pr-pay"><div class="wrap">
     <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
       <h2>付費方式</h2><span class="en" style="margin-left:auto">Payment</span></div></div>
     <div class="card card-p">
@@ -1448,8 +1680,8 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
           <button class="stb" id="pgt-plus" aria-label="增加人數">＋</button></div>
         <div class="avs" id="pgt-avs"></div>
         <div class="split">
-          <div class="bx"><div class="k">單堂總價</div><div class="v" id="pgt-total">NT$1,800</div></div>
-          <div class="bx hi"><div class="k">每人均攤</div><div class="v" id="pgt-each">NT$600</div></div></div></div>
+          <div class="bx"><div class="k">單堂總價</div><div class="v" id="pgt-total">NT$2,100</div></div>
+          <div class="bx hi"><div class="k">每人均攤</div><div class="v" id="pgt-each">NT$700</div></div></div></div>
       <div class="note" id="pgt-note" style="margin-top:13px"></div></div>
 
     <div class="sec">
@@ -1528,6 +1760,10 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
         <div class="addr-map">
           <iframe src="https://www.google.com/maps?q=%E5%8F%B0%E5%8C%97%E5%B8%82%E4%BF%A1%E7%BE%A9%E8%B7%AF%E4%BA%8C%E6%AE%B574%E8%99%9F&output=embed"
             loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="諧動空間位置地圖"></iframe></div>
+        <div class="arrive">
+          <img src="assets/facility/entrance.jpg" alt="諧動空間 10 樓入口的品牌牆"
+            width="1400" height="933" loading="lazy" decoding="async">
+          <p>搭電梯到 <b>10 樓</b>，出電梯就會看到這面牆。置物櫃就在電梯旁邊。</p></div>
         <div class="soc" style="margin-top:16px">
           <a href="https://www.facebook.com/fusionforcefitness/" target="_blank" rel="noopener">Facebook</a>
           <a href="https://www.instagram.com/fusionforcefitness/" target="_blank" rel="noopener">Instagram</a>
@@ -1580,7 +1816,7 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
         <p style="margin-top:14px;max-width:34ch">諧動空間抗老化中心<br>整合體適能知識，帶動全人健康。</p></div>
       <div><h4>Explore</h4><ul>
         <li><a href="#/about">關於諧動</a></li><li><a href="#/services">服務課程</a></li>
-        <li><a href="#/schedule">團課課表</a></li><li><a href="#/pricing">價目表</a></li>
+        <li><a href="#/schedule">團體課表</a></li><li><a href="#/pricing">價目表</a></li>
         <li><a href="#/booking">線上預約</a></li></ul></div>
       <div><h4>Contact</h4><ul>
         <li><a href="tel:0223569462">(02) 2356-9462</a></li>
@@ -1623,6 +1859,32 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
       <button class="btn btn-2" id="btn-copy">複製訊息</button>
       <a class="btn btn-1" href="https://lin.ee/9tthCBh" target="_blank" rel="noopener">開啟 LINE</a></div>
     <a class="btn btn-3" href="tel:0223569462" style="width:100%;margin-top:10px">或直接來電 (02) 2356-9462</a>
+  </div>
+</div>
+
+<!-- 場館照片燈箱 -->
+<div class="ov" id="ov-photo" role="dialog" aria-modal="true" aria-label="場館照片">
+  <div class="lbox">
+    <div class="lbox-fr"><img id="lb-img" src="" alt=""></div>
+    <div class="lbox-bar">
+      <div class="lbox-tx"><b id="lb-t"></b><span id="lb-d"></span></div>
+      <div class="lbox-nv">
+        <span class="lbox-n" id="lb-n"></span>
+        <button id="lb-prev" aria-label="上一張">‹</button>
+        <button id="lb-next" aria-label="下一張">›</button>
+        <button data-close aria-label="關閉">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 教練詳細資料 -->
+<div class="ov" id="ov-coach" role="dialog" aria-modal="true" aria-labelledby="cd-name">
+  <div class="sheet">
+    <div class="sheet-hd">
+      <div id="cd-head"></div>
+      <button class="x" data-close aria-label="關閉">✕</button></div>
+    <div id="cd-body"></div>
   </div>
 </div>
 
@@ -1698,24 +1960,146 @@ var FFDATA = {
 
   /* ── 教練團隊 ─────────────────────────────────────────── */
   coaches: [
-    { id: 'jian', name: '簡基城', zh: '醫師 / 博士', initial: '簡', home: false,
-      role: '抗老化專家',
-      skills: ['抗老化醫師', '公衛碩士', '分子醫學博士'] },
-    { id: 'jerec', name: 'Jerec', zh: '總教練', initial: 'J', home: true,
+    { id: 'jian', name: '簡基城', zh: '醫師 · 博士（MD, PhD.）', initial: '簡', home: true,
+      photo: 'assets/coaches/dr-chien.jpg', av: 'assets/coaches/dr-chien-av.jpg',
+      role: '抗老化體適能 醫療總顧問',
+      skills: ['逆轉胰島素阻抗與代謝症候群', '八大系統抗老化醫學', '分子醫學與生活醫學整合'],
+      titles: ['抗老實務發展關注會（SAMPA）會長',
+               '抗老化體適能 醫療總顧問',
+               '台灣代謝症候群健康促進協會 創會長'],
+      detail: [
+        { h: '學歷背景與研究', items: [
+          '臺灣國立清華大學 生命科學暨醫學院 博士',
+          '美國加州大學洛杉磯分校（UCLA）公共衛生學院 碩士',
+          '臺北醫學大學醫學系 醫學士',
+          '中央研究院生化所 博士後研究'] },
+        { h: '工作經歷', items: [
+          '抗老實務發展關注會（SAMPA）會長／創辦人',
+          '台灣代謝症候群健康促進協會（SMART）創會長',
+          '東元綜合醫院 資深副院長',
+          '艾微芙國際生殖醫學中心 院長',
+          '康邁醫學科技股份有限公司 策略長暨醫學長',
+          '新竹科學園區管理局員工診所 前院長'] },
+        { h: '特色專長與著作', items: [
+          '八大系統抗老化醫學、生物哲學與分子醫學',
+          '生理生化學、抗老化體適能科學與生活醫學',
+          '逆轉胰島素阻抗與代謝逆轉科學，啟動身體全方位自癒力',
+          '專著：《健康零漏洞：簡基城博士獨創六大系統健康自療法》、《精瘦練習》'] }
+      ],
+      quote: '面對人口高齡化的大趨勢，正確的健康照護哲學應建立在底層生理原理與長期效益上。我們以抗老化的工作觀念作為系統基礎，透過知性轉化破解健康迷思。人體是一座奧妙的機器，真正的健康自癒來自於精準的分子醫學與生活醫學結合。我們致力於協助每位學員化焦慮為動能，建立精準認知，在歲月中實現身心樂活與全方位抗老！' },
+
+    { id: 'jerec', name: 'Jerec', zh: '于郅弘', initial: 'J', home: true,
+      photo: 'assets/coaches/jerec.jpg', av: 'assets/coaches/jerec-av.jpg',
       role: '體適能總教練', ig: '',
-      skills: ['整復師、特殊族群體適能', '感覺統合運動認證', '中華民國整復總會'] },
+      skills: ['重訓與功能性訓練整合設計', '徒手整復・美式整脊', 'DNS 動態神經肌肉穩定'],
+      titles: ['體適能總教官', '抗老化體適能總教官',
+               '諧動空間 創辦人', 'FFETS 諧動教育培訓系統 創始人'],
+      detail: [
+        { h: '工作經歷與培訓背景', items: [
+          '2015 – 至今｜諧動空間 創辦人：倡導打破體適能疆界，貫徹「一為全，全為一」的運動哲學',
+          '2012 – 至今｜FFETS 諧動教育培訓系統 創辦人／教練培訓官：跨領域整合徒手整復、美式整脊、神經肌肉訓練、DNS、SCS、楊達療法與肌筋膜週期調理',
+          '2014｜AFAA 美國運動體適能協會 教育訓練官：指導解剖學、運動生理學、基礎肌動學與運動按摩',
+          '2012｜World Gym 教練培訓官：負責內部教練培訓，引導入門教練掌握核心教學概念'] },
+        { h: '特色專長', items: [
+          '重量訓練與功能性訓練',
+          'DNS（動態神經肌肉穩定技術）& SMT 訓練',
+          '柔軟體操、肌筋膜系統與週期化訓練設計',
+          '運動按摩、徒手整復與美式整脊'] },
+        { h: '專業認證與歷練', items: [
+          'FFETS 諧動教育培訓系統 創始人',
+          'ACE 美國運動委員會 國際私人教練認證（ACE-CPT）',
+          'NSCA 美國國家肌力體能協會 私人教練與體能專家認證（NSCA-CPT & CSCS）',
+          'ACSM 美國運動醫學學會 認證私人教練（ACSM-CPT）',
+          'NASM 美國國家運動醫學學會 國際私人教練認證（NASM-CPT）',
+          'AFAA 美國運動體適能協會 重量訓練指導員 & 教官',
+          'SCS 拮抗鬆弛術（Strain Counterstrain）',
+          'Mulligan 關節鬆動術',
+          'FMS 功能性評估與矯正認證（Level 1 & 2）',
+          '中華肌內效協會 B 級認證',
+          '中華民國整復總會 認證整復師',
+          '美國科學與傷後訓練研習',
+          '特殊族群體適能（兒童青少年體適能 & 銀髮族肌力訓練）',
+          '感覺統合運動指導人員培訓',
+          'CPR & AED 心肺復甦與急救認證'] }
+      ],
+      quote: '這世界上沒有最好的訓練方式，而我們也不應被某種運動定義。每個人體即為一個宇宙，我們秉持『一為全，全為一』與『東學為體，西學為用』的哲學，融合西方科學與東方內觀智慧，打破化整為零的框架。不是讓客戶適應我們，而是我們適應客戶的需求。運動不只是打造體態，而是拓展生命無限潛能的平台；我們作為預防醫學最前線，透過正念的身心靈整合與終生客製化運動，陪伴每個人探索並定義屬於自己的健康模樣。' },
+
     { id: 'jessica', name: 'Jessica', zh: '王韻茹', initial: 'J', home: true,
+      photo: 'assets/coaches/jessica.jpg', av: 'assets/coaches/jessica-av.jpg',
       role: '抗老化體適能教練', ig: 'jessicaniniayu',
-      skills: ['健康式女性體態雕塑', '抗肌筋膜老化', '久坐姿勢矯正'] },
+      skills: ['女性體態雕塑與曲線打造', '肌力與舉重專項訓練', '久坐族姿勢矯正'],
+      titles: ['體適能專家', '資深抗老化體適能高級私人教練', '資深抗老化體適能教官'],
+      detail: [
+        { h: '特色專長', items: [
+          '肌力與體能訓練、舉重專項訓練',
+          '健康女性體態雕塑與曲線打造',
+          '抗肌筋膜老化，有效改善慢性發炎',
+          '久坐族群客製化姿勢矯正與體態調整'] },
+        { h: '專業認證與歷練', items: [
+          'FFT 系統研習認證',
+          'ACE-CPT 美國運動委員會 國際私人教練認證',
+          '孕力研究所 孕婦運動指導教練研習',
+          'DNS 動態神經肌肉穩定技術研習',
+          'FMS 功能性評估與矯正認證',
+          'CPR & AED 心肺復甦與急救認證'] }
+      ],
+      quote: '行動是大腦探索世界最佳的方式！運動本該是充滿喜悅與能量的本能，而不是讓人卻步的艱難挑戰。我喜歡陪伴學員透過科學的指引與精準的動態察覺，從久坐疲憊中解鎖身體的靈活性與曲線美。在這裡不需與任何人較量，每一次伸展與訓練都是跟自己的精彩對話。讓我們用最輕鬆、充滿活力的節奏，一起享受動中的自在，探索並定義屬於你最耀眼自信的模樣！' },
+
     { id: 'vc', name: 'VC', zh: '穆孝偉', initial: 'V', home: true,
+      photo: 'assets/coaches/vc.jpg', av: 'assets/coaches/vc-av.jpg',
       role: '抗老化體適能教練', ig: 'vcmu',
-      skills: ['抗肌筋膜老化', '久坐姿勢矯正', '有氧無氧交替式訓練'] },
+      skills: ['辦公室久坐族姿勢矯正', '抗肌筋膜老化・改善慢性發炎', '有氧無氧交替・提升活動品質'],
+      titles: ['體適能專家', '資深抗老化體適能高級私人教練', '資深抗老化體適能教官'],
+      detail: [
+        { h: '特色專長', items: [
+          '抗肌筋膜老化，有效改善慢性發炎',
+          '辦公室久坐族群客製化姿勢矯正與體態調整',
+          '有氧與無氧交替式訓練，提升中高齡肌肉活動品質'] },
+        { h: '專業認證與歷練', items: [
+          'ACE-CPT 美國運動委員會 個人體適能指導員',
+          'NSCA-CPT 美國國家肌力體能協會 個人體適能指導員',
+          'EOXI 飛輪教練認證',
+          '教育部體育署 認證救生員教練'] }
+      ],
+      quote: '專業一定重要，但不必然最重要；沒有對標到客戶想法的高強度指導，往往換不到客戶的滿意度。比起把棒式做得極為標準，我相信一個過去 20 年不運動的退休族，更需要的是教練能懂他此刻做棒式時有多「捱苦」，以及藏在這個「捱苦」背後對不健康的「擔憂」與「著急」。' },
+
     { id: 'peter', name: 'Peter', zh: '謝原', initial: 'P', home: true,
+      photo: 'assets/coaches/peter.jpg', av: 'assets/coaches/peter-av.jpg',
       role: '抗老化體適能教練', ig: 'peter550282',
-      skills: ['中高齡肌肉退化翻轉', '中年婦女體態調整', '預防本體感退化、骨質疏鬆保健'] },
-    { id: 'johnson', name: 'Johnson', zh: '饒誠', initial: 'J', home: false,
+      skills: ['中高齡肌少症與肌力重建', '骨質疏鬆保健與強化訓練', '中年女性體態調整'],
+      titles: ['體適能專家', '資深抗老化體適能高級私人教練', '資深抗老化體適能教官'],
+      detail: [
+        { h: '特色專長', items: [
+          '翻轉中高齡肌肉退化、肌筋膜硬化與收縮困境',
+          '中年婦女身型與體態調整，客製化精準指導',
+          '有氧與無氧交替式訓練，預防本體感覺退化',
+          '骨質疏鬆保健與強化訓練'] },
+        { h: '專業認證與歷練', items: [
+          'NASM-CES 運動矯正專家（美國國家運動醫學學會）',
+          'Strain Counterstrain 拮抗鬆弛術 Lv.2（上、下半身）',
+          'IMA Steel Mace 錘鈴訓練師（Level 1 & Level 2 - Mastery）'] }
+      ],
+      quote: '擔任體適能教練那麼多年，發現中高熟齡以上的學員越來越多了，他（她）們展現出比想像中還要積極的態度在學習體適能。我的實務經驗察覺到：若是教練能夠柔軟地協助他（她）們去面對日益老化的體適能，就會很受到喜歡。其原因藏在背後：體適能的老化帶給他（她）們無名的焦慮，感到很不舒服。我很開心自己是諧動空間大家庭的「抗老化體適能」教練，知道如何陪著學員去共同對抗那種不舒服！' },
+
+    { id: 'johnson', name: 'Johnson', zh: '饒誠', initial: 'J', home: true,
+      photo: 'assets/coaches/johnson.jpg', av: 'assets/coaches/johnson-av.jpg',
       role: '抗老化體適能教練', ig: 'johnsonjao4',
-      skills: ['核心及功能設計訓練', '有氧無氧交替式訓練', '抗肌筋膜老化'] }
+      skills: ['核心與功能性訓練設計', '運動恢復按摩與放鬆', '有氧無氧交替式訓練'],
+      titles: ['體適能專家', '資深抗老化體適能高級私人教練', '資深抗老化體適能教官'],
+      detail: [
+        { h: '特色專長', items: [
+          '核心與功能性設計訓練，達成姿勢矯正與體態調整',
+          '有氧與無氧交替式訓練，提升中高齡肌肉活動品質',
+          '抗肌筋膜老化，改善慢性發炎'] },
+        { h: '專業認證與歷練', items: [
+          '中華民國 C 級體適能指導員',
+          'ACE-CPT 美國運動委員會 私人教練認證',
+          'ISCA-CPT 國家運動教練協會 私人教練認證',
+          'NASM-CES 美國國家運動醫學學院 運動矯正專家',
+          'ISSA 國際運動科學協會 C 級、B 級運動恢復按摩技術員',
+          'CPR & AED 心肺復甦與急救認證'] }
+      ],
+      quote: '過去對於身體健康的觀念就是必須靠不斷的運動與訓練去加強和維持，還包括各式各樣的飲食控制等等，但自從當上教練後這樣的認知在執業過程中不斷被打破，讓我重新思考健康的定義究竟為何。如今我重新了解健康不是來自於可以舉多重、或是跑多遠，而是能不能有辦法讓身體有舒服自在的感覺，這正是【抗老化體適能】當中所帶給學員的理念。不論你是因工作缺乏活動的上班族，還是因年齡漸長害怕身體老化的銀髮族，都可以在諧動空間找到你想要的健康狀態！' }
   ],
 
   /* 可預約的教練（PT / PGT 用） */
@@ -1728,19 +2112,43 @@ var FFDATA = {
     { id: 'any',     n: '不指定',  zh: '由我們安排', sk: '依您的需求與時段，安排最適合的教練' }
   ],
 
+  /* ── 場館空間 ─────────────────────────────────────────── */
+  /* home: true = 也會出現在首頁。想移除某張，整行刪掉即可 */
+  facility: [
+    { src: 'assets/facility/entrance-wide.jpg',
+      t: '入口與置物區', d: '電梯上 10 樓，出來就是這面牆；置物櫃就在電梯旁邊' },
+    { src: 'assets/facility/functional-zone.jpg', home: true,
+      t: '功能訓練區', d: 'TRX 懸吊、吊環與跳箱，用自身體重做全身整合訓練' },
+    { src: 'assets/facility/weight-zone.jpg', home: true,
+      t: '重訓區', d: '機械式器材、滑輪訓練站與完整啞鈴級距' },
+    { src: 'assets/facility/studio-wide.jpg',
+      t: '開闊的訓練場', d: '肋木架、鏡牆與藍墊連成一片，動線不被切開' },
+    { src: 'assets/facility/mat-area.jpg',
+      t: '藍墊區', d: '攀繩、沙包、藥球與跳箱，落地有緩衝' },
+    { src: 'assets/facility/strength-area.jpg',
+      t: '深蹲與自由重量', d: '深蹲架、槓鈴與槓片，天花板可掛環帶與布幔' },
+    { src: 'assets/facility/rig-area.jpg',
+      t: '戰繩與壺鈴', d: '肋木架與天花板吊掛系統，工具換得快、節奏拉得起來' },
+    { src: 'assets/facility/dumbbells.jpg',
+      t: '啞鈴區', d: '從輕到重完整級距，方便漸進式加重' },
+    { src: 'assets/facility/sled.jpg',
+      t: '雪橇車', d: '推拉訓練，強化下肢驅動與核心穩定' }
+  ],
+
   /* ── 價格 ─────────────────────────────────────────────── */
   pricing: {
     pt: [
-      { id: '1v1', k: '一對一', trial: 1000, single: 1500, pack10: 12000 },
+      { id: '1v1', k: '一對一', trial: 1000, single: 1800, pack10: 15000 },
       { id: '1v2', k: '一對二', trial: 1500, single: 2200, pack10: 20000 }
     ],
-    pgt: { base: 1800, step: 300, min: 3, max: 8 },
+    /* 私人團體班改為對照表：價格非線性，六人以上內洽 */
+    pgt: { rates: { 3: 2100, 4: 2400, 5: 2500 }, min: 3, max: 5 },
     gt:  { single: 400, pack: 4000, packQty: 10, bonus: 2 },
     open: [
-      { t: '7am–12pm',  p: 100, u: '/hr' },
+      { t: '9am–12pm',  p: 100, u: '/hr' },
       { t: '12pm–6pm',  p: 100, u: '不限時' },
-      { t: '6pm–10pm',  p: 100, u: '/hr' },
-      { t: '諧動教練客戶', p: 0, u: '免收費' }
+      { t: '6pm–9pm',   p: 100, u: '/hr' },
+      { t: '諧動教練學員', p: 0, u: '9am–6pm 免費' }
     ]
   },
 
@@ -1836,7 +2244,7 @@ var ROUTES = {
               desc: '諧動空間的品牌理念、願景使命、LOGO 意象與教練團隊。融合並以終為始，一為全、全為一。' },
   services: { title: '服務課程｜諧動空間 Fusion Force Fitness',
               desc: '私人教練課 PT、私人團體班 PGT、主題式團體課 GT 三種上課方式，以及抗老化體適能、功能運動處方、痠痛運動整復與企業健康講座。' },
-  schedule: { title: '團課課表｜諧動空間 Fusion Force Fitness',
+  schedule: { title: '團體課表｜諧動空間 Fusion Force Fitness',
               desc: '諧動空間每週團體課表，每堂 60 分鐘、每班上限 10 人，分入門、中階、進階三種難度。' },
   pricing:  { title: '價目表與付費說明｜諧動空間 Fusion Force Fitness',
               desc: '完整價目表：私人教練、私人團體班、團體課程、自主訓練四大品項，以及付費流程說明。' },
@@ -1913,8 +2321,19 @@ window.addEventListener('hashchange', function () { goRoute(currentRoute()); });
   FF.each(document.querySelectorAll('[data-scroll]'), function (a) {
     a.addEventListener('click', function (e) {
       e.preventDefault();
-      var t = FF.el(a.getAttribute('data-scroll'));
-      if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      var id = a.getAttribute('data-scroll');
+      var href = a.getAttribute('href') || '';
+      var want = href.replace(/^#\/?/, '').split('?')[0] || 'home';
+      var jump = function () {
+        var t = FF.el(id);
+        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      if (want !== currentRoute()) {
+        location.hash = href;      // 先換分頁（hashchange 會捲到頂）
+        setTimeout(jump, 140);     // 換頁完成後再捲到目標區塊
+      } else {
+        jump();
+      }
     });
   });
 })();
@@ -1939,13 +2358,27 @@ window.addEventListener('hashchange', function () { goRoute(currentRoute()); });
   }
   FF.el('home-tt').innerHTML = html;
 
+  /* 照片放進容器；檔案不存在時退回姓名字母，不會破版 */
+  FF.coachImg = function (box, src, alt, w, h, initial) {
+    if (!src) { box.classList.add('noimg'); box.textContent = initial; return; }
+    var im = new Image();
+    im.width = w; im.height = h; im.alt = alt;
+    im.loading = 'lazy'; im.decoding = 'async';
+    im.onerror = function () {
+      box.innerHTML = ''; box.classList.add('noimg'); box.textContent = initial;
+    };
+    im.src = src;
+    box.appendChild(im);
+  };
+
   var g = FF.el('home-coaches');
   FFDATA.coaches.filter(function (c) { return c.home; }).forEach(function (c) {
     var d = document.createElement('div');
     d.className = 'card coach-mini';
-    d.innerHTML = '<div class="av">' + c.initial + '</div><h3>' + c.name + '</h3>' +
+    d.innerHTML = '<div class="av"></div><h3>' + c.name + '</h3>' +
       '<div class="zh">' + c.zh + '</div>' +
       '<div class="sk">' + c.skills.slice(0, 2).join('<br>') + '</div>';
+    FF.coachImg(d.querySelector('.av'), c.av, c.name + ' 教練', 240, 240, c.initial);
     g.appendChild(d);
   });
 })();
@@ -1954,16 +2387,56 @@ window.addEventListener('hashchange', function () { goRoute(currentRoute()); });
    關於 / 服務
    ═══════════════════════════════════════════════════════════ */
 (function () {
+  /* 開啟教練詳細資料 */
+  function openCoach(c) {
+    FF.el('cd-head').innerHTML =
+      '<div class="cd-hd">' +
+      (c.av ? '<img class="cd-av" src="' + c.av + '" alt="" width="240" height="240">' : '') +
+      '<div><h3 id="cd-name">' + c.name + '</h3>' +
+      '<p class="sub">' + c.zh + ' · ' + c.role + '</p></div></div>';
+
+    var h = '';
+    if (c.titles && c.titles.length) {
+      h += '<div class="cd-ttl">' +
+        c.titles.map(function (t) { return '<span>' + t + '</span>'; }).join('') + '</div>';
+    }
+    (c.detail || []).forEach(function (sec) {
+      h += '<div class="cd-sec"><h4>' + sec.h + '</h4><ul>' +
+        sec.items.map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</ul></div>';
+    });
+    if (c.quote) {
+      h += '<div class="cd-q"><p>「' + c.quote + '」</p>' +
+        '<div class="by">—— ' + (c.zh || c.name) + '</div></div>';
+    }
+    if (c.ig) {
+      h += '<a class="cd-ig" href="https://instagram.com/' + c.ig +
+        '" target="_blank" rel="noopener">@' + c.ig + '</a>';
+    }
+    FF.el('cd-body').innerHTML = h;
+
+    var ov = FF.el('ov-coach');
+    ov.classList.add('show');
+    var sh = ov.querySelector('.sheet'); if (sh) sh.scrollTop = 0;
+  }
+
   var t = FF.el('about-team');
   FFDATA.coaches.forEach(function (c) {
     var d = document.createElement('div');
     d.className = 'card cch';
-    var ig = c.ig ? '<a class="ig" href="https://instagram.com/' + c.ig +
-      '" target="_blank" rel="noopener">@' + c.ig + '</a>' : '';
-    d.innerHTML = '<div class="hd"><div class="av">' + c.initial + '</div>' +
-      '<div><h3>' + c.name + '</h3><div class="zh">' + c.zh + '</div>' +
-      '<div class="role">' + c.role + '</div></div></div><ul>' +
-      c.skills.map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ul>' + ig;
+    d.setAttribute('tabindex', '0');
+    d.setAttribute('role', 'button');
+    d.setAttribute('aria-label', c.name + ' — 看完整資歷');
+    d.innerHTML = '<div class="ph"></div>' +
+      '<div class="bd"><h3>' + c.name + '</h3>' +
+      '<div class="zh">' + c.zh + '</div>' +
+      '<div class="role">' + c.role + '</div><ul>' +
+      c.skills.map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ul>' +
+      '<div class="more">看完整資歷 <span>›</span></div></div>';
+    FF.coachImg(d.querySelector('.ph'), c.photo, c.name + ' 教練', 800, 1000, c.initial);
+    d.addEventListener('click', function () { openCoach(c); });
+    d.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCoach(c); }
+    });
     t.appendChild(d);
   });
 
@@ -2016,7 +2489,7 @@ window.addEventListener('hashchange', function () { goRoute(currentRoute()); });
     var inner = '<div class="dh"><span class="dz">週' + d.zh + '</span>' +
       '<span class="de">' + d.en + '</span><span class="cnt">' + list.length + ' 堂</span></div>';
     if (!list.length) {
-      inner += '<div class="note" style="padding:12px 15px;font-size:.79rem">本日無團體課</div>';
+      inner += '<div class="note" style="padding:12px 15px;font-size:1.264rem">本日無團體課</div>';
     } else {
       list.forEach(function (c) {
         inner += '<div class="drow ' + c.lv + '"><div class="tm"><div class="a">' + c.time + '</div>' +
@@ -2053,7 +2526,7 @@ window.addEventListener('hashchange', function () { goRoute(currentRoute()); });
   var P = FFDATA.pricing.pgt, ZH = { 3: '三', 4: '四', 5: '五', 6: '六', 7: '七', 8: '八' };
   var n = P.min;
   function paint() {
-    var tot = P.base + (n - P.min) * P.step;
+    var tot = P.rates[n];
     FF.el('pr-num').textContent = n;
     FF.el('pr-lbl').textContent = '一對' + ZH[n];
     FF.el('pr-total').textContent = FF.money(tot);
@@ -2076,7 +2549,7 @@ window.addEventListener('hashchange', function () { goRoute(currentRoute()); });
     { id: 'pt', code: 'PT', t: '私人教練課', d: '一對一／一對二 · 與教練協調時間',
       p: '體驗 NT$1,000 起 ・ 含 FMS 評估', href: '#/pt' },
     { id: 'pgt', code: 'PGT', t: '私人團體班', d: '三人以上成班 · 與教練詳談內容',
-      p: '單堂 NT$1,800 起 ・ 人數越多越省', href: '#/pgt' }
+      p: '單堂 NT$2,100 起 ・ 人數越多越省', href: '#/pgt' }
   ];
   var cur = 'gt';
   var dd = FF.el('bk-dd'), btn = FF.el('bk-btn'), panel = FF.el('bk-panel'), go = FF.el('bk-go');
@@ -2287,7 +2760,7 @@ window.addEventListener('hashchange', function () { goRoute(currentRoute()); });
     var s = cur();
     FF.el('pt-note').innerHTML = '<b>' + s.k + '</b>　初次體驗 ' + FF.money(s.trial) +
       '　·　單堂 ' + FF.money(s.single) + '　·　10 堂 ' + FF.money(s.pack10) +
-      '<br>第一次體驗含 <b>FMS 評估檢測</b>；諧動教練客戶自主訓練免費。';
+      '<br>第一次體驗含 <b>FMS 評估檢測</b>；諧動教練學員自主訓練 9am–6pm 免費。';
   }
   function renderCoaches() {
     var w = FF.el('pt-coaches'); w.innerHTML = '';
@@ -2356,7 +2829,7 @@ window.addEventListener('hashchange', function () { goRoute(currentRoute()); });
   var P = FFDATA.pricing.pgt, ZH = { 3: '三', 4: '四', 5: '五', 6: '六', 7: '七', 8: '八' };
   var COACHES = FFDATA.bookableCoaches, SLOTS = FFDATA.slots, THEMES = FFDATA.themes;
   var n = P.min, theme = THEMES[0], coach = 'any', slot = '';
-  function priceOf(k) { return P.base + (k - P.min) * P.step; }
+  function priceOf(k) { return P.rates[k]; }
   function curCoach() { return COACHES.filter(function (c) { return c.id === coach; })[0]; }
 
   function renderPeople() {
@@ -2372,8 +2845,8 @@ window.addEventListener('hashchange', function () { goRoute(currentRoute()); });
       var d = document.createElement('div');
       d.className = 'avd' + (i < n ? ' on' : ''); d.textContent = '人'; a.appendChild(d);
     }
-    FF.el('pgt-note').innerHTML = '一對三 ' + FF.money(1800) + '　·　一對四 ' + FF.money(2100) +
-      '　·　一對五 ' + FF.money(2400) + '　·　一對多以此類推（每增一人 +' + FF.money(P.step) + '）<br>' +
+    FF.el('pgt-note').innerHTML = '一對三 ' + FF.money(P.rates[3]) + '　·　一對四 ' + FF.money(P.rates[4]) +
+      '　·　一對五 ' + FF.money(P.rates[5]) + '　·　六人以上請來電洽詢<br>' +
       '<b>人數越多，每人均攤越低。</b>實際課程內容與週期規劃由教練與你詳談後確認。';
     renderSum();
   }
@@ -2479,6 +2952,61 @@ FF.el('btn-copy').onclick = function () {
     .then(function () { FF.toast('已複製，貼到 LINE 傳給我們就完成了'); })
     .catch(function () { FF.toast('複製失敗，請手動選取文字', true); });
 };
+
+/* ═══════════════════════════════════════════════════════════
+   場館空間 + 照片燈箱
+   ═══════════════════════════════════════════════════════════ */
+(function () {
+  var F = FFDATA.facility || [];
+  if (!F.length) return;
+
+  var ov = FF.el('ov-photo'), cur = 0;
+
+  function show(i) {
+    cur = (i + F.length) % F.length;
+    var f = F[cur];
+    FF.el('lb-img').src = f.src;
+    FF.el('lb-img').alt = f.t;
+    FF.el('lb-t').textContent = f.t;
+    FF.el('lb-d').textContent = f.d || '';
+    FF.el('lb-n').textContent = (cur + 1) + ' / ' + F.length;
+  }
+  function open(i) { show(i); ov.classList.add('show'); }
+
+  FF.el('lb-prev').addEventListener('click', function () { show(cur - 1); });
+  FF.el('lb-next').addEventListener('click', function () { show(cur + 1); });
+  document.addEventListener('keydown', function (e) {
+    if (!ov.classList.contains('show')) return;
+    if (e.key === 'ArrowLeft')  show(cur - 1);
+    if (e.key === 'ArrowRight') show(cur + 1);
+  });
+
+  function tile(f, i) {
+    var d = document.createElement('div');
+    d.className = 'fac-i';
+    d.setAttribute('tabindex', '0');
+    d.setAttribute('role', 'button');
+    d.setAttribute('aria-label', f.t + '，看大圖');
+    var im = new Image();
+    im.alt = f.t; im.loading = 'lazy'; im.decoding = 'async'; im.src = f.src;
+    d.appendChild(im);
+    var c = document.createElement('div');
+    c.className = 'cap';
+    c.innerHTML = '<b>' + f.t + '</b>' + (f.d ? '<small>' + f.d + '</small>' : '');
+    d.appendChild(c);
+    d.addEventListener('click', function () { open(i); });
+    d.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(i); }
+    });
+    return d;
+  }
+
+  var hg = FF.el('home-fac'), ag = FF.el('about-fac');
+  F.forEach(function (f, i) {
+    if (f.home && hg) hg.appendChild(tile(f, i));
+    if (ag) ag.appendChild(tile(f, i));
+  });
+})();
 
 /* 啟動 */
 goRoute(currentRoute(), true);
