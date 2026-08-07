@@ -461,9 +461,19 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .cch:hover .more span{transform:translateX(3px)}
 @media (max-width:560px){
   #about-team{grid-template-columns:1fr}
-  .cch{flex-direction:row;align-items:stretch}
-  .cch .ph{flex:0 0 40%;aspect-ratio:auto}
-  .cch .bd{flex:1 1 auto;padding:15px 16px 16px}
+  /* 手機改為上下堆疊：照片在上、文字吃滿整個寬度，避免文字被擠到跳行 */
+  .cch{flex-direction:column}
+  .cch .ph{flex:none;aspect-ratio:1/1}
+  .cch .ph img{object-position:center 10%}
+  .cch .bd{padding:16px 18px 18px}
+  .cch .zh{font-size:1.16rem}
+  .cch li{font-size:1.19rem}
+}
+/* 極窄螢幕（iPhone SE 等 320px 級）再收一點，讓長技能項目也不跳行 */
+@media (max-width:360px){
+  .cch .bd{padding:15px 14px 16px}
+  .cch .zh{font-size:1.1rem}
+  .cch li{font-size:1.1rem;padding-left:13px}
 }
 .certs{display:flex;gap:7px;flex-wrap:wrap}
 
