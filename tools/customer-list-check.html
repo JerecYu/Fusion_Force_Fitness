@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FFF 客人名單檢查工具</title>
+<style>
+  :root{
+    --ink:#0E1B2C; --navy:#2C4E7D; --teal:#2E8B94; --green:#2F6B54;
+    --orange:#DE7A38; --orange-deep:#A9531D;
+    --paper:#E9EEF2; --line:#C9D4DD; --muted:#5E6E7E;
+    --pin:#D8342B; --pin-deep:#A4211A; --pin-bg:#FDECEA;
+    --ok-bg:#EDF5F3; --ok-line:#A8C9BE; --fog-bg:#EFF2F5;
+    --mono:ui-monospace,"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);
+    font-family:"Noto Sans TC",system-ui,-apple-system,sans-serif;line-height:1.6;
+    padding:20px 14px 70px;-webkit-font-smoothing:antialiased}
+  .page{max-width:940px;margin:0 auto}
+
+  h1{font-size:25px;font-weight:900;letter-spacing:.02em;padding-bottom:12px;border-bottom:2px solid var(--ink)}
+  h1 small{display:block;font-size:12.5px;font-weight:400;color:var(--muted);margin-top:5px;letter-spacing:0}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:3px;padding:15px 17px;margin-top:14px}
+  .card>h2{font-size:16.5px;font-weight:700;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .card>h2 .no{font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;
+    background:var(--ink);padding:3px 7px;border-radius:2px;letter-spacing:.08em}
+  .card>p.cap{font-size:12.5px;color:var(--muted);margin:5px 0 12px;line-height:1.7}
+  .card.priv{border-top:4px solid var(--green);background:var(--ok-bg)}
+  .card.priv h2{color:var(--green)}
+
+  textarea{width:100%;min-height:180px;font-family:var(--mono);font-size:12.5px;line-height:1.7;
+    padding:11px 13px;border:1px solid var(--line);border-radius:3px;background:#FBFDFE;
+    color:var(--ink);resize:vertical}
+  textarea:focus{outline:2px solid var(--teal);outline-offset:-1px}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:12px}
+  .fld{display:flex;flex-direction:column;gap:4px}
+  .fld label{font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+  select,input[type=number]{font-family:inherit;font-size:13px;padding:7px 9px;
+    border:1px solid var(--line);border-radius:3px;background:#fff;color:var(--ink);min-width:130px}
+  input[type=number]{min-width:90px}
+
+  button{font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.05em;
+    padding:10px 18px;border-radius:3px;cursor:pointer;border:1px solid var(--navy);
+    background:var(--navy);color:#fff;transition:.14s}
+  button:hover{background:var(--ink);border-color:var(--ink)}
+  button.ghost{background:#fff;color:var(--navy)}
+  button.ghost:hover{background:var(--navy);color:#fff}
+
+  .verdict{margin-top:14px;border-radius:3px;padding:16px 18px;border:2px solid}
+  .verdict.pass{background:var(--ok-bg);border-color:var(--green)}
+  .verdict.fail{background:var(--pin-bg);border-color:var(--pin)}
+  .verdict.warn{background:#FEF6EF;border-color:var(--orange)}
+  .verdict h3{font-size:19px;font-weight:900;letter-spacing:.03em;margin-bottom:5px}
+  .verdict.pass h3{color:var(--green)} .verdict.fail h3{color:var(--pin-deep)} .verdict.warn h3{color:var(--orange-deep)}
+  .verdict p{font-size:13px;line-height:1.75}
+  .tally{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+  .tally span{font-family:var(--mono);font-size:12px;font-weight:700;padding:5px 10px;
+    border-radius:2px;background:#fff;border:1px solid var(--line)}
+  .tally .f{color:var(--pin-deep);border-color:#F3C9C5;background:var(--pin-bg)}
+  .tally .w{color:var(--orange-deep);border-color:#EBC4A0;background:#FDF3EA}
+  .tally .o{color:var(--green);border-color:var(--ok-line);background:#E4F0EA}
+
+  .issue{margin-top:12px;border-radius:3px;border:1px solid var(--line);overflow:hidden}
+  .issue>.hd{padding:9px 13px;font-size:13.5px;font-weight:700;display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
+  .issue.f>.hd{background:var(--pin-bg);color:var(--pin-deep);border-bottom:1px solid #F3C9C5}
+  .issue.w>.hd{background:#FDF3EA;color:var(--orange-deep);border-bottom:1px solid #EBC4A0}
+  .issue>.hd .cnt{font-family:var(--mono);font-size:11px;margin-left:auto;opacity:.85}
+  .issue>.why{padding:9px 13px;font-size:12px;color:var(--muted);line-height:1.75;background:#FAFCFD;
+    border-bottom:1px solid var(--line)}
+  .issue>.why b{color:var(--ink)}
+  .issue ul{list-style:none;max-height:280px;overflow-y:auto}
+  .issue li{padding:7px 13px;font-size:12.5px;border-bottom:1px solid #F0F4F7;display:flex;gap:11px;flex-wrap:wrap}
+  .issue li:last-child{border-bottom:none}
+  .issue li .r{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted);
+    background:var(--fog-bg);border:1px solid var(--line);padding:1px 6px;border-radius:2px;flex:none;height:fit-content}
+  .issue li .v{font-family:var(--mono);color:var(--ink)}
+  .issue li .n{color:var(--muted)}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+  th,td{text-align:left;padding:6px 9px;border-bottom:1px solid #EDF1F4}
+  th{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;
+    background:#F7FAFB;border-bottom:1px solid var(--line);position:sticky;top:0}
+  td.mono{font-family:var(--mono)}
+  .scroll{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:3px}
+  tr.bad td{background:var(--pin-bg)}
+  tr.warn td{background:#FDF3EA}
+
+  code{font-family:var(--mono);font-size:11.5px;color:var(--navy);background:var(--fog-bg);
+    padding:1px 5px;border-radius:2px}
+  .note{font-size:12px;color:var(--muted);line-height:1.8;border-left:3px solid var(--orange);
+    padding-left:11px;margin-top:12px}
+  .note b{color:var(--orange-deep)}
+  .foot{margin-top:22px;text-align:center;font-size:12px;color:var(--muted);line-height:1.9}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>FFF 客人名單檢查工具
+    <small>第 21 步用 —— 匯入前先抓出會讓整批失敗的問題</small>
+  </h1>
+
+  <!-- 隱私 -->
+  <section class="card priv">
+    <h2>🔒 這一頁不會把資料送到任何地方</h2>
+    <p class="cap" style="margin-bottom:0">
+      整頁沒有任何一行程式碼會連上網路 —— 沒有 CDN、沒有字型、沒有分析工具。你貼進去的名單只存在這個瀏覽器分頁裡，
+      關掉就沒了，<b>連你自己的電腦硬碟都不會留</b>。<br><br>
+      <b>不用相信我，自己驗：</b>按 <code>F12</code> → 切到 <code>Network</code> 分頁 → 貼上名單 → 按檢查。
+      請求數應該是 <b>0</b>。<br><br>
+      ⚠️ 同樣的理由：<b>不要把名單貼進跟 AI 的對話裡</b>。完整手機號碼在你自己訂的規則裡屬於「櫃檯保險箱，永不上雲」。
+      有問題就把<b>這一頁的檢查結果截圖</b>給我 —— 那上面只有列號和問題類型，沒有完整號碼。
+    </p>
+  </section>
+
+  <!-- 貼上 -->
+  <section class="card">
+    <h2><span class="no">1</span>把試算表的內容貼進來</h2>
+    <p class="cap">
+      在 Excel／Google 試算表裡選取<b>包含標題列</b>的整個範圍，<code>Ctrl+C</code>，然後在下面 <code>Ctrl+V</code>。<br>
+      欄位順序不重要，我會自己認。多餘的欄位（方案、備註、加入日期…）留著沒關係。
+    </p>
+    <textarea id="raw" placeholder="姓名&#9;手機&#9;剩餘堂數&#9;方案&#10;王小明&#9;0912345678&#9;8&#9;十堂卡&#10;陳美麗&#9;0922-333-444&#9;3&#9;單堂"></textarea>
+    <div class="row">
+      <div class="fld"><label>姓名欄</label><select id="cName"></select></div>
+      <div class="fld"><label>手機欄</label><select id="cPhone"></select></div>
+      <div class="fld"><label>剩餘堂數欄</label><select id="cCredit"></select></div>
+      <div class="fld"><label>第一列是 Excel 的第幾列</label><input type="number" id="offset" value="1" min="1"></div>
+      <button id="go">開始檢查</button>
+      <button class="ghost" id="demo">放一份範例試試</button>
+    </div>
+  </section>
+
+  <!-- 結果 -->
+  <div id="out"></div>
+
+  <p class="foot">
+    這一頁是拋棄式工具，第三幕做完就可以刪掉。<br>
+    檢查全過之後，下一步是第 22 步：決定「舊有剩餘堂數」怎麼變成流水帳的第一筆。
+  </p>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  let cols = [], rows = [];
+
+  /* ── 把全形字、奇怪空白正規化 ── */
+  const clean = s => String(s ?? '')
+    .replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)) // 全形→半形
+    .replace(/[　 ​-‍﻿]/g, ' ')                              // 各種怪空白→一般空白
+    .trim();
+
+  /* ── 手機正規化：留下數字，處理 +886 ── */
+  function normPhone(raw){
+    let s = clean(raw);
+    if (!s) return { ok:false, why:'空白', v:'' };
+    let d = s.replace(/\D/g, '');
+    if (d.startsWith('886')) d = '0' + d.slice(3);
+    if (/^9\d{8}$/.test(d)) d = '0' + d;            // 少了開頭的 0
+    if (!/^09\d{8}$/.test(d)) {
+      return { ok:false, why:'不是 09 開頭的 10 碼手機', v:d || s };
+    }
+    return { ok:true, why:'', v:d, changed: d !== s };
+  }
+
+  /* ── 解析貼上的內容 ── */
+  function parse(){
+    const txt = $('raw').value.replace(/\r/g,'');
+    if (!txt.trim()) return { cols:[], rows:[] };
+    const lines = txt.split('\n').filter(l => l.trim() !== '');
+    const sep = lines[0].includes('\t') ? '\t' : (lines[0].includes(',') ? ',' : '\t');
+    const grid = lines.map(l => l.split(sep).map(clean));
+    const width = Math.max(...grid.map(r => r.length));
+    grid.forEach(r => { while (r.length < width) r.push(''); });
+    return { grid, width };
+  }
+
+  function guessCol(headers, keys){
+    for (let i = 0; i < headers.length; i++){
+      const h = headers[i].toLowerCase();
+      if (keys.some(k => h.includes(k))) return i;
+    }
+    return -1;
+  }
+
+  function refreshCols(){
+    const { grid, width } = parse();
+    if (!grid || !grid.length){ ['cName','cPhone','cCredit'].forEach(id => $(id).innerHTML = ''); return; }
+    const head = grid[0];
+    // 看起來像標題列嗎（第一列完全沒有 09 開頭的數字）
+    const looksHeader = !head.some(c => /^09\d{8}$/.test(c.replace(/\D/g,'')));
+    const opts = i => `第 ${i+1} 欄${head[i] ? '（' + esc(head[i]) + '）' : ''}`;
+    ['cName','cPhone','cCredit'].forEach(id => {
+      $(id).innerHTML = Array.from({length:width}, (_,i) => `<option value="${i}">${opts(i)}</option>`).join('')
+                        + '<option value="-1">（沒有這一欄）</option>';
+    });
+    if (looksHeader){
+      const gN = guessCol(head, ['姓名','名字','name','客人','會員']);
+      const gP = guessCol(head, ['手機','電話','phone','mobile','聯絡']);
+      const gC = guessCol(head, ['堂','剩餘','餘額','credit','點數','次數']);
+      if (gN >= 0) $('cName').value = gN;
+      if (gP >= 0) $('cPhone').value = gP;
+      if (gC >= 0) $('cCredit').value = gC;
+      $('offset').value = 2;   // 第一列是標題，所以資料從 Excel 第 2 列開始
+    } else {
+      $('offset').value = 1;
+    }
+    $('raw').dataset.header = looksHeader ? '1' : '0';
+  }
+
+  /* ── 檢查 ── */
+  function run(){
+    const { grid } = parse();
+    if (!grid || !grid.length){ $('out').innerHTML = ''; return; }
+    const hasHeader = $('raw').dataset.header === '1';
+    const body = hasHeader ? grid.slice(1) : grid;
+    const off  = parseInt($('offset').value, 10) || 1;
+    const iN = +$('cName').value, iP = +$('cPhone').value, iC = +$('cCredit').value;
+
+    const recs = body.map((r, k) => {
+      const name = iN >= 0 ? clean(r[iN]) : '';
+      const rawP = iP >= 0 ? r[iP] : '';
+      const p    = normPhone(rawP);
+      const rawC = iC >= 0 ? clean(r[iC]) : '';
+      const pureNum = /^-?\d+(\.\d+)?$/.test(rawC);        // 必須是純數字，「約5」不算
+      const cNum = (rawC === '' || !pureNum) ? null : Number(rawC);
+      return { excelRow: off + k, name, rawPhone: clean(rawP), phone:p, rawCredit: rawC, credit: cNum };
+    });
+
+    // ── 致命：會讓整批匯入失敗 ──
+    const fatal = [];
+    const noName  = recs.filter(r => !r.name);
+    const noPhone = recs.filter(r => !clean(r.rawPhone));
+    const dupMap = {};
+    recs.forEach(r => { if (r.phone.ok) (dupMap[r.phone.v] = dupMap[r.phone.v] || []).push(r); });
+    const dups = Object.entries(dupMap).filter(([,v]) => v.length > 1);
+
+    if (dups.length) fatal.push({
+      t:'手機重複', c:dups.reduce((a,[,v]) => a + v.length, 0),
+      why:'<code>customers.phone</code> 設了 <b>unique</b>（唯一）。同一個號碼出現兩次，<b>整批匯入會直接失敗，一筆都不會進去</b>。<br>而且這個欄位之後是 LINE 綁定的依據 —— 兩個人共用一個號碼，系統會分不清誰是誰。',
+      items: dups.flatMap(([ph, v]) => v.map(r =>
+        ({ row:r.excelRow, v: ph.slice(0,4)+'****'+ph.slice(-2), n:'跟第 ' + v.filter(x=>x!==r).map(x=>x.excelRow).join('、') + ' 列同號　' + (r.name||'（無名）') })))
+    });
+    if (noPhone.length) fatal.push({
+      t:'手機空白', c:noPhone.length,
+      why:'<code>customers.phone</code> 是 <b>NOT NULL</b>（不可空白）。<br><b>怎麼辦：</b>問得到就補上；問不到的人先從這批拿掉，等他下次來場館再單獨加。<b>不要填假號碼</b> —— 假號碼會佔掉一個 unique 名額，之後真號碼反而進不來。',
+      items: noPhone.map(r => ({ row:r.excelRow, v:'（空白）', n:r.name || '（連姓名也空白）' }))
+    });
+    if (noName.length) fatal.push({
+      t:'姓名空白', c:noName.length,
+      why:'<code>customers.name</code> 是 <b>NOT NULL</b>。教練點名時看的就是這個欄位。',
+      items: noName.map(r => ({ row:r.excelRow, v:'（空白）', n: r.rawPhone ? '手機 ' + r.rawPhone.slice(0,4)+'****' : '整列都空的？' }))
+    });
+
+    // ── 要看一下：不會讓匯入失敗，但值得確認 ──
+    const warn = [];
+    const badFmt = recs.filter(r => clean(r.rawPhone) && !r.phone.ok);
+    if (badFmt.length) warn.push({
+      t:'手機格式看起來不對', c:badFmt.length,
+      why:'不是「09 開頭的 10 碼」。可能是市話、輸入少一碼、或是家長的號碼。<br><b>這批不會擋住匯入</b>，但號碼錯的人之後綁不了 LINE，等於白匯。',
+      items: badFmt.map(r => ({ row:r.excelRow, v:r.rawPhone, n:r.name + '　→ ' + r.phone.why }))
+    });
+    const fixed = recs.filter(r => r.phone.ok && r.phone.changed);
+    if (fixed.length) warn.push({
+      t:'手機被自動整理過', c:fixed.length,
+      why:'原本有連字號、空白、+886 或全形數字，我把它整理成純數字。<b>看一眼確認整理對了</b>。',
+      items: fixed.map(r => ({ row:r.excelRow, v:r.rawPhone + '　→　' + r.phone.v.slice(0,4)+'****'+r.phone.v.slice(-2), n:r.name }))
+    });
+    const badCredit = recs.filter(r => r.rawCredit !== '' && r.credit === null);
+    if (badCredit.length) warn.push({
+      t:'剩餘堂數不是純數字', c:badCredit.length,
+      why:'像「約 5 堂」「待確認」「5-6」這種寫法<b>沒辦法直接當數字用</b>。<br>' +
+          '⚠️ 我<b>刻意不自動猜</b> —— 把「約 5」當成 5 看起來很方便，但那是幫你決定了一件你沒決定的事，' +
+          '而且之後客人問起來，你會答不出這個數字哪來的。<b>這些請一筆一筆確認實際堂數。</b>',
+      items: badCredit.map(r => ({ row:r.excelRow, v:r.rawCredit, n:r.name }))
+    });
+    const negCredit = recs.filter(r => typeof r.credit === 'number' && !isNaN(r.credit) && r.credit < 0);
+    if (negCredit.length) warn.push({
+      t:'剩餘堂數是負數', c:negCredit.length,
+      why:'欠課？還是記錯？<b>負數可以匯入</b>（流水帳本來就允許負值），但先確認是不是你要的意思。',
+      items: negCredit.map(r => ({ row:r.excelRow, v:r.rawCredit, n:r.name }))
+    });
+    const emptyCredit = recs.filter(r => r.rawCredit === '');
+    if (emptyCredit.length) warn.push({
+      t:'剩餘堂數空白', c:emptyCredit.length,
+      why:'空白會當成 <b>0 堂</b>處理。剩 0 堂還是可以預約（到現場再課購），所以不影響使用 —— 只要確認這些人真的是 0。',
+      items: emptyCredit.map(r => ({ row:r.excelRow, v:'（空白）', n:r.name }))
+    });
+    const nameMap = {};
+    recs.forEach(r => { if (r.name) (nameMap[r.name] = nameMap[r.name] || []).push(r); });
+    const dupName = Object.entries(nameMap).filter(([,v]) => v.length > 1);
+    if (dupName.length) warn.push({
+      t:'同名的人', c:dupName.reduce((a,[,v]) => a + v.length, 0),
+      why:'手機不同就<b>不影響匯入</b>（系統靠手機分辨）。但教練點名時螢幕上會出現兩個一樣的名字 —— 考慮在其中一個後面加註記，例如「王小明(大)」。',
+      items: dupName.flatMap(([nm, v]) => v.map(r => ({ row:r.excelRow, v:nm, n:'跟第 ' + v.filter(x=>x!==r).map(x=>x.excelRow).join('、') + ' 列同名' })))
+    });
+
+    render(recs, fatal, warn);
+  }
+
+  function block(kind, b){
+    return '<div class="issue ' + kind + '"><div class="hd">' +
+      (kind === 'f' ? '❌ ' : '⚠️ ') + esc(b.t) +
+      '<span class="cnt">' + b.c + ' 筆</span></div>' +
+      '<div class="why">' + b.why + '</div><ul>' +
+      b.items.map(i => '<li><span class="r">第 ' + i.row + ' 列</span>' +
+        '<span class="v">' + esc(i.v) + '</span>' +
+        '<span class="n">' + esc(i.n) + '</span></li>').join('') +
+      '</ul></div>';
+  }
+
+  function render(recs, fatal, warn){
+    const nF = fatal.reduce((a,b) => a + b.c, 0);
+    const nW = warn.reduce((a,b) => a + b.c, 0);
+    const ok = nF === 0;
+
+    let h = '<section class="card"><h2><span class="no">2</span>檢查結果</h2>';
+    h += '<div class="verdict ' + (ok ? (nW ? 'warn' : 'pass') : 'fail') + '">' +
+      '<h3>' + (ok ? (nW ? '沒有致命問題，但有幾筆要確認' : '全部通過 ✅') : '有問題會讓整批匯入失敗') + '</h3>' +
+      '<p>' + (ok
+        ? (nW ? '這些不會擋住匯入，但看過一遍再往下走比較安心 —— 匯入之後才發現，改起來麻煩得多。'
+              : '名單乾淨，可以進第 22 步。')
+        : '<b>Postgres 會把整批當成一件事</b>：中間任何一筆出錯，前面成功的全部退回，一筆都不會進去。<br>所以下面這些必須先修掉，不能「先匯進去再說」。') +
+      '</p><div class="tally">' +
+        '<span class="o">總共 ' + recs.length + ' 筆</span>' +
+        '<span class="' + (nF ? 'f' : 'o') + '">致命 ' + nF + ' 筆</span>' +
+        '<span class="' + (nW ? 'w' : 'o') + '">要確認 ' + nW + ' 筆</span>' +
+      '</div></div>';
+
+    h += fatal.map(b => block('f', b)).join('');
+    h += warn.map(b => block('w', b)).join('');
+    h += '</section>';
+
+    // 整理後預覽
+    h += '<section class="card"><h2><span class="no">3</span>整理後長這樣</h2>' +
+      '<p class="cap">這是實際會寫進資料庫的樣子。手機已經去掉連字號和空白，只留純數字。' +
+      '<b>紅色是致命問題，橘色是要確認的</b>。</p><div class="scroll"><table><thead><tr>' +
+      '<th>Excel 列</th><th>姓名</th><th>手機（整理後）</th><th>剩餘堂數</th></tr></thead><tbody>' +
+      recs.map(r => {
+        const isDup = r.phone.ok && recs.filter(x => x.phone.ok && x.phone.v === r.phone.v).length > 1;
+        const bad   = !r.name || !clean(r.rawPhone) || isDup;
+        const warnR = !bad && ((clean(r.rawPhone) && !r.phone.ok) || (r.rawCredit !== '' && r.credit === null));
+        return '<tr class="' + (bad ? 'bad' : (warnR ? 'warn' : '')) + '">' +
+          '<td class="mono">' + r.excelRow + '</td>' +
+          '<td>' + esc(r.name || '—') + '</td>' +
+          '<td class="mono">' + esc(r.phone.ok ? r.phone.v : (clean(r.rawPhone) || '—')) + '</td>' +
+          '<td class="mono">' + esc(r.rawCredit === '' ? '0' : r.rawCredit) + '</td></tr>';
+      }).join('') +
+      '</tbody></table></div>' +
+      '<div class="note"><b>要回報給我的時候：</b>把上面第 2 區的<b>檢查結果</b>截圖就好 —— 那裡只有列號和問題類型，' +
+      '手機號碼都遮成 <code>0912****78</code>。<b>第 3 區這張表不要截圖</b>，上面是完整號碼。</div>' +
+      '</section>';
+
+    $('out').innerHTML = h;
+    $('out').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  /* ── 事件 ── */
+  $('raw').addEventListener('input', refreshCols);
+  $('raw').addEventListener('paste', () => setTimeout(refreshCols, 30));
+  $('go').onclick = run;
+  $('demo').onclick = () => {
+    $('raw').value =
+      ['姓名\t手機\t剩餘堂數\t方案',
+       '王小明\t0912345678\t8\t十堂卡',
+       '陳美麗\t0922-333-444\t3\t單堂',
+       '林大同\t0912345678\t5\t十堂卡',
+       '張三\t\t2\t單堂',
+       '\t0955666777\t10\t十堂卡',
+       '李四\t+886933444555\t約5\t待確認',
+       '王小明\t0966777888\t0\t新客',
+       '趙六\t02-27001234\t-2\t欠課',
+       '孫七\t０９８７６５４３２１\t7\t十堂卡'].join('\n');
+    refreshCols(); run();
+  };
+  refreshCols();
+})();
+</script>
+</body>
+</html>

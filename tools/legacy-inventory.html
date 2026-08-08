@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FFF 舊系統盤點工具</title>
+<style>
+  :root{
+    --ink:#0E1B2C; --navy:#2C4E7D; --teal:#2E8B94; --green:#2F6B54;
+    --orange:#DE7A38; --orange-deep:#A9531D;
+    --paper:#E9EEF2; --line:#C9D4DD; --muted:#5E6E7E;
+    --pin:#D8342B; --pin-deep:#A4211A; --pin-bg:#FDECEA;
+    --ok-bg:#EDF5F3; --ok-line:#A8C9BE; --fog-bg:#EFF2F5;
+    --mono:ui-monospace,"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);
+    font-family:"Noto Sans TC",system-ui,-apple-system,sans-serif;line-height:1.6;
+    padding:20px 14px 70px;-webkit-font-smoothing:antialiased}
+  .page{max-width:1000px;margin:0 auto}
+  h1{font-size:25px;font-weight:900;letter-spacing:.02em;padding-bottom:12px;border-bottom:2px solid var(--ink)}
+  h1 small{display:block;font-size:12.5px;font-weight:400;color:var(--muted);margin-top:5px;letter-spacing:0}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:3px;padding:15px 17px;margin-top:14px}
+  .card>h2{font-size:16.5px;font-weight:700;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .card>h2 .no{font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;
+    background:var(--ink);padding:3px 7px;border-radius:2px;letter-spacing:.08em}
+  .card>p.cap{font-size:12.5px;color:var(--muted);margin:5px 0 12px;line-height:1.7}
+  .card.priv{border-top:4px solid var(--green);background:var(--ok-bg)}
+  .card.priv h2{color:var(--green)}
+
+  textarea{width:100%;min-height:130px;font-family:var(--mono);font-size:12px;line-height:1.65;
+    padding:10px 12px;border:1px solid var(--line);border-radius:3px;background:#FBFDFE;color:var(--ink);resize:vertical}
+  textarea:focus{outline:2px solid var(--teal);outline-offset:-1px}
+
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end;margin-top:11px}
+  select{font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);
+    border-radius:3px;background:#fff;color:var(--ink);min-width:190px}
+  button{font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.05em;
+    padding:10px 17px;border-radius:3px;cursor:pointer;border:1px solid var(--navy);
+    background:var(--navy);color:#fff;transition:.14s}
+  button:hover{background:var(--ink);border-color:var(--ink)}
+  button.ghost{background:#fff;color:var(--navy)}
+  button.ghost:hover{background:var(--navy);color:#fff}
+  button.danger{background:#fff;color:var(--pin-deep);border-color:#F3C9C5}
+  button.danger:hover{background:var(--pin);color:#fff;border-color:var(--pin)}
+
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+  .chip{font-family:var(--mono);font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:2px;
+    border:1px solid var(--line);background:var(--fog-bg);color:var(--muted)}
+  .chip.on{background:#E4F0EA;border-color:var(--ok-line);color:var(--green)}
+  .chip.on::before{content:"✓ "}
+
+  .sheet{margin-top:13px;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+  .sheet>.hd{background:var(--navy);color:#fff;padding:9px 13px;font-size:14px;font-weight:700;
+    display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .sheet>.hd .n{font-family:var(--mono);font-size:11.5px;margin-left:auto;opacity:.85}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #EDF1F4;vertical-align:top}
+  th{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.06em;background:#F7FAFB;border-bottom:1px solid var(--line)}
+  td.mono{font-family:var(--mono);font-size:11.5px}
+  .vals{display:flex;gap:4px;flex-wrap:wrap}
+  .v{font-family:var(--mono);font-size:11px;background:#EEF4F8;border:1px solid var(--line);
+    padding:1px 6px;border-radius:2px;color:var(--navy)}
+  .v.blank{background:var(--pin-bg);border-color:#F3C9C5;color:var(--pin-deep)}
+  .lock{font-size:11px;color:var(--green)}
+  .hi{font-size:11px;color:var(--muted)}
+
+  .find{margin-top:13px;border-radius:3px;border:1px solid var(--line);overflow:hidden}
+  .find>.hd{padding:9px 13px;font-size:13.5px;font-weight:700;display:flex;gap:9px;flex-wrap:wrap;align-items:baseline}
+  .find.bad>.hd{background:var(--pin-bg);color:var(--pin-deep);border-bottom:1px solid #F3C9C5}
+  .find.ok>.hd{background:#E4F0EA;color:var(--green);border-bottom:1px solid var(--ok-line)}
+  .find.info>.hd{background:#EEF4F8;color:var(--navy);border-bottom:1px solid var(--line)}
+  .find>.bd{padding:10px 13px;font-size:12.5px;line-height:1.8;color:var(--muted)}
+  .find>.bd b{color:var(--ink)}
+  .find>.hd .n{margin-left:auto;font-family:var(--mono);font-size:11.5px}
+
+  code{font-family:var(--mono);font-size:11.5px;color:var(--navy);background:var(--fog-bg);padding:1px 5px;border-radius:2px}
+  .foot{margin-top:22px;text-align:center;font-size:12px;color:var(--muted);line-height:1.9}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>FFF 舊系統盤點工具
+    <small>搬遷前先看清楚舊資料裡裝了什麼 —— 憑印象規劃，寫出來的東西會歪</small>
+  </h1>
+
+  <section class="card priv">
+    <h2>🔒 一樣完全不連網，而且輸出可以安全截圖</h2>
+    <p class="cap" style="margin-bottom:0">
+      這一頁沒有任何一行程式碼會連上網路（按 <code>F12</code> → <code>Network</code> 自己驗，請求數是 0）。<br><br>
+      <b>更重要的是：報告本身不含任何個資。</b>手機、姓名、email、passwordHash 這些欄位<b>只統計筆數，不顯示內容</b>。
+      只有「看起來像選項」的欄位（狀態、類型、角色…）才會列出實際的值 —— 那些不是個資，而且我需要它們才寫得出搬遷邏輯。<br><br>
+      所以下面的報告<b>整份截圖給我都沒問題</b>。
+    </p>
+  </section>
+
+  <section class="card">
+    <h2><span class="no">1</span>一張一張貼進來</h2>
+    <p class="cap">
+      在試算表切到某一張分頁 → 選取<b>含標題列</b>的整個範圍 → <code>Ctrl+C</code> → 選好下面的分頁名稱 → 貼上 → 按「加入盤點」。<br>
+      <b>沒資料的分頁跳過就好。</b>順序不重要，但 <code>members</code> 建議先貼（跨表比對要用它當基準）。
+    </p>
+    <textarea id="raw" placeholder="切到分頁 → 選取含標題列的整個範圍 → Ctrl+C → 在這裡 Ctrl+V"></textarea>
+    <div class="row">
+      <select id="sheet"></select>
+      <button id="add">加入盤點</button>
+      <button class="ghost" id="report">產生報告</button>
+      <button class="danger" id="clear">全部清掉</button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <div id="out"></div>
+
+  <p class="foot">拋棄式工具，搬遷做完就可以刪掉。</p>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  const SHEETS = ['members','Staff','Classes','ClassExceptions','Bookings',
+                  'LessonInstances','PassLedger','ContactLog','PasswordResets','AuditLog'];
+
+  // 這些欄位只報統計，永遠不顯示內容
+  const SECRET = ['phone','name','membername','email','lineid','passwordhash','tokenhash',
+                  'note','notice','detailjson','username'];
+  // 這些是識別碼：數量太多沒意義，只報「幾個不同的」
+  const IDLIKE = /(^|_)id$|id$/i;
+
+  const store = {};                       // { 分頁名: {cols:[], rows:[[...]]} }
+
+  const clean = s => String(s ?? '')
+    .replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[　 ​-‍﻿]/g,' ').trim();
+
+  SHEETS.forEach(s => $('sheet').insertAdjacentHTML('beforeend', `<option>${s}</option>`));
+
+  function parse(txt){
+    const lines = txt.replace(/\r/g,'').split('\n').filter(l => l.trim() !== '');
+    if (!lines.length) return null;
+    const sep = lines[0].includes('\t') ? '\t' : ',';
+    const grid = lines.map(l => l.split(sep).map(clean));
+    const w = Math.max(...grid.map(r => r.length));
+    grid.forEach(r => { while (r.length < w) r.push(''); });
+    return { cols: grid[0], rows: grid.slice(1) };
+  }
+
+  function chips(){
+    $('chips').innerHTML = SHEETS.map(s =>
+      `<span class="chip${store[s] ? ' on' : ''}">${s}${store[s] ? '：' + store[s].rows.length + ' 筆' : '　未貼'}</span>`
+    ).join('');
+  }
+
+  $('add').onclick = () => {
+    const p = parse($('raw').value);
+    if (!p){ alert('沒有讀到內容'); return; }
+    store[$('sheet').value] = p;
+    $('raw').value = '';
+    chips();
+    const i = SHEETS.indexOf($('sheet').value);
+    if (i >= 0 && i < SHEETS.length - 1) $('sheet').value = SHEETS[i+1];
+    $('raw').focus();
+  };
+  $('clear').onclick = () => { Object.keys(store).forEach(k => delete store[k]); chips(); $('out').innerHTML=''; };
+  $('report').onclick = report;
+
+  /* ── 單欄統計 ── */
+  function colStat(name, vals){
+    const lower = name.toLowerCase();
+    const filled = vals.filter(v => v !== '');
+    const blank  = vals.length - filled.length;
+    const uniq   = new Set(filled);
+    const isSecret = SECRET.includes(lower);
+    const isId     = IDLIKE.test(name) && !isSecret;
+    let show;
+    if (isSecret)            show = `<span class="lock">🔒 不顯示內容</span>`;
+    else if (isId)           show = `<span class="hi">識別碼，${uniq.size} 個不同</span>`;
+    else if (uniq.size <= 20) show = `<div class="vals">` +
+        [...uniq].sort().map(v => `<span class="v">${esc(v)}</span>`).join('') +
+        (blank ? `<span class="v blank">（空白）</span>` : '') + `</div>`;
+    else                     show = `<span class="hi">${uniq.size} 個不同的值（太多不列）</span>`;
+    return { filled: filled.length, blank, uniq: uniq.size, show };
+  }
+
+  function col(sheet, name){
+    const s = store[sheet]; if (!s) return null;
+    const i = s.cols.findIndex(c => c.toLowerCase() === name.toLowerCase());
+    return i < 0 ? null : s.rows.map(r => r[i]);
+  }
+
+  /* ── 報告 ── */
+  function report(){
+    const names = Object.keys(store);
+    if (!names.length){ alert('還沒貼任何分頁'); return; }
+    let h = '';
+
+    // ① 各分頁
+    h += `<section class="card"><h2><span class="no">2</span>每張分頁裡有什麼</h2>
+          <p class="cap">🔒 標記的欄位只報數量，不顯示內容。可以整份截圖。</p>`;
+    names.forEach(sn => {
+      const s = store[sn];
+      h += `<div class="sheet"><div class="hd">${esc(sn)}<span class="n">${s.rows.length} 筆 · ${s.cols.length} 欄</span></div>
+            <table><thead><tr><th style="width:150px">欄位</th><th style="width:130px">填了／空白</th><th>值</th></tr></thead><tbody>`;
+      s.cols.forEach((c, i) => {
+        const st = colStat(c, s.rows.map(r => r[i]));
+        h += `<tr><td class="mono">${esc(c)}</td>
+              <td class="mono">${st.filled} ／ ${st.blank ? '<b style="color:#A4211A">'+st.blank+'</b>' : '0'}</td>
+              <td>${st.show}</td></tr>`;
+      });
+      h += `</tbody></table></div>`;
+    });
+    h += `</section>`;
+
+    // ② 跨表檢查
+    const finds = [];
+    const F = (kind, t, n, body) => finds.push({kind, t, n, body});
+
+    // 手機重複
+    const mp = col('members','phone');
+    if (mp){
+      const cnt = {}; mp.forEach(p => { if(p) cnt[p] = (cnt[p]||0)+1; });
+      const dup = Object.values(cnt).filter(v => v>1).length;
+      F(dup ? 'bad' : 'ok', 'members 手機是否唯一', dup ? dup + ' 組重複' : '沒有重複',
+        dup ? '我們的 <code>customers.phone</code> 設了 unique。<b>這幾組必須先在舊系統合併或修正</b>，否則搬不進來。'
+            : '可以直接對應到我們的 <code>customers.phone</code>（unique）。');
+      const blank = mp.filter(p => !p).length;
+      if (blank) F('bad','members 手機空白', blank + ' 筆',
+        '我們的 <code>phone</code> 是 NOT NULL。<b>這些人要嘛補號碼，要嘛先不搬。</b>');
+    }
+
+    // PassLedger 的人是否都在 members 裡
+    const lp = col('PassLedger','phone');
+    if (lp && mp){
+      const set = new Set(mp.filter(Boolean));
+      const orphan = new Set(lp.filter(p => p && !set.has(p)));
+      F(orphan.size ? 'bad' : 'ok', 'PassLedger 裡的人都在 members 嗎',
+        orphan.size ? orphan.size + ' 個號碼找不到人' : '全部對得上',
+        orphan.size ? '有堂數異動紀錄，但 members 裡沒有這個人 —— 可能是已刪除的舊會員。<b>搬遷時這些流水帳會變成孤兒</b>，要決定：補建人、還是丟掉這些紀錄。'
+                    : '每一筆流水帳都找得到對應的人，可以安全搬遷。');
+    }
+
+    // PassLedger 帳本自我一致性 —— 這一項最重要
+    const lpd = col('PassLedger','delta'), lpb = col('PassLedger','balanceAfter'),
+          lpc = col('PassLedger','createdAt');
+    if (lp && lpd && lpb){
+      const per = {};
+      lp.forEach((p, i) => {
+        if (!p) return;
+        (per[p] = per[p] || []).push({ d: Number(lpd[i]), b: Number(lpb[i]), t: lpc ? lpc[i] : String(i) });
+      });
+      let bad = 0, ok = 0, nanRows = 0;
+      Object.values(per).forEach(arr => {
+        arr.sort((a,b) => String(a.t).localeCompare(String(b.t)));
+        const sum = arr.reduce((a,x) => a + (isNaN(x.d) ? (nanRows++, 0) : x.d), 0);
+        const last = arr[arr.length-1].b;
+        if (isNaN(last)) { nanRows++; return; }
+        if (Math.abs(sum - last) < 0.001) ok++; else bad++;
+      });
+      F(bad ? 'bad' : 'ok', '舊帳本自己對得起來嗎（delta 加總 vs 最後的 balanceAfter）',
+        bad ? bad + ' 人對不起來（' + ok + ' 人正確）' : ok + ' 人全部正確',
+        bad ? '<b>這是搬遷前最該處理的事。</b>舊系統自己的流水帳加總，跟它記錄的餘額不一致 —— 代表舊資料在某個時間點被手動改過，或有紀錄遺失。<br>照搬過來的話，我們的 <code>customer_credits</code> 算出來的數字會跟客人以為的不一樣。<b>要先決定以哪一邊為準。</b>'
+            : '每個人的流水帳加總都等於最後記錄的餘額。<b>舊帳本是健康的，可以直接搬。</b>' +
+              (nanRows ? '<br>⚠️ 有 ' + nanRows + ' 格不是數字，已跳過，記得回頭看。' : ''));
+    }
+
+    // Bookings 的人
+    const bp = col('Bookings','phone');
+    if (bp && mp){
+      const set = new Set(mp.filter(Boolean));
+      const orphan = new Set(bp.filter(p => p && !set.has(p)));
+      if (orphan.size) F('bad','Bookings 裡的人都在 members 嗎', orphan.size + ' 個號碼找不到人',
+        '有預約紀錄但 members 裡沒這個人。搬預約歷史時會變成孤兒。');
+    }
+
+    // headCount：一筆代訂多人？
+    const hc = col('Bookings','headCount');
+    if (hc){
+      const multi = hc.filter(v => Number(v) > 1).length;
+      F(multi ? 'info' : 'ok', '有人一次幫多人訂嗎（headCount > 1）',
+        multi ? multi + ' 筆是多人' : '全部都是 1 人',
+        multi ? '<b>我們的 <code>bookings</code> 目前是一人一筆，沒有 headCount 這個概念。</b><br>要嘛把一筆拆成多筆（但拆出來的人是誰？），要嘛替我們的資料表加一個欄位。<b>這是業務規則問題：客人可以幫朋友一起訂嗎？</b>'
+              : '每一筆都只代表一個人 —— 跟我們的 <code>bookings</code> 結構一致，可以直接對應。');
+    }
+
+    // 舊課表 vs 我們的 14 堂
+    if (store['Classes']){
+      const s = store['Classes'];
+      const iOpen = s.cols.findIndex(c => c.toLowerCase()==='open');
+      const alive = iOpen >= 0 ? s.rows.filter(r => !/^(false|0|否|no)$/i.test(r[iOpen])).length : s.rows.length;
+      F(alive === 14 ? 'ok' : 'info', '舊系統的週課表 vs 我們建的 14 堂',
+        '舊系統 ' + alive + ' 堂 · 我們 14 堂',
+        alive === 14
+          ? '數量一樣。<b>還是要逐堂比對時間、教練、難度</b> —— 數量對不代表內容對。'
+          : '<b>數量不一樣。</b>要先釐清哪一邊是準的：我們的 14 堂是手動塞進去的，舊系統的可能比較新（或比較舊）。<b>課表錯了，之後每天生出來的課都是錯的。</b>');
+    }
+
+    h += `<section class="card"><h2><span class="no">3</span>跨表檢查</h2>
+          <p class="cap">這些是「一張表自己看不出來、要兩張擺在一起才發現」的問題。</p>`;
+    h += finds.map(f => `<div class="find ${f.kind}"><div class="hd">${
+      f.kind==='bad'?'❌':f.kind==='ok'?'✅':'ℹ️'} ${esc(f.t)}<span class="n">${esc(f.n)}</span></div>
+      <div class="bd">${f.body}</div></div>`).join('');
+    if (!finds.length) h += `<p class="cap">貼進 <code>members</code> 和 <code>PassLedger</code> 之後，這裡才會有東西。</p>`;
+    h += `</section>`;
+
+    $('out').innerHTML = h;
+    $('out').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  chips();
+})();
+</script>
+</body>
+</html>
