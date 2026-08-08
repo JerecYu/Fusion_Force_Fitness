@@ -34,7 +34,7 @@
 window.FFF_ROADMAP = {
 
   meta: {
-    updated: '2026-08-09 · 第 23、24 步完成',
+    updated: '2026-08-09 · 第 25 步完成，課表已核對',
     phaseName: '第一階段：官網 ＋ LINE 預約系統',
     repo: 'https://github.com/JerecYu/Fusion_Force_Fitness'
   },
@@ -191,10 +191,10 @@ window.FFF_ROADMAP = {
           warn:'☢️ <b>這一步要在「還沒有任何 PT 資料」的時候做完。</b>等到有資料才想起來，那就不是預防，是善後了。<br>而且這種錯<b>不會報錯、不會有人通知你</b> —— 跟 CSS 撞名、跟 <code>const</code> 不上 <code>window</code> 是同一種：安靜地錯。',
           ck:'手動在 <code>class_sessions</code> 塞一列 <code>product=\'PT\'</code> 的假資料 → 查 <code>public_schedule</code> <b>看不到它</b> → 把 Role 切成 <code>anon</code> 再查一次<b>還是看不到</b> → 刪掉假資料、Role 切回 <code>postgres</code>。<b>看不到才算過。</b>' },
 
-        { n:25, t:'課表校正：容量、程度用語、教練名單', where:'決定', done:false, kind:'decide',
+        { n:25, t:'課表校正：容量、程度用語、教練名單', where:'決定', done:true, kind:'decide',
           summary:'這一步是「對現實」，不是「對資料」',
           body:'三件事只有你答得出來，資料庫裡找不到答案：<ul><li>舊系統有容量 <b>12</b> 的課，我們現在 14 堂<b>全部是 10</b>。哪幾堂真的收 12？</li><li><b>簡基城不在舊 <code>Classes</code> 裡</b> —— 他現在到底帶不帶團體課？</li><li>舊系統程度寫全字、我們用縮寫，要一組一對一的對照表</li></ul>先對完再搬。搬完才發現容量不對，等於整批課堂的名額都要重來。',
-          ck:'14 堂課的容量、程度、教練，跟你現在牆上貼的那張課表一模一樣。' },
+          ck:'<b>2026-08-09 對完，三題都有答案：</b><ul><li><b>容量全部 10</b> —— 舊系統那個 12 是歷史值，現況沒有收 12 的課。搬歷史時<b>照舊值搬</b>，不要改成 10</li><li><b>簡基城不帶團體課</b> —— 他留在 <code>employees</code> 裡（PT 用），但不會出現在任何 GT 課表</li><li><b>程度對照</b>：<code>beginner→beg</code>／<code>intermediate→int</code>／<code>advanced→adv</code>，一對一，沒有例外</li></ul>另外逐堂對過：14 堂全部是現行的，沒有停開的課，時間／教練／程度都相符。<b>資料庫不用改任何一筆。</b>' },
 
         { n:26, t:'做搬遷工具（離線，在你自己的電腦上跑）', where:'前端', done:false,
           summary:'為什麼一定要離線 ＋ 檔案放哪裡',
