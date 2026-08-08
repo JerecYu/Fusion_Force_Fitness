@@ -205,6 +205,7 @@ FFF 賣的不只團體課：
 | 欄位數 | 剛好 12 欄 |
 | 誰讀得到 | `anon`、`authenticated`（已 grant select） |
 | 資料來源 | `class_sessions` ＋ `employees`（left join）＋ `bookings`（count） |
+| 過濾條件 | ☢️ **`where s.product = 'GT'`**（2026-08-09 第 24 步加上）|
 
 12 個欄位：
 `session_id`／`session_date`／`start_time`／`duration_min`／`title`／`level`／`coach_name`／`capacity`／`booked_count`／`seats_left`／`is_full`／`status`
@@ -235,11 +236,17 @@ FFF 賣的不只團體課：
 2. **不要因為 Advisors 顯示 `Security Definer View` 警告就改成 `security_invoker`**
    那個警告是在提醒「這東西繞過 RLS，請確認你是故意的」。你是故意的。改掉就等於打開上面那個洞。
 
-3. **☢️ 絕不讓 `public_schedule` 沒有 `where product = 'GT'`**
+3. **☢️ 絕不讓 `public_schedule` 沒有 `where product = 'GT'`**　✅ 2026-08-09 已加上
    這張檢視表建立時是**無條件**讀 `class_sessions` 的每一列 —— 因為那時候表裡只可能有團體課。
    但排 PT 的時候一定會把它排進 `class_sessions`（場地要排班，不然撞場），那一刻
    **「王小姐 週二 14:00 上私人課」就會出現在官網課表上**。
-   這個外洩**不會報錯、不會有人通知你**。第 24 步就是專門把這扇門關上的，而且刻意排在「還沒有任何 PT 資料」的時候做。
+   這個外洩**不會報錯、不會有人通知你**。
+
+   第 24 步用一次真的攻擊測試證實過：加 `where` 之前，假的 PT 課**確實**出現在公開課表上（33 筆 vs 32 堂 GT）；
+   加了之後變 0。**這不是理論風險，是量到的。**
+
+   > 新增商品別的時候，**預設是「不給看」**。要公開才明確加進 `where` 裡 —— 不要反過來寫成「排除 PT」，
+   > 那樣每多一種商品就多一個會忘記的地方。
 
 > 記一條原則：**`permission denied` 不一定是問題。**
 > 先問「這個身分本來就該進得去嗎」，再決定要不要修。
@@ -256,6 +263,18 @@ class_sessions    →  permission denied  ✅ 擋住
 `public_schedule` 和 `class_sessions` 是**同一批課表資料**。走窗口拿得到、走原表拿不到 —— 這一對結果就是整個設計的證明。
 
 ⚠️ 用 `anon` 測完，**記得把 Role 切回 `postgres`**。忘了切的話之後每個查詢都會安靜地失敗，畫面上不會告訴你原因。
+
+#### 2026-08-09 加上 product 過濾後的複測
+
+```
+① 原表塞一筆假的 PT   →  class_sessions 看得到      1 筆  ✅
+② 公開課表            →  看不到它                   0 筆  ✅  ← 門關上了
+③ 公開課表總筆數      →  32 ＝ GT 課堂數 32         沒誤殺 ✅
+④ anon 讀 public_schedule →  32 筆                        ✅
+⑤ anon 讀 class_sessions  →  permission denied           ✅
+```
+
+假資料用 `id` 比對刪除（不是課名字串），整段一次交易，測完殘留 0 筆。
 
 
 ---
@@ -413,7 +432,7 @@ end $$;
 
 ---
 
-## 九、db/ 備份（十一支，可完整重建）
+## 九、db/ 備份（十二支，可完整重建）
 
 ```
 db/
@@ -427,10 +446,11 @@ db/
 ├── 07-daily-job.sql
 ├── 08-cron.sql
 ├── 09-fix-dup.sql               ← 有保險絲
-└── 10-public-views.sql          ← 公開課表檢視表
+├── 10-public-views.sql          ← 公開課表檢視表（含 where product='GT'）
+└── 11-alter-migration.sql       ← 商品別 product ＋ paid_by ＋ 重建 customer_credits
 ```
 
-**現在如果資料庫整個消失，可以從這十一支照 00→10 的順序重建。** 這件事在 2026-08-08 之前是做不到的。
+**現在如果資料庫整個消失，可以從這十二支照 00→11 的順序重建。** 這件事在 2026-08-08 之前是做不到的。
 
 ⚠️ 舊文件誤記為「已包含 00~06」，實際上 `06`、`07`、`08`、`09` 從來沒備份過。
 
@@ -967,3 +987,69 @@ payout(n) = 200 + 100 × n      （n ≥ 2）
 
 > 第 19 步當時擔心的「status 可能有第三種值」，在舊系統這裡有了現實的命名前例。
 > 前端「認不得的值就照原樣顯示」這個寫法，事後看是對的。
+
+---
+
+## 附錄五：2026-08-09 凌晨（第 23～24 步 · 商品別與公開課表的門）
+
+### 這一輪做了什麼
+
+| 步 | 內容 |
+|---|---|
+| 23 | `class_sessions.product`、`credit_ledger.product`、`bookings.paid_by_customer_id`；重建 `customer_credits`；`pt_requests.kind` 改名 `product`；兩條 RLS |
+| 24 | `public_schedule` 加 `where s.product = 'GT'` |
+
+### 六件學到的事
+
+**1. 規則 9 當場救了一次。**
+原本計畫要在 `credit_ledger` 加一個 `kind` 欄位（`purchase`／`bonus`／…）。
+照規則 9 先 `select` 實際欄位，才發現**它本來就有 `reason`**，值域正是
+`purchase / bonus / class / adjust / refund`。
+再加 `kind` 就是「兩個欄位講同一件事」—— 跟 `db/ 00~06` 那個坑同一個病。
+**憑記憶寫欄位不只是會打錯字，是會憑空長出多餘的設計。**
+
+**2. 驗證 SQL 漏了 `from`，整張 rollback —— 而這證明了交易是有效的。**
+`★B` 那段 `select ... count(*) filter (where paid_by_customer_id = customer_id)` 少寫 `from public.bookings`，
+跳 `column "paid_by_customer_id" does not exist`。
+**看起來像「欄位沒加成功」，其實是「查詢寫錯」** —— 這兩件事的錯誤訊息一模一樣。
+事後查欄位數＝0，確認整張退回，資料庫完全沒被動到。
+
+**3. 從這一步開始，每一支 SQL 都先在本機 PostgreSQL 跑過再給人。**
+在容器裡裝 PostgreSQL 16、照 `db/01~04` 建出一模一樣的七張表，把 `11` 整支跑兩次
+（確認重複執行安全），才交出去。
+上一版只用眼睛看，結果就是上面第 2 點。
+
+**4. `customer_credits` 和 `public_schedule` 是方向相反的兩張檢視表。**
+
+| | `public_schedule` | `customer_credits` |
+|---|---|---|
+| 要不要繞過 RLS | **故意繞過**（要端出教練 `display_name`） | **絕對不能繞過**（每個人只能看自己的餘額） |
+| 寫法 | 預設（definer） | `with (security_invoker = true)` |
+| Advisors 會不會叫 | 會，而且不要理它 | 不會 |
+
+實測過：`security_invoker=false` 時，一個客人查到 **2 筆**（含別人的餘額）；改成 `true` 之後只查到 **1 筆**。
+
+> **以後每建一張新的檢視表，都要重問一次「這張該不該繞過 RLS」。**
+> 沒有預設答案。
+
+**5. 「改之前 vs 改之後」的對照實驗，比「全綠」更有價值。**
+第 24 步的攻擊測試先在**還沒加 `where`** 的狀態下跑了一次，親眼看到假的 PT 出現在公開課表上（② 1 筆、③ 33 vs 32）。
+加了 `where` 再跑，變成 0 和 32 vs 32。
+**如果一開始就全綠，你只會知道「現在沒問題」，不會知道「那行 `where` 真的在擋東西」。**
+
+**6. 測試用的 `delete` 要用 `id`，不要用字串比對。**
+第一版寫 `where title like '★測試用-%'`。
+壓力測試：先塞一堂真的叫「★測試用-…」的課再跑測試 —— **它被誤刪了**。
+改成把新增的 `id` 存進暫存表、`delete` 只認 `id` 之後，同名的真課安然無恙。
+而且刪之前先報一次「這個 `where` 會打到幾列（必須是 1）」，在按下去之前就看得到。
+
+### 留給第 33 步的一個地雷
+
+`credit_ledger` 的政策裡有
+`select 1 from employees where auth_user_id = auth.uid()`。
+`customer_credits` 加了 `security_invoker = true` 之後，這一句是**用客人的身分**去查 `employees` 的 ——
+客人沒有讀取權，會直接跳 `permission denied`，**不是回 0 筆，是整句查詢失敗**。
+
+正解不是把 `employees` 開給客人（那等於拆掉第二幕蓋的牆），
+而是把這類判斷包成 `security definer` 的小函式，只回傳 `true`/`false`。
+本機 PostgreSQL 16 實測確認會這樣。

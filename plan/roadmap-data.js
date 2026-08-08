@@ -34,7 +34,7 @@
 window.FFF_ROADMAP = {
 
   meta: {
-    updated: '2026-08-08 · 加入 PT／RT 商品別預留',
+    updated: '2026-08-09 · 第 23、24 步完成',
     phaseName: '第一階段：官網 ＋ LINE 預約系統',
     repo: 'https://github.com/JerecYu/Fusion_Force_Fitness'
   },
@@ -179,13 +179,13 @@ window.FFF_ROADMAP = {
           warn:'③ 的道理跟這份路線圖本身一樣：<b>能算出來的東西就不要另外記一份</b>。記兩份，兩份遲早會對不起來 —— 這就是 <code>db/</code> 那個坑的同一個病。',
           ck:'四個決定都寫進 <code>HANDOVER.md</code> 附錄四。' },
 
-        { n:23, t:'改資料表：加上「商品別」和「扣誰的卡」', where:'SQL', done:false,
+        { n:23, t:'改資料表：加上「商品別」和「扣誰的卡」', where:'SQL', done:true,
           summary:'四個欄位，為什麼一定要現在加',
-          body:'檔名 <code>db/11-alter-migration.sql</code>（10 已經被 <code>public-views</code> 用掉了）。<ul><li><code>class_sessions.product</code> → <code>GT</code>／<code>PT</code>／<code>PGT</code>／<code>RT</code>，<b>預設 <code>GT</code></b></li><li><code>credit_ledger.product</code> → 同上，預設 <code>GT</code></li><li><code>credit_ledger.kind</code> → <code>purchase</code>／<code>bonus</code>／<code>checkin</code>／<code>manual</code>，舊資料一律 <code>purchase</code></li><li><code>bookings.paid_by_customer_id</code> → 指向 <code>customers</code>，既有每一列先補成等於自己的 <code>customer_id</code></li></ul><b>為什麼是現在：</b>這四欄現在加是四行 SQL，表裡幾乎沒有資料。等 81 個人和幾百筆流水都搬進來之後再加，<b>每一列都要回頭補標</b> —— 而且你會沒把握哪幾列標對了。',
-          warn:'⚠️ 兩件會跟著壞的事：<br>① <b><code>customer_credits</code> 這張檢視表要一起改。</b>它現在是「<code>delta</code> 全部加總＝一個數字」。加了 <code>product</code> 之後要變成<b>每一種商品各一個餘額</b>，否則客人會拿團體課的堂數去上私人課，而系統覺得完全合理。<br>② <b>新欄位不會自動被現有的 RLS 規則涵蓋。</b>加完一定要回頭把 <code>bookings</code> 那 5 條規則再讀一次 —— 「客人只能看自己的預約」那條，現在「自己」有兩種意思了（上課的人／付錢的人）。',
-          ck:'Table Editor 看得到四個新欄位；而且查 <code>customer_credits</code> 回傳的是「<b>每人每種商品一列</b>」，不是「每人一列」。' },
+          body:'檔名 <code>db/11-alter-migration.sql</code>（10 已經被 <code>public-views</code> 用掉了）。<b>三個新欄位 ＋ 一張檢視表重建 ＋ 兩條 RLS</b>：<ul><li><code>class_sessions.product</code> → <code>GT</code>／<code>PT</code>／<code>PGT</code>／<code>RT</code>，<b>預設 <code>GT</code></b></li><li><code>credit_ledger.product</code> → <code>GT</code>／<code>PT</code>／<code>PGT</code>（RT 不扣堂數），預設 <code>GT</code></li><li><code>bookings.paid_by_customer_id</code> → 指向 <code>customers</code>，既有每一列先補成等於自己的 <code>customer_id</code></li><li>重建 <code>customer_credits</code> → 從「一個人一個餘額」改成「<b>每人每種商品各一個餘額</b>」</li><li><code>pt_requests.kind</code> 改名成 <code>product</code> —— 同一個概念只留一個名字</li></ul><b>⚠️ 原本說要加的 <code>kind</code> 欄位取消了。</b>照規則 9 撈實際欄位才發現，<code>credit_ledger</code> <b>本來就有 <code>reason</code></b>，值域是 <code>purchase</code>／<code>bonus</code>／<code>class</code>／<code>adjust</code>／<code>refund</code> —— 「買十送二」拆兩列要用的 <code>purchase</code> 和 <code>bonus</code> 現成就在裡面。再加一個 <code>kind</code> 就是兩個欄位講同一件事。<br><br><b>為什麼是現在：</b>這些現在加是幾行 SQL，表裡幾乎沒有資料。等 81 個人和幾百筆流水都搬進來之後再加，<b>每一列都要回頭補標</b> —— 而且你會沒把握哪幾列標對了。',
+          warn:'☢️ <b>撈欄位時發現的一個現成的洞：<code>customer_credits</code> 會繞過 RLS。</b><br>檢視表預設是「以擁有者身分執行」。<code>customer_credits</code> 現在沒開放給任何人，所以還沒出事 —— 但第 33 步客人要查自己的堂數時一開放，<b>每個人都看得到別人的餘額</b>。<br>重建時要加 <code>with (security_invoker = true)</code>，讓它走 <code>credit_ledger</code> 上「客人只讀自己的」那條規則。<br><br>⚠️ <b>這跟 <code>public_schedule</code> 剛好相反</b>：那一張是<b>故意</b>繞過 RLS（要端出教練名字），這一張是<b>絕對不能</b>繞過。同樣是檢視表、方向相反 —— 以後每建一張新的檢視表都要重問一次「這張該不該繞過 RLS」。<br><br>另外：<b>新欄位不會自動被現有 RLS 涵蓋。</b>「客人讀自己的預約」那條要加上「或是我付錢的」，還要補一條「員工可代開預約」—— 否則櫃檯根本開不了體驗客的單，而且<b>不會報錯，只是功能不會動</b>。',
+          ck:'SQL 檔最後有 ★A～★G 七段驗收，反白跑一次：<ul><li>★A 三個新欄位都在</li><li>★B 既有預約「不一樣的」＝ <b>0</b></li><li>★D <code>customer_credits</code> 是 <b>customer_id／product／balance 三欄</b></li><li>★E 看得到 <code>product</code>、看不到 <code>kind</code></li><li>★F <code>bookings</code> 有 <b>6</b> 條 RLS 規則</li><li>★G 現有課堂 <b>全部是 GT</b></li></ul>' },
 
-        { n:24, t:'把公開課表的門關上：public_schedule 只給 GT', where:'SQL', done:false,
+        { n:24, t:'把公開課表的門關上：public_schedule 只給 GT', where:'SQL', done:true,
           summary:'一個還沒發生、但一定會發生的外洩',
           body:'<code>public_schedule</code> 現在<b>無條件</b>讀 <code>class_sessions</code> 的每一列 —— 因為建它的時候，那張表裡只可能有團體課。<br><br>但排 PT 的時候，你<b>一定</b>會把它排進 <code>class_sessions</code>（場地要排班，不然會撞場）。那一刻：<br><br><code>class_sessions</code> 多一列「週二 14:00 私人課 · 王小姐 · 教練 Peter」<br>↓ <code>public_schedule</code> 沒有任何過濾<br>↓ <b>官網課表上，全世界都看得到王小姐週二下午在上私人課</b><br><br><b>改法：</b>改 <code>db/10-public-views.sql</code> 那一張分頁本身（<code>create or replace view</code> 可以重複執行），加一行 <code>where x.product = \'GT\'</code>。<br><br><b>為什麼改 10 而不是開一支新的：</b>檢視表的定義應該<b>只有一個地方</b>寫著。開新檔案的話，半年後沒人知道哪一份才是現行的 —— 那正是 <code>db/ 00~06</code> 那個坑。',
           warn:'☢️ <b>這一步要在「還沒有任何 PT 資料」的時候做完。</b>等到有資料才想起來，那就不是預防，是善後了。<br>而且這種錯<b>不會報錯、不會有人通知你</b> —— 跟 CSS 撞名、跟 <code>const</code> 不上 <code>window</code> 是同一種：安靜地錯。',
