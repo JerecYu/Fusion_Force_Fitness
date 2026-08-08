@@ -34,7 +34,7 @@
 window.FFF_ROADMAP = {
 
   meta: {
-    updated: '2026-08-08 傍晚',
+    updated: '2026-08-08 · 第二幕完成',
     phaseName: '第一階段：官網 ＋ LINE 預約系統',
     repo: 'https://github.com/JerecYu/Fusion_Force_Fitness'
   },
@@ -151,11 +151,10 @@ window.FFF_ROADMAP = {
           warn:'踩到兩個坑，<b>兩個都不會報錯</b>：<br>① <b>CSS class 撞名</b> —— 新加的 <code>.x</code> 跟原檔的彈窗關閉鈕撞到，版面整個爛掉。在既有樣式裡加東西，class 名字一律加前綴。<br>② <b><code>const</code> 宣告的東西不會變成 <code>window</code> 的屬性</b> —— <code>supabase-config.js</code> 裡 <code>const fffDB</code> 存在，但 <code>window.fffDB</code> 是 undefined。要多寫一行 <code>window.fffDB = fffDB;</code> 才掛得上門牌。',
           ck:'在 Table Editor 把 8/10 的「TRX綜合雕塑」改成「TRX綜合雕塑（測試中）」，網頁重新整理後跟著變 —— <b>證明這條線是活的，不是快照</b>。' },
 
-        { n:20, t:'推上 GitHub Pages，用手機實測', where:'Git', done:false,
-          summary:'說明 ＋ 完成判準',
-          body:'用自己的手機、關掉 Wi-Fi 用行動網路開一次。桌機看得到不代表手機看得到。',
-          warn:'部署可能卡在 <code>deployment_queued</code>，那是 GitHub 端的已知問題，不是你設定錯。解法是重試（可能要多次）或推一個空 commit。',
-          ck:'手機瀏覽器看得到真實課表。<br><b>同時：風險 1（免費方案被自動暫停）自動解除 —— 這個資料庫從此有外部流量了。</b>' }
+        { n:20, t:'推上 GitHub Pages，用手機實測', where:'Git', done:true,
+          summary:'上線了，而且風險 1 解除',
+          body:'網址：<code>jerecyu.github.io/Fusion_Force_Fitness/line-prototype/GT-booking.html</code><br><br>桌機和手機都確認過，畫面跟本機一模一樣。手機那次是在<b>手機內建瀏覽器</b>開的 —— 那正是第 27 步 LIFF 之後客人會用的環境，等於提前測到了。<br><br><b>⚠️ 風險 1 到此解除。</b>這個資料庫從此有外部流量，免費方案不會再因為「一週沒人用」被自動暫停。',
+          ck:'手機瀏覽器看得到真實課表。' }
       ]
     },
 
