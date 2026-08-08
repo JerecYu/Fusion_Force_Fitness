@@ -1,0 +1,54 @@
+-- ═══════════════════════════════════════════════════════════
+-- 10-public-views.sql
+-- 公開課表檢視表 — 對外唯一開的那扇窗
+-- 2026-08-08
+--
+-- 這一支不塞任何資料，所以不需要保險絲。
+-- create or replace 可以安全重複執行，跑幾次結果都一樣。
+-- ═══════════════════════════════════════════════════════════
+
+create or replace view public.public_schedule as
+select
+  x.session_id,
+  x.session_date,
+  x.start_time,
+  x.duration_min,
+  x.title,
+  x.level,
+  x.coach_name,
+  x.capacity,
+  x.booked_count,
+  greatest(x.capacity - x.booked_count, 0)::int as seats_left,
+  (x.booked_count >= x.capacity)                as is_full,
+  x.status
+from (
+  select
+    s.id            as session_id,
+    s.session_date,
+    s.start_time,
+    s.duration_min,
+    s.title,
+    s.level,
+    -- 只拿 display_name。name / phone / email / auth_user_id 一律不出去
+    e.display_name  as coach_name,
+    s.capacity,
+    -- 人數用「沒有取消時間」來數，不猜 status 存什麼字
+    (select count(*)
+       from public.bookings bk
+      where bk.session_id = s.id
+        and bk.cancelled_at is null)::int as booked_count,
+    s.status
+  from public.class_sessions s
+  -- ⚠️ 一定要 left join：coach_id 可以留空，
+  --    用一般 join 的話「還沒指定教練」的課會整堂從課表消失
+  left join public.employees e
+    on e.id = s.coach_id
+) x;
+
+
+-- ── 門禁：先全部關死，再只開一條縫 ──
+revoke all on public.public_schedule from public, anon, authenticated;
+grant  select on public.public_schedule to anon, authenticated;
+
+comment on view public.public_schedule is
+  '公開課表。對外唯一開放讀取的對象，只含可公開欄位。修改前先想清楚有沒有多開什麼。';
