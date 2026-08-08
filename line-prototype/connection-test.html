@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FFF 連線測試</title>
+<style>
+  :root{
+    --ink:#0E1B2C; --navy:#2C4E7D; --teal:#2E8B94; --green:#2F6B54;
+    --orange:#DE7A38; --orange-deep:#A9531D;
+    --paper:#E9EEF2; --line:#C9D4DD; --muted:#5E6E7E;
+    --pin:#D8342B; --pin-deep:#A4211A; --pin-bg:#FDECEA;
+    --ok-bg:#EDF5F3; --ok-line:#A8C9BE;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);
+    font-family:"Noto Sans TC",system-ui,-apple-system,sans-serif;line-height:1.6;
+    padding:20px 14px 60px;-webkit-font-smoothing:antialiased}
+  .page{max-width:860px;margin:0 auto}
+  h1{font-size:24px;font-weight:900;letter-spacing:.02em;
+     padding-bottom:12px;border-bottom:2px solid var(--ink)}
+  h1 small{display:block;font-size:12.5px;font-weight:400;color:var(--muted);margin-top:5px;letter-spacing:0}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:3px;
+    padding:14px 16px;margin-top:14px}
+  .card>h2{font-size:16px;font-weight:700;margin-bottom:3px}
+  .card>p.cap{font-size:12.5px;color:var(--muted);margin-bottom:11px}
+  .card.ok{border-top:4px solid var(--green)}
+  .card.bad{border-top:4px solid var(--pin);background:#fff}
+  .card.wait{border-top:4px solid var(--muted)}
+
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:13px;margin-bottom:4px}
+  .kv dt{color:var(--muted);white-space:nowrap}
+  .kv dd{font-family:ui-monospace,"JetBrains Mono",monospace;font-size:12px;word-break:break-all}
+
+  .badge{display:inline-block;font-family:ui-monospace,monospace;font-size:11px;font-weight:700;
+    padding:3px 8px;border-radius:2px;letter-spacing:.04em}
+  .badge.pass{background:#E4F0EA;color:var(--green);border:1px solid var(--ok-line)}
+  .badge.fail{background:var(--pin-bg);color:var(--pin-deep);border:1px solid #F3C9C5}
+  .badge.wait{background:#EDF1F4;color:var(--muted);border:1px solid var(--line)}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid #EDF1F4}
+  th{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;
+     background:#F7FAFB;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{font-variant-numeric:tabular-nums}
+  td.mono{font-family:ui-monospace,monospace;font-size:12px}
+  tr.cancelled td{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+
+  .leak{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center;
+    font-size:13px;padding:8px 0;border-bottom:1px solid #EDF1F4}
+  .leak:last-child{border-bottom:none}
+  .leak code{font-family:ui-monospace,monospace;font-size:12.5px;color:var(--navy)}
+  .leak .why{grid-column:1/3;font-size:11.5px;color:var(--muted);margin-top:-4px}
+
+  pre.err{background:#FDF3F2;border:1px solid #F3C9C5;border-left:3px solid var(--pin);
+    border-radius:2px;padding:10px 12px;font-family:ui-monospace,monospace;
+    font-size:12px;white-space:pre-wrap;word-break:break-word;color:var(--pin-deep);margin-top:8px}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:10px;
+    border-left:3px solid var(--orange);padding-left:10px;line-height:1.7}
+  .hint b{color:var(--orange-deep)}
+  .foot{margin-top:20px;text-align:center;font-size:12px;color:var(--muted);line-height:1.7}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>FFF 連線測試
+    <small>第 18 步用的臨時工具 —— 只驗證「網頁 ↔ 資料庫」這條管線通不通，不做任何預約功能</small>
+  </h1>
+
+  <!-- ① 連線設定 -->
+  <section class="card wait" id="c-conf">
+    <h2>① 連線設定</h2>
+    <p class="cap">確認 supabase-config.js 有被讀到，而且放的是公開金鑰</p>
+    <dl class="kv" id="conf"></dl>
+  </section>
+
+  <!-- ② 讀公開課表 -->
+  <section class="card wait" id="c-read">
+    <h2>② 讀公開課表 <span class="badge wait" id="b-read">測試中…</span></h2>
+    <p class="cap">向 public_schedule 要今天以後的課，最多 10 筆</p>
+    <div id="read"></div>
+  </section>
+
+  <!-- ③ 洩漏測試 -->
+  <section class="card wait" id="c-leak">
+    <h2>③ 洩漏測試 <span class="badge wait" id="b-leak">測試中…</span></h2>
+    <p class="cap">從瀏覽器直接去撈那三張鎖住的表。<b>全部失敗才算通過。</b></p>
+    <div id="leak"></div>
+  </section>
+
+  <p class="foot">
+    這一頁只讀不寫，重新整理幾次都不會影響任何資料。<br>
+    三個區塊全綠 = 第 18 步完成，可以進第 19 步。
+  </p>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+  // ───────── ① 連線設定 ─────────
+  const keyHead = (SUPABASE_PUBLISHABLE_KEY || '').slice(0, 16);
+  const looksRight = keyHead.startsWith('sb_publishable_');
+  const looksSecret = keyHead.startsWith('sb_secret_');
+  const notFilled  = /貼在這裡/.test(SUPABASE_PUBLISHABLE_KEY || '');
+
+  $('conf').innerHTML =
+    '<dt>專案網址</dt><dd>' + esc(SUPABASE_URL) + '</dd>' +
+    '<dt>金鑰開頭</dt><dd>' + (notFilled ? '（還沒貼）' : esc(keyHead) + '…') + '</dd>' +
+    '<dt>判定</dt><dd>' + (
+      notFilled  ? '<span class="badge fail">還沒把金鑰貼進 supabase-config.js</span>' :
+      looksSecret? '<span class="badge fail">☢️ 這是 SECRET key，立刻停止並撤銷</span>' :
+      looksRight ? '<span class="badge pass">✓ 是 Publishable key，可以放在前端</span>' :
+                   '<span class="badge fail">開頭不是 sb_publishable_，請重新確認</span>'
+    ) + '</dd>';
+
+  $('c-conf').className = 'card ' + ((looksRight && !notFilled) ? 'ok' : 'bad');
+
+  if (notFilled || looksSecret || !looksRight) {
+    $('b-read').className = 'badge fail'; $('b-read').textContent = '跳過';
+    $('b-leak').className = 'badge fail'; $('b-leak').textContent = '跳過';
+    $('read').innerHTML = '<div class="hint"><b>先把金鑰貼好再重新整理。</b>' +
+      '打開同資料夾的 <code>supabase-config.js</code>，把 Supabase → Settings → API Keys 裡的 ' +
+      'Publishable key 貼進第 ② 段那對單引號中間。</div>';
+    $('c-read').className = 'card bad';
+    $('c-leak').className = 'card bad';
+    return;
+  }
+
+  const today = new Date().toLocaleDateString('sv-SE');   // 產生 YYYY-MM-DD（台灣當地日期）
+
+  // ───────── ② 讀公開課表 ─────────
+  try {
+    const { data, error, count } = await fffDB
+      .from('public_schedule')
+      .select('session_date,start_time,title,level,coach_name,capacity,booked_count,seats_left,is_full,status',
+              { count: 'exact' })
+      .gte('session_date', today)
+      .order('session_date', { ascending: true })
+      .order('start_time',   { ascending: true })
+      .limit(10);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      $('b-read').className = 'badge fail'; $('b-read').textContent = '通了，但沒資料';
+      $('c-read').className = 'card bad';
+      $('read').innerHTML = '<div class="hint">管線是通的（沒有報錯），但今天以後一堂課都沒有。' +
+        '<b>去 Supabase 跑 00-check 的第 ② 段確認課表還在。</b></div>';
+    } else {
+      $('b-read').className = 'badge pass';
+      $('b-read').textContent = '✓ 通了，共 ' + count + ' 堂';
+      $('c-read').className = 'card ok';
+      let h = '<table><thead><tr>' +
+        '<th>日期</th><th>時間</th><th>課程</th><th>難度</th><th>教練</th>' +
+        '<th>報名</th><th>剩餘</th><th>狀態</th></tr></thead><tbody>';
+      for (const r of data) {
+        h += '<tr class="' + (r.status === 'cancelled' ? 'cancelled' : '') + '">' +
+          '<td class="mono">' + esc(r.session_date) + '</td>' +
+          '<td class="mono">' + esc(String(r.start_time).slice(0,5)) + '</td>' +
+          '<td>' + esc(r.title) + '</td>' +
+          '<td class="mono">' + esc(r.level) + '</td>' +
+          '<td>' + esc(r.coach_name ?? '（待定）') + '</td>' +
+          '<td class="mono">' + esc(r.booked_count) + ' / ' + esc(r.capacity) + '</td>' +
+          '<td class="mono">' + esc(r.seats_left) + '</td>' +
+          '<td class="mono">' + esc(r.status) + '</td>' +
+        '</tr>';
+      }
+      h += '</tbody></table>' +
+        '<div class="hint">這張表的每一格，都是<b>剛剛從東京機房拿回來的真實資料</b>，' +
+        '不是寫死在網頁裡的。你去 Supabase 改一個課名再重新整理，這裡就會跟著變。</div>';
+      $('read').innerHTML = h;
+    }
+  } catch (e) {
+    $('b-read').className = 'badge fail'; $('b-read').textContent = '✕ 失敗';
+    $('c-read').className = 'card bad';
+    $('read').innerHTML = '<pre class="err">' + esc(e.message || e) + '</pre>' +
+      '<div class="hint"><b>常見原因：</b><br>' +
+      '· 金鑰貼錯或貼漏了幾個字 —— 回去重複製一次<br>' +
+      '· 專案被自動暫停（免費方案風險 1）—— 去 Supabase 看專案還醒著嗎<br>' +
+      '· 沒網路，或 CDN 被擋 —— 按 F12 看 Console 有沒有紅字</div>';
+  }
+
+  // ───────── ③ 洩漏測試 ─────────
+  const locked = [
+    ['employees',      '教練表 —— 有 name／phone／email，絕不能外流'],
+    ['customers',      '客人表 —— 有手機和 line_user_id'],
+    ['class_sessions', '課堂原表 —— 跟課表同一批資料，但只能走窗口拿']
+  ];
+
+  let allBlocked = true, rows = '';
+  for (const [table, why] of locked) {
+    let blocked, detail;
+    try {
+      const { data, error } = await fffDB.from(table).select('*').limit(1);
+      if (error) { blocked = true;  detail = error.message; }
+      else if (!data || data.length === 0) { blocked = true; detail = '回 0 筆（RLS 擋掉每一列）'; }
+      else { blocked = false; detail = '⚠️ 撈到 ' + data.length + ' 筆資料'; }
+    } catch (e) {
+      blocked = true; detail = e.message || String(e);
+    }
+    if (!blocked) allBlocked = false;
+    rows += '<div class="leak">' +
+      '<div><code>' + esc(table) + '</code></div>' +
+      '<div>' + (blocked
+        ? '<span class="badge pass">✓ 擋住了</span>'
+        : '<span class="badge fail">✕ 洩漏！</span>') + '</div>' +
+      '<div class="why">' + esc(why) + '　→　' + esc(detail) + '</div>' +
+    '</div>';
+  }
+
+  $('leak').innerHTML = rows + (allBlocked
+    ? '<div class="hint">三張全部擋住 —— 而且這次是<b>從真正的瀏覽器、用真正的前端金鑰</b>測的，' +
+      '不是在 Supabase 後台。這比第 17 步的測試更接近客人的處境。</div>'
+    : '<div class="hint"><b>停下來，不要繼續。</b>有東西外洩了。' +
+      '先確認你貼的是 Publishable key 而不是 Secret key，然後把結果告訴我。</div>');
+
+  $('b-leak').className = 'badge ' + (allBlocked ? 'pass' : 'fail');
+  $('b-leak').textContent = allBlocked ? '✓ 三張全擋住' : '✕ 有洩漏';
+  $('c-leak').className = 'card ' + (allBlocked ? 'ok' : 'bad');
+})();
+</script>
+</body>
+</html>
