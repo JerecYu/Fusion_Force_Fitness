@@ -7,7 +7,7 @@
    │  把某一步的  done: false  改成  done: true  ，然後存檔。            │
    │                                                                  │
    │  這些東西會自己跟著變，你完全不用手動改：                            │
-   │    · 進度條和「17 / 36」那個數字                                   │
+   │    · 進度條和「22 / 41」那個數字                                   │
    │    · 每一幕的「3 / 6」計數                                        │
    │    · 路線圖上綠色實線的長度                                        │
    │    · 紅色定位釘會自動移到下一個還沒做的步驟                          │
@@ -34,7 +34,7 @@
 window.FFF_ROADMAP = {
 
   meta: {
-    updated: '2026-08-08 · 第二幕完成',
+    updated: '2026-08-08 · 加入 PT／RT 商品別預留',
     phaseName: '第一階段：官網 ＋ LINE 預約系統',
     repo: 'https://github.com/JerecYu/Fusion_Force_Fitness'
   },
@@ -69,7 +69,7 @@ window.FFF_ROADMAP = {
 
         { n:5, t:'塞進 6 位教練', where:'SQL', done:true,
           summary:'是哪六位',
-          body:'簡基城、Jerec（owner）、Jessica、VC、Peter、Johnson。<br><code>auth_user_id</code> 目前都是空的，等教練真的註冊帳號才會填（第 33 步）。<br>離職改 <code>is_active</code> 不刪除 —— 刪掉會讓歷史課堂失去教練資訊。' },
+          body:'簡基城、Jerec（owner）、Jessica、VC、Peter、Johnson。<br><code>auth_user_id</code> 目前都是空的，等教練真的註冊帳號才會填（第 37 步）。<br>離職改 <code>is_active</code> 不刪除 —— 刪掉會讓歷史課堂失去教練資訊。' },
 
         { n:6, t:'塞進 14 堂週課表範本', where:'SQL', done:true,
           summary:'週課表內容',
@@ -147,44 +147,68 @@ window.FFF_ROADMAP = {
 
         { n:19, t:'GT-booking.html 改成讀真實課表（只能看，不能訂）', where:'前端', done:true,
           summary:'做完之後改了什麼、踩到什麼',
-          body:'寫死的 <code>RAW</code> 週課表整段拿掉，改讀 <code>public_schedule</code>。視覺設計一個像素沒動，換掉的只有資料來源。<br><br><b>① 日期分頁從「週一～週日」改成真實日期</b><br>這不是偏好，是資料逼的。<code>class_sessions</code> 存的是「2026-08-10 那一堂」，不是「每個週一」。用星期分頁的話，「今天這堂已取消、下週同一堂還在」這個差別會整個消失。<br><br><b>② 候補整套移除</b>；額滿改成「仍可報名，現場座位需與教練確認」（規則：不硬擋）<br><br><b>③ 取消的課</b>卡片轉灰、按鈕變「本日未開課」<br><br><b>④ 訂課按鈕停用</b>，腳本第一行有 <code>BOOKING_OPEN = false</code> 開關 —— 第 30 步才打開，而且要先做完 28、29 步。<br><br><b>⑤ 兩個「不寫死」</b>：認不得的 <code>status</code> 和 <code>level</code> 都照原樣顯示，不會壞掉、不會空白。',
+          body:'寫死的 <code>RAW</code> 週課表整段拿掉，改讀 <code>public_schedule</code>。視覺設計一個像素沒動，換掉的只有資料來源。<br><br><b>① 日期分頁從「週一～週日」改成真實日期</b><br>這不是偏好，是資料逼的。<code>class_sessions</code> 存的是「2026-08-10 那一堂」，不是「每個週一」。用星期分頁的話，「今天這堂已取消、下週同一堂還在」這個差別會整個消失。<br><br><b>② 候補整套移除</b>；額滿改成「仍可報名，現場座位需與教練確認」（規則：不硬擋）<br><br><b>③ 取消的課</b>卡片轉灰、按鈕變「本日未開課」<br><br><b>④ 訂課按鈕停用</b>，腳本第一行有 <code>BOOKING_OPEN = false</code> 開關 —— 第 33 步才打開，而且要先做完 30、31 步。<br><br><b>⑤ 兩個「不寫死」</b>：認不得的 <code>status</code> 和 <code>level</code> 都照原樣顯示，不會壞掉、不會空白。',
           warn:'踩到兩個坑，<b>兩個都不會報錯</b>：<br>① <b>CSS class 撞名</b> —— 新加的 <code>.x</code> 跟原檔的彈窗關閉鈕撞到，版面整個爛掉。在既有樣式裡加東西，class 名字一律加前綴。<br>② <b><code>const</code> 宣告的東西不會變成 <code>window</code> 的屬性</b> —— <code>supabase-config.js</code> 裡 <code>const fffDB</code> 存在，但 <code>window.fffDB</code> 是 undefined。要多寫一行 <code>window.fffDB = fffDB;</code> 才掛得上門牌。',
           ck:'在 Table Editor 把 8/10 的「TRX綜合雕塑」改成「TRX綜合雕塑（測試中）」，網頁重新整理後跟著變 —— <b>證明這條線是活的，不是快照</b>。' },
 
         { n:20, t:'推上 GitHub Pages，用手機實測', where:'Git', done:true,
           summary:'上線了，而且風險 1 解除',
-          body:'網址：<code>jerecyu.github.io/Fusion_Force_Fitness/line-prototype/GT-booking.html</code><br><br>桌機和手機都確認過，畫面跟本機一模一樣。手機那次是在<b>手機內建瀏覽器</b>開的 —— 那正是第 27 步 LIFF 之後客人會用的環境，等於提前測到了。<br><br><b>⚠️ 風險 1 到此解除。</b>這個資料庫從此有外部流量，免費方案不會再因為「一週沒人用」被自動暫停。',
+          body:'網址：<code>jerecyu.github.io/Fusion_Force_Fitness/line-prototype/GT-booking.html</code><br><br>桌機和手機都確認過，畫面跟本機一模一樣。手機那次是在<b>手機內建瀏覽器</b>開的 —— 那正是第 30 步 LIFF 之後客人會用的環境，等於提前測到了。<br><br><b>⚠️ 風險 1 到此解除。</b>這個資料庫從此有外部流量，免費方案不會再因為「一週沒人用」被自動暫停。',
           ck:'手機瀏覽器看得到真實課表。' }
       ]
     },
 
     /* ══════════ 第三幕 ══════════ */
     {
-      key: 'a3', place: '後台名冊室', no: '第三幕', name: '讓觀眾入座', theatre: '＝ 把客人名冊搬進來',
-      note: '交接紀錄原本把這一幕排在最前面。往後挪不是因為它不重要，而是因為它<b>看不到成果</b> —— 管線通了之後再匯入，你才驗證得了自己做對了。',
+      key: 'a3', place: '後台名冊室', no: '第三幕', name: '接手舊劇院', theatre: '＝ 舊系統資料搬遷',
+      note: '這一幕原本叫「匯入客人名單」。發現舊系統有完整匯出之後改寫了 —— 要搬的不是一張名單，是<b>一整套還在營運中的帳</b>：81 個人、完整的堂數流水、上課歷史。<br>往後挪不是因為它不重要，而是因為它<b>看不到成果</b> —— 管線通了之後再搬，你才驗證得了自己做對了。',
+      milestone: {
+        title: '▲ 第三幕結束 — 兩套帳對得起來',
+        text: '新系統裡有 81 個人、一份完整的堂數流水帳，而且每一個人的餘額都跟舊系統一模一樣。<b>你手上有兩套帳，而且它們對得起來 —— 這是可以放心搬家的前提。</b>'
+      },
       steps: [
-        { n:21, t:'整理現有客人名單，先確認手機沒有重複', where:'決定', done:false,
-          summary:'說明 ＋ 完成判準',
-          body:'<code>customers.phone</code> 是 unique <b>而且 NOT NULL</b>。名單裡有兩個一樣的手機、或有人沒填手機，整批匯入都會直接失敗。<b>匯入前先在 Excel 排序看一遍</b>，比匯入後才發現省事得多。',
-          ck:'一份姓名、手機、剩餘堂數、方案都齊全，而且手機沒有重複、沒有空白的名單。' },
+        { n:21, t:'盤點舊系統，確認舊帳是健康的', where:'決定', done:true,
+          summary:'三個好消息 ＋ 五個要處理的差異',
+          body:'用離線工具 <code>tools/legacy-inventory.html</code> 掃過舊系統匯出的 10 個分頁。<b>全程沒有任何一個位元組離開你的電腦</b>，報告裡也不含任何姓名或手機。<br><br><b>三個好消息：</b><ul><li><b>舊帳本是自洽的</b> —— 68 個有帳的人，每一個人的 <code>delta</code> 加總都等於最後記錄的餘額。這代表舊帳可以整份直接搬，不用重算</li><li><b>手機 81／81 唯一</b>，沒有重複、沒有空白</li><li><b>沒有孤兒帳列</b> —— 每一筆流水都對得到人</li></ul><b>五個要處理的差異：</b><ul><li>舊系統有容量 <b>12</b> 的課，我們 14 堂目前全是 10</li><li>程度舊系統寫全字，我們用縮寫 → 要一組對照表</li><li>舊 <code>Classes</code> 只有 <b>5 位</b>教練，沒有簡基城</li><li>81 人裡有 <b>13 人完全沒有帳本紀錄</b> → 要確認是「0 堂」還是「沒建帳」</li><li><code>assignedCoach</code> 和 <code>email</code> 幾乎全空 → 不搬</li></ul>',
+          warn:'⚠️ <b>只有 4 個人有 <code>lineId</code>。</b>這代表第 32 步的手機綁定完全不能跳過 —— 77 個人要重新綁一次。切換日的公告要把這件事講清楚。',
+          ck:'你看過報告，「帳本自洽」和「手機唯一」兩項都通過。' },
 
-        { n:22, t:'「舊有剩餘堂數」怎麼變成流水帳的第一筆', where:'決定', done:false, kind:'decide',
-          summary:'兩條路的取捨 ＋ 完成判準',
-          body:'<ul><li><b>(A) 一次性期初餘額</b>：每人一筆「系統上線前結轉 N 堂」。快、簡單，但客人問「這 N 堂哪來的」你只能說結轉</li><li><b>(B) 照實際購買紀錄逐筆補</b>：慢很多，但完整可追</li></ul><b>建議 A</b>，並在備註欄寫清楚結轉日期 —— 反正 B 需要的舊資料多半也不完整。',
-          ck:'你選定了一種，而且能對客人解釋為什麼。' },
+        { n:22, t:'決定搬遷範圍與商品架構：七個決定', where:'決定', done:true, kind:'decide',
+          summary:'七個決定與各自的理由',
+          body:'<b>① 帶朋友來體驗 → 體驗客建檔，一人一列</b><br><code>bookings</code> 加一個 <code>paid_by_customer_id</code> 記「這堂扣誰的卡」。舊系統用 <code>headCount</code> 把 5 個人壓成 1 筆，<b>教練鐘點費會算成 200 而不是 700</b> —— 人數錯，薪水就錯。順帶：帶來體驗的人是最可能成交的名單，舊系統把他們變成一個數字就丟掉了。<br><br><b>② 買十送二 → 帳本拆兩列</b><br>買課時記 <code>purchase +10</code> 和 <code>bonus +2</code> 兩筆。餘額還是 12，扣課邏輯一行都不用改，但「送出去多少堂」和「贈送帶來多少新客」查得出來。舊資料分不出來，一律標 <code>purchase</code>。<br><br><b>③ 教練鐘點費 <code>payout</code> → 不搬</b><br>它是<b>算出來的</b>：團體課 1 人 200，第 2 人起每多一人 +100，跟人數一對一。只要點名是對的，錢就是對的。規則寫進 HANDOVER 附錄四。<br><br><b>④ 舊 <code>LessonInstances</code> 只有團體課</b><br>所以 <code>payout=1200</code> 就是「10 個人」，沒有第二種解釋。反推規則成立。<br><br><b>—— 以下三個是知道還有 PT／RT 之後補的 ——</b><br><br><b>⑤ 全面加上「商品別」<code>product</code></b><br>值：<code>GT</code>（主題式團體課）／<code>PT</code>（私人教練課）／<code>PGT</code>（私人團體班）／<code>RT</code>（場地租借），<b>預設一律 <code>GT</code></b>。<code>class_sessions</code> 和 <code>credit_ledger</code> 兩張都要加。<br><br><b>⑥ 堂數分錢包</b><br>買 10 堂團體課<b>不能</b>拿去上私人課。<code>customer_credits</code> 要從「一個人一個餘額」改成「一個人每一種商品各一個餘額」。<br><br><b>⑦ 教練薪資第一階段只算 GT 人頭費</b><br>資料來源就是點名 —— 實到幾個人，鐘點費就是多少，不需要任何額外輸入。PT 的 8 萬門檻抽成要等每一堂 PT 都進系統，那是 ERP 那一段。',
+          warn:'③ 的道理跟這份路線圖本身一樣：<b>能算出來的東西就不要另外記一份</b>。記兩份，兩份遲早會對不起來 —— 這就是 <code>db/</code> 那個坑的同一個病。',
+          ck:'四個決定都寫進 <code>HANDOVER.md</code> 附錄四。' },
 
-        { n:23, t:'寫匯入 SQL，匯入 customers', where:'SQL', done:false,
-          summary:'說明 ＋ 完成判準',
-          body:'檔名跟著慣例叫 <code>11-seed-customers.sql</code>（10 已經被 public-views 用掉了）。',
-          warn:'這是「塞資料」的 SQL —— <b>一定要加保險絲</b>，而且備份檔和 Supabase 分頁<b>兩邊都要</b>。這是你自己訂的第 7 條規則。',
-          ck:'把整張分頁再按一次 Run，它報錯中止、一筆都沒重複進去。這才叫保險絲有效。' },
+        { n:23, t:'改資料表：加上「商品別」和「扣誰的卡」', where:'SQL', done:false,
+          summary:'四個欄位，為什麼一定要現在加',
+          body:'檔名 <code>db/11-alter-migration.sql</code>（10 已經被 <code>public-views</code> 用掉了）。<ul><li><code>class_sessions.product</code> → <code>GT</code>／<code>PT</code>／<code>PGT</code>／<code>RT</code>，<b>預設 <code>GT</code></b></li><li><code>credit_ledger.product</code> → 同上，預設 <code>GT</code></li><li><code>credit_ledger.kind</code> → <code>purchase</code>／<code>bonus</code>／<code>checkin</code>／<code>manual</code>，舊資料一律 <code>purchase</code></li><li><code>bookings.paid_by_customer_id</code> → 指向 <code>customers</code>，既有每一列先補成等於自己的 <code>customer_id</code></li></ul><b>為什麼是現在：</b>這四欄現在加是四行 SQL，表裡幾乎沒有資料。等 81 個人和幾百筆流水都搬進來之後再加，<b>每一列都要回頭補標</b> —— 而且你會沒把握哪幾列標對了。',
+          warn:'⚠️ 兩件會跟著壞的事：<br>① <b><code>customer_credits</code> 這張檢視表要一起改。</b>它現在是「<code>delta</code> 全部加總＝一個數字」。加了 <code>product</code> 之後要變成<b>每一種商品各一個餘額</b>，否則客人會拿團體課的堂數去上私人課，而系統覺得完全合理。<br>② <b>新欄位不會自動被現有的 RLS 規則涵蓋。</b>加完一定要回頭把 <code>bookings</code> 那 5 條規則再讀一次 —— 「客人只能看自己的預約」那條，現在「自己」有兩種意思了（上課的人／付錢的人）。',
+          ck:'Table Editor 看得到四個新欄位；而且查 <code>customer_credits</code> 回傳的是「<b>每人每種商品一列</b>」，不是「每人一列」。' },
 
-        { n:24, t:'寫入期初堂數，核對 customer_credits 對不對', where:'SQL', done:false,
-          summary:'說明 ＋ 完成判準',
-          body:'寫進 <code>credit_ledger</code>（<code>delta</code> 是整數，加課正數、扣課負數），然後查 <code>customer_credits</code>，逐筆比對跟你手上的名單一不一樣。',
-          ck:'隨機抽三個人，系統算出來的剩餘堂數跟紙本一致。' },
+        { n:24, t:'把公開課表的門關上：public_schedule 只給 GT', where:'SQL', done:false,
+          summary:'一個還沒發生、但一定會發生的外洩',
+          body:'<code>public_schedule</code> 現在<b>無條件</b>讀 <code>class_sessions</code> 的每一列 —— 因為建它的時候，那張表裡只可能有團體課。<br><br>但排 PT 的時候，你<b>一定</b>會把它排進 <code>class_sessions</code>（場地要排班，不然會撞場）。那一刻：<br><br><code>class_sessions</code> 多一列「週二 14:00 私人課 · 王小姐 · 教練 Peter」<br>↓ <code>public_schedule</code> 沒有任何過濾<br>↓ <b>官網課表上，全世界都看得到王小姐週二下午在上私人課</b><br><br><b>改法：</b>改 <code>db/10-public-views.sql</code> 那一張分頁本身（<code>create or replace view</code> 可以重複執行），加一行 <code>where x.product = \'GT\'</code>。<br><br><b>為什麼改 10 而不是開一支新的：</b>檢視表的定義應該<b>只有一個地方</b>寫著。開新檔案的話，半年後沒人知道哪一份才是現行的 —— 那正是 <code>db/ 00~06</code> 那個坑。',
+          warn:'☢️ <b>這一步要在「還沒有任何 PT 資料」的時候做完。</b>等到有資料才想起來，那就不是預防，是善後了。<br>而且這種錯<b>不會報錯、不會有人通知你</b> —— 跟 CSS 撞名、跟 <code>const</code> 不上 <code>window</code> 是同一種：安靜地錯。',
+          ck:'手動在 <code>class_sessions</code> 塞一列 <code>product=\'PT\'</code> 的假資料 → 查 <code>public_schedule</code> <b>看不到它</b> → 把 Role 切成 <code>anon</code> 再查一次<b>還是看不到</b> → 刪掉假資料、Role 切回 <code>postgres</code>。<b>看不到才算過。</b>' },
 
-        { n:25, t:'風險 2：漏跑的日子要不要補結算', where:'決定', done:false, kind:'decide',
+        { n:25, t:'課表校正：容量、程度用語、教練名單', where:'決定', done:false, kind:'decide',
+          summary:'這一步是「對現實」，不是「對資料」',
+          body:'三件事只有你答得出來，資料庫裡找不到答案：<ul><li>舊系統有容量 <b>12</b> 的課，我們現在 14 堂<b>全部是 10</b>。哪幾堂真的收 12？</li><li><b>簡基城不在舊 <code>Classes</code> 裡</b> —— 他現在到底帶不帶團體課？</li><li>舊系統程度寫全字、我們用縮寫，要一組一對一的對照表</li></ul>先對完再搬。搬完才發現容量不對，等於整批課堂的名額都要重來。',
+          ck:'14 堂課的容量、程度、教練，跟你現在牆上貼的那張課表一模一樣。' },
+
+        { n:26, t:'做搬遷工具（離線，在你自己的電腦上跑）', where:'前端', done:false,
+          summary:'為什麼一定要離線 ＋ 檔案放哪裡',
+          body:'一個 HTML 檔，跟 <code>tools/legacy-inventory.html</code> 一樣<b>雙擊就能開、完全不連網</b>。丟進舊系統的 Excel，吐出三支 SQL：客人、堂數流水、上課歷史。<br><br><b>為什麼是工具不是手工：</b>81 個人、幾百筆流水，手打一定會錯，而且切換日還要再跑一次乾淨的。工具做一次，用兩次。',
+          warn:'☢️ <b>產出的 SQL 含完整姓名和手機。</b><ul><li>絕不貼進聊天室</li><li><b>絕不放進 <code>db/</code></b> —— 那個資料夾是版控的，而且 repo 是公開的</li><li>輸出到 <code>migration-local/</code>，並且先把這個資料夾寫進 <code>.gitignore</code></li></ul>順序很重要：<b>先改 <code>.gitignore</code>，再產生檔案。</b>反過來的話，檔案有可能在你改之前就被 Git 看到了。',
+          ck:'拿備份資料跑一次，三支 SQL 都打得開，行數跟盤點報告上的人數對得起來。而且 <code>git status</code> 看不到它們。' },
+
+        { n:27, t:'彩排：完整匯入 ＋ 81 筆逐筆對帳', where:'SQL', done:false,
+          summary:'彩排的目的不是上線，是證明工具是對的',
+          body:'用備份資料整套跑一次：客人 → 堂數流水 → 上課歷史。<br><br><b>對帳方式：</b>查 <code>customer_credits</code>，跟舊系統最後的餘額<b>逐筆</b>比。81 筆要全中 —— 這一步<b>不接受抽查</b>，因為抽查抽不到的那一筆，就是上線後客人打來抱怨的那一筆。<br><br>對完把資料清掉，正式那天再跑一次乾淨的。',
+          warn:'⚠️ 這是「塞資料」的 SQL —— <b>一定要加保險絲，備份檔和 Supabase 分頁兩邊都要</b>。這是你自己訂的第 7 條規則。<br><br>還有一條：<b>有一筆對不上，就是工具有問題。</b>不要手動改資料庫把它「喬」過去 —— 喬過去的那一筆會在半年後變成一個查不出來的鬼。',
+          ck:'81 筆餘額零誤差。把整張分頁再按一次 Run，它報錯中止、一筆都沒重複進去。' },
+
+        { n:28, t:'風險 2：漏跑的日子要不要補結算', where:'決定', done:false, kind:'decide',
           summary:'技術上五秒，商業上要想 ＋ 完成判準',
           body:'<code>daily_class_job()</code> 的 ②③ 都寫 <code>session_date = v_today</code>，只結算「今天」。如果排程有幾天沒跑，中間那幾天的課堂會永遠停在 <code>pending</code>，既沒成立也沒取消。<br>改法是把 <code>=</code> 改成 <code>&lt;=</code>，五秒鐘。<br><br><b>但那是商業決定：</b>三天前的課現在才補判定「取消」，對已經報名的客人合不合理？<br><b>現在還沒客人，是做這個決定最沒有代價的時機。</b>',
           ck:'你做了決定，而且理由寫進 HANDOVER.md。' }
@@ -194,47 +218,54 @@ window.FFF_ROADMAP = {
     /* ══════════ 第四幕 ══════════ */
     {
       key: 'a4', place: '劇院大門', no: '第四幕', name: '開大門', theatre: '＝ 蓋 LINE 劇院大門',
-      note: '客人不會記得你的網址，但他們每天都開 LINE。這一幕最難的不是介面，是<b>第 28 步的身分驗證</b> —— 那一步做錯，前面所有的鎖都只是裝飾。',
+      note: '客人不會記得你的網址，但他們每天都開 LINE。這一幕最難的不是介面，是<b>第 31 步的身分驗證</b> —— 那一步做錯，前面所有的鎖都只是裝飾。',
       milestone: {
         title: '▲ 第四幕結束 — 系統正式上線',
-        text: '客人可以在 LINE 裡自己訂課、自己取消、自己查堂數。你原本要花在接電話和回訊息的時間，從這裡開始省下來。'
+        text: '客人可以在 LINE 裡自己訂課、自己取消、自己查堂數，舊系統從切換日起變成唯讀的存證。你原本要花在接電話和回訊息的時間，從這裡開始省下來。'
       },
       steps: [
-        { n:26, t:'開 LINE 官方帳號 ＋ LINE Developers 的 Provider／Channel', where:'LINE後台', done:false,
+        { n:29, t:'開 LINE 官方帳號 ＋ LINE Developers 的 Provider／Channel', where:'LINE後台', done:false,
           summary:'說明 ＋ 完成判準',
           body:'兩個不同的後台，容易搞混：官方帳號管「客人看到的門面」，Developers 管「程式怎麼進去」。',
           ck:'你能用自己的 LINE 加到這個官方帳號的好友。' },
 
-        { n:27, t:'建 LIFF App，指向 GitHub Pages 上的預約頁', where:'LINE後台', done:false,
+        { n:30, t:'建 LIFF App，指向 GitHub Pages 上的預約頁', where:'LINE後台', done:false,
           summary:'說明 ＋ 完成判準',
           body:'LIFF 會在 LINE 內部開一層網頁蓋在對話上 —— 客人全程不離開 LINE，但本質仍是網頁。<b>預約介面不可能真的長在對話泡泡裡。</b><br>簡單查詢（例如「剩幾堂」）可以用機器人純文字回覆，不用開網頁。',
           ck:'在 LINE 裡點一個連結，課表在 LINE 內部打開。' },
 
-        { n:28, t:'寫 Edge Function：驗 LINE 身分，發 Supabase 憑證', where:'SQL', done:false,
+        { n:31, t:'寫 Edge Function：驗 LINE 身分，發 Supabase 憑證', where:'SQL', done:false,
           summary:'整個專案技術上最關鍵的一步 ＋ 完成判準',
           body:'❌ <b>錯</b>：LIFF 取得 <code>line_user_id</code>，前端直接拿它查資料庫<br>→ 任何人改一個字串就能查別人的資料<br><br>✅ <b>對</b>：<br>LIFF 取得 ID Token（LINE 簽章過的憑證）<br>↓ 送到 Supabase Edge Function<br>↓ 向 LINE 官方驗證<br>↓ 發一張 Supabase 登入憑證<br>之後所有查詢用 <code>auth.uid()</code> 判斷身分',
           warn:'<b>這一步沒做對，後面所有 RLS 都是裝飾。</b>',
           ck:'你試著把請求裡的 ID 換成別人的，系統拒絕你。' },
 
-        { n:29, t:'手機綁定流程', where:'前端', done:false,
+        { n:32, t:'手機綁定流程', where:'前端', done:false,
           summary:'說明 ＋ 完成判準',
           body:'客人第一次開 LIFF → 輸入手機 → 比對第三幕匯入的名單 → 寫入 <code>line_user_id</code>。<br><code>customers.phone</code> 設成 unique 就是為了這一刻。',
           ck:'用你自己的 LINE 綁定成功，第二次打開直接認得你。' },
 
-        { n:30, t:'打開真正的訂課', where:'前端', done:false,
+        { n:33, t:'打開真正的訂課', where:'前端', done:false,
           summary:'說明 ＋ 完成判準',
           body:'寫入 <code>bookings</code>、取消時限靠 RLS 擋（<b>不是靠前端藏按鈕</b>）、額滿只跳提醒不硬擋。<br>順便：查課卡餘額、看自己的課、取消自己的課。',
           ck:'你用手機訂一堂課，Supabase 裡真的多一筆。<br><b>同時：風險 3（每天課都被自動取消）自動解除 —— 終於有人報名了。</b>' },
 
-        { n:31, t:'PT／PGT 頁改成「送出需求」', where:'前端', done:false,
+        { n:34, t:'PT／PGT 頁改成「送出需求」', where:'前端', done:false,
           summary:'說明 ＋ 完成判準',
           body:'按鈕文字從「確認預約」改成「送出需求」，寫進 <code>pt_requests</code>。<br><b>私人課不是預約</b> —— 客人送需求，教練聯繫後才敲定。',
           ck:'送出一筆需求，<code>pt_requests</code> 裡看得到，而且沒有動到任何課堂名額。' },
 
-        { n:32, t:'設定 LINE 圖文選單', where:'LINE後台', done:false,
+        { n:35, t:'設定 LINE 圖文選單', where:'LINE後台', done:false,
           summary:'說明 ＋ 完成判準',
           body:'大門上的指示牌：訂課／我的課／剩幾堂／聯絡我們。',
-          ck:'加好友之後，不用任何說明就知道該點哪裡。' }
+          ck:'加好友之後，不用任何說明就知道該點哪裡。' },
+
+        { n:36, t:'切換日：停業一天，正式搬家', where:'決定', done:false, kind:'decide',
+          summary:'那一天的七件事，照順序做',
+          body:'<b>挑哪一天：</b>課最少的那天。你的課表裡<b>週三只有一堂</b>（12:20 間歇有氧），是最自然的分水嶺。<br><b>前一週：</b>公告「X 月 X 日暫停購課與消課一天」。<br><br><b>當天照順序做，不要跳：</b><ul><li><b>①</b> <b>舊系統停止購課與消課</b> —— 先把帳凍住，後面每一步才有意義</li><li><b>②</b> 舊系統最後一次完整匯出</li><li><b>③</b> 用第 26 步的工具產生 SQL</li><li><b>④</b> 清掉彩排資料，正式匯入</li><li><b>⑤</b> <b>81 筆餘額逐筆對帳</b>（跟第 27 步同一套查詢）</li><li><b>⑥</b> <b>舊系統設為唯讀，不要刪</b> —— 至少留三個月</li><li><b>⑦</b> 公告上線，發綁定指引給那 77 個還沒綁 LINE 的人</li></ul>',
+          warn:'⚠️ <b>這一天結束時，教練還不能在系統上點名核銷</b>（那是第 38 步）。中間這段期間扣課要你自己在 Table Editor 手動做，或先紙本記、之後補。<br><b>這是已知的取捨，不是疏漏</b> —— 早一點切換，就早一點停掉維護兩套系統的心力。你自己也說了：課程銷售節奏不快，撐得住。',
+          ck:'隔天早上，新系統的 81 筆餘額跟前一天舊系統的最後畫面一致，而且舊系統再也沒有新資料進去。' }
+
       ]
     },
 
@@ -243,22 +274,28 @@ window.FFF_ROADMAP = {
       key: 'a5', place: '前台櫃檯', no: '第五幕', name: '讓教練上工', theatre: '＝ 前台櫃檯數位化',
       note: '客人端跑順之後才做這一幕。前面四幕都在服務觀眾，這一幕開始服務工作人員 —— 也是<b>往 ERP 的第一步</b>。',
       steps: [
-        { n:33, t:'六位教練註冊帳號，填回 employees.auth_user_id', where:'Supabase', done:false,
+        { n:37, t:'六位教練註冊帳號，填回 employees.auth_user_id', where:'Supabase', done:false,
           summary:'說明 ＋ 完成判準',
           body:'目前六個人的 <code>auth_user_id</code> 都是空的，等的就是這一步。',
           ck:'六位教練都能登入，而且各自只看得到自己該看的。' },
 
-        { n:34, t:'課後點名核銷頁', where:'前端', done:false,
+        { n:38, t:'課後點名核銷頁', where:'前端', done:false,
           summary:'說明 ＋ 完成判準',
           body:'教練在現場點名，扣課寫進 <code>credit_ledger</code>。<code>bookings</code> 已經預留了 <code>checked_by</code> 和 <code>checked_at</code> 兩個欄位給這一步。<br><b>缺席不扣課</b> —— 這條規則要寫進程式，不能靠教練記得。',
           ck:'核銷一堂課，客人手機上的剩餘堂數當場少一堂。' },
 
-        { n:35, t:'教練端的私人課需求處理', where:'前端', done:false,
+        { n:39, t:'教練鐘點費月報表（GT 人頭費）', where:'SQL', done:false,
+          summary:'為什麼它一定排在點名核銷後面',
+          body:'規則寫在 <b>HANDOVER.md 附錄四</b>：1 人 200，第 2 人起每多一人 +100。<br><br><b>資料來源就是上一步的點名</b> —— 一堂課實到幾個人，鐘點費就是多少，<b>不需要任何額外輸入</b>。這就是當初決定「<code>payout</code> 不搬、改用算的」換來的東西。<br><br>做一張 <code>coach_monthly_payout</code> 檢視表：教練 × 月份 → 堂數、總人次、鐘點費合計。',
+          warn:'⚠️ <b><code>n</code> 是「實到人數」，不是「報名人數」。</b>點名漏掉一個人，教練就少領 100 元 —— 這張報表的正確性<b>完全建立在上一步的點名紀律上</b>。<br><br>PT 的抽成（8 萬門檻、4:6 → 5:5）<b>不在這一步</b>，因為它需要每一堂 PT 都進系統。那是地平線那一段。',
+          ck:'隨機挑一個月，報表算出來的金額跟你自己手算的一樣。' },
+
+        { n:40, t:'教練端的私人課需求處理', where:'前端', done:false,
           summary:'說明 ＋ 完成判準',
           body:'看到 <code>pt_requests</code> 的待處理清單，聯繫客人、敲定時間、標記完成。',
           ck:'教練不用再翻 LINE 訊息找誰要約私人課。' },
 
-        { n:36, t:'課前提醒推播', where:'SQL', done:false,
+        { n:41, t:'課前提醒推播', where:'SQL', done:false,
           summary:'說明 ＋ 完成判準',
           body:'Edge Function ＋ LINE Messaging API。',
           warn:'這一條同時是<b>架構失效警訊</b> —— 需要頻繁自動通知，就代表 GitHub Pages 這套開始不夠用了，該考慮搬去 Cloudflare 或更完整的系統鏈。',
@@ -270,7 +307,9 @@ window.FFF_ROADMAP = {
   /* ── 地平線：ERP（刻意不編號、不排序） ──────────────────────── */
   horizon: [
     { t:'金流與電子發票',   d:'一碰這個就必須搬離 GitHub Pages —— 條款明確禁止，沒有討論空間' },
-    { t:'教練排班與薪資',   d:'建在 employees 上。離職改 is_active 不刪除，就是為了這一天' },
+    { t:'教練排班與 PT 抽成薪資', d:'GT 人頭費第 39 步就做掉了。這裡剩下的是 PT 的 8 萬門檻抽成 —— 它需要每一堂 PT 都進系統' },
+    { t:'私人課 PT／PGT 完整流程', d:'目前只有 pt_requests（需求單）。要算抽成就得有「實際上了哪幾堂、每堂賣多少」' },
+    { t:'場地租借 RT',       d:'第一階段只預留 product 欄位。真的要做時，關鍵是「場地佔用」要跟課排在同一本行事曆上，不然會撞場' },
     { t:'營收與出席報表',   d:'資料其實從 pg_cron 上工那天就開始累積了' },
     { t:'會員關係與續約管理', d:'建在 customers 上。credit_ledger 本身就是一份消費行為紀錄' },
     { t:'器材與庫存',       d:'目前完全沒動，也還看不出急迫性' },
@@ -284,19 +323,20 @@ window.FFF_ROADMAP = {
       clearAt:20, how:'auto' },
     { n:2, t:'漏跑的那幾天永遠不會被補結算',
       d:'<code>daily_class_job()</code> 只結算「今天」。中間漏掉的日子會永遠卡在 <code>pending</code>。改法是把 <code>=</code> 改成 <code>&lt;=</code>。',
-      clearAt:25, how:'hand' },
+      clearAt:28, how:'hand' },
     { n:3, t:'在有客人之前，每天的課都會被自動取消',
       d:'這不是錯誤，是照規則正確運作。<code>bookings</code> 空的 → 每天 00:00 判定「無人報名 → 取消」。看到一整排 <code>cancelled</code> 不用緊張。',
-      clearAt:30, how:'auto' }
+      clearAt:33, how:'auto' }
   ],
 
   /* ── 不可違反的規則（挑出接下來最容易踩到的） ────────────────── */
   rules: [
     { t:'每建一張資料表，立刻開 RLS 並寫至少一條規則', at:'建檢視表時同樣適用' },
     { t:'<code>sb_secret_</code> 絕不可出現在前端', at:'第 18 步唯一要盯的事' },
-    { t:'前端隱藏不是安全', at:'第 30 步的取消時限要寫在 RLS，不是靠藏按鈕' },
-    { t:'塞資料的 SQL 一律加保險絲，備份檔和 Supabase 分頁兩邊都要', at:'第 23 步' },
+    { t:'前端隱藏不是安全', at:'第 33 步的取消時限要寫在 RLS，不是靠藏按鈕' },
+    { t:'塞資料的 SQL 一律加保險絲，備份檔和 Supabase 分頁兩邊都要', at:'第 27 步' },
     { t:'按 Run 之前先看按鈕寫 <code>Run</code> 還是 <code>Run selected</code>', at:'整張跑和只跑反白的差很多' },
+    { t:'含個資的 SQL 絕不放進 <code>db/</code>', at:'那個資料夾是版控的，而且 repo 是公開的（第 26 步）' },
     { t:'不要憑記憶寫欄位名稱', at:'這就是第 15 步存在的理由' },
     { t:'看到 <code>permission denied</code> 先問「這個身分本來就該進得去嗎」', at:'絕不照錯誤訊息的 HINT 去 GRANT' }
   ]

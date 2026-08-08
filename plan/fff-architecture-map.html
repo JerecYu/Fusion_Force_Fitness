@@ -400,11 +400,13 @@
       <path d="M560 90 V142" fill="none" stroke="#2C4E7D" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
       <text x="570" y="118" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#2C4E7D">git push</text>
 
-      <!-- ── 定位釘（釘在斷線處正上方） ── -->
+      <!-- ── 定位釘（x 由 JS 依「目前在第幾幕」決定，基準 x=316） ── -->
+      <g id="svg-pin">
       <rect x="256" y="66" width="120" height="24" rx="3" fill="#D8342B"/>
       <text x="316" y="83" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="13" font-weight="900" fill="#fff" letter-spacing="2">你在這裡</text>
       <path d="M316 100 C303 100 293 110 293 122 C293 137 316 148 316 148 C316 148 339 137 339 122 C339 110 329 100 316 100 Z" fill="#D8342B"/>
       <circle cx="316" cy="121" r="7.5" fill="#fff"/>
+      </g>
 
       <!-- ── 建築外殼 ── -->
       <rect x="40" y="148" width="920" height="322" fill="#fff" stroke="#0E1B2C" stroke-width="2"/>
@@ -451,19 +453,24 @@
       <text x="218" y="400" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8.5" fill="#8C9AA8">Edge Function</text>
       <text x="218" y="418" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#8C9AA8">未動工</text>
 
-      <!-- ══ 斷線處 ══ -->
-      <rect x="300" y="150" width="32" height="318" fill="#FDECEA"/>
-      <line x1="301" y1="150" x2="301" y2="468" stroke="#D8342B" stroke-width="2.4" stroke-dasharray="7 5"/>
-      <line x1="331" y1="150" x2="331" y2="468" stroke="#D8342B" stroke-width="2.4" stroke-dasharray="7 5"/>
-      <path d="M320 226 L307 268 L317 268 L306 310" fill="none" stroke="#D8342B" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/>
-      <text x="316" y="352" font-family="'Noto Sans TC',sans-serif" font-size="13" font-weight="900" fill="#A4211A"
-            transform="rotate(90 316 352)" text-anchor="middle" letter-spacing="4">線還沒接</text>
+      <!-- ══ 接線處：讀已通、寫還沒（2026-08-08 第二幕完成後改） ══ -->
+      <rect x="300" y="150" width="32" height="156" fill="#EDF5F3"/>
+      <rect x="300" y="306" width="32" height="162" fill="#F4F6F8"/>
+      <line x1="303" y1="150" x2="303" y2="306" stroke="#2F6B54" stroke-width="2.6"/>
+      <line x1="329" y1="150" x2="329" y2="306" stroke="#2F6B54" stroke-width="2.6"/>
+      <text x="316" y="232" font-family="'Noto Sans TC',sans-serif" font-size="12" font-weight="900" fill="#2F6B54"
+            transform="rotate(90 316 232)" text-anchor="middle" letter-spacing="3">讀　已接通</text>
+      <circle cx="316" cy="306" r="4.5" fill="#2F6B54"/>
+      <line x1="303" y1="306" x2="303" y2="468" stroke="#8C9AA8" stroke-width="2.4" stroke-dasharray="7 5"/>
+      <line x1="329" y1="306" x2="329" y2="468" stroke="#8C9AA8" stroke-width="2.4" stroke-dasharray="7 5"/>
+      <text x="316" y="394" font-family="'Noto Sans TC',sans-serif" font-size="12" font-weight="900" fill="#5E6E7E"
+            transform="rotate(90 316 394)" text-anchor="middle" letter-spacing="3">寫　還沒通</text>
 
       <!-- ══ 舞台 GitHub Pages ══ -->
       <rect x="332" y="150" width="278" height="318" fill="#fff"/>
       <rect x="332" y="150" width="278" height="30" fill="#0E1B2C"/>
       <text x="344" y="171" font-family="'Noto Sans TC',sans-serif" font-size="13" font-weight="700" fill="#fff">舞台　GitHub Pages</text>
-      <text x="558" y="171" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#A8BCCE">純靜態</text>
+      <text x="598" y="171" text-anchor="end" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#A8BCCE">靜態頁 · 已接電</text>
 
       <!-- 布幕 -->
       <rect x="334" y="182" width="274" height="20" fill="#2C4E7D"/>
@@ -486,12 +493,13 @@
       <path d="M414 334 l3.6 3.8 L425 330" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
       <text x="419" y="366" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#2F6B54">正在上演</text>
 
-      <rect x="477" y="248" width="92" height="104" rx="2" fill="url(#hatchOrange)" stroke="#DE7A38" stroke-width="1.8" stroke-dasharray="6 4"/>
-      <text x="523" y="276" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="12" font-weight="700" fill="#A9531D">預約頁</text>
-      <text x="523" y="294" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#A9531D">booking/</text>
-      <text x="523" y="312" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#A9531D">5 個原型</text>
-      <path d="M516 328 h14 M523 328 v10 M514 344 h18" stroke="#A9531D" stroke-width="2.2" stroke-linecap="round" fill="none"/>
-      <text x="523" y="366" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#A9531D">布景已搭 · 未接電</text>
+      <rect x="477" y="248" width="92" height="104" rx="2" fill="#F1F7F4" stroke="#2F6B54" stroke-width="1.6"/>
+      <text x="523" y="276" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="12" font-weight="700" fill="#0E1B2C">預約頁</text>
+      <text x="523" y="294" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#5E6E7E">GT-booking</text>
+      <text x="523" y="312" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#2F6B54">讀真實課表</text>
+      <circle cx="523" cy="334" r="10" fill="#2F6B54"/>
+      <path d="M518 334 l3.6 3.8 L529 330" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="523" y="366" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#A9531D">只能看 · 訂課關著</text>
 
       <!-- 台板 -->
       <rect x="334" y="382" width="274" height="14" fill="#0E1B2C"/>
@@ -555,9 +563,12 @@
     </svg>
     </div>
     <p class="cap">
-      <b>怎麼讀這張圖：</b>後台（左，實心綠）＝已完工。舞台（中）上有兩位演員：官網正在演，預約頁的布景搭好了但沒接電。
-      兩者之間那條紅色虛線就是<b>還沒接上的線 —— 你在那裡</b>。右邊的觀眾席已經有座位，但大門（LINE）整層還是灰色斜線＝尚未動工。
-      橘色的前台櫃檯畫在觀眾席旁邊，代表它<b>不會被自動化取代</b>，那是刻意的設計。
+      <b>怎麼讀這張圖：</b>後台（左，實心綠）＝已完工。舞台（中）上兩位演員都在演了：官網正在上演，預約頁已經接上電、讀得到真實課表。
+      中間那道管線<b>上半綠色實線＝「讀」已經通了</b>（第二幕做的），<b>下半灰色虛線＝「寫」還沒通</b> ——
+      要先蓋好左邊那個「驗票窗口」（第 31 步的 Edge Function），客人才能真的訂課。
+      右邊的觀眾席已經有座位，但大門（LINE）整層還是灰色斜線＝尚未動工。
+      橘色的前台櫃檯畫在觀眾席旁邊，代表它<b>不會被自動化取代</b>，那是刻意的設計。<br>
+      <b>紅色定位釘會自己跑</b> —— 它釘在你目前那一幕所在的區塊，資料一改就跟著移。
     </p>
   </div>
 
@@ -676,21 +687,28 @@
             <b>版本編號規則</b>：大 1.x.x 動架構或加模組｜中 x.1.x 加新區塊或新功能｜小 x.x.1 改文字、價格、換照片。
           </div></details>
         </div>
-        <div class="cell sub wide build"><b>booking/ — 預約頁的布景<span class="st wip">布景已搭 · 未接電</span></b><small>五個 HTML 原型：A-entry／GT／PGT／PT／pricing。資料只存在瀏覽器記憶體。</small>
-          <details class="more"><summary>接電時要順手改掉的三件事</summary><div class="body">
+        <div class="cell sub wide"><b>booking/ — 預約頁<span class="st done">已接電</span><span class="st wip">訂課關著</span></b><small><code>GT-booking</code> 已改讀 <code>public_schedule</code>，上線在 GitHub Pages。另外四個原型還是記憶體版。</small>
+          <details class="more"><summary>做完了什麼、還剩什麼</summary><div class="body">
+            <b>✅ 第 19～20 步做完的：</b>
             <ul>
-              <li><code>GT-booking.html</code>：移除候補邏輯（已定案不做候補）；額滿改成「可報但先提醒」；加上「今日未開課」狀態</li>
-              <li><code>PT</code>／<code>PGT-booking.html</code>：「確認預約」改成「送出需求」—— 私人課不是預約</li>
-              <li>全部：姓名手機改成 LIFF 自動帶入，資料寫進 Supabase</li>
+              <li><code>GT-booking.html</code>：候補整套移除；額滿改成「可報但先提醒」；取消的課轉灰變「本日未開課」；日期分頁改成真實日期</li>
+              <li>訂課按鈕停用，腳本第一行 <code>BOOKING_OPEN = false</code> —— <b>第 33 步才打開</b></li>
+            </ul>
+            <b>⬜ 還沒做的：</b>
+            <ul>
+              <li><code>PT</code>／<code>PGT-booking.html</code>：「確認預約」改成「送出需求」（第 34 步）—— 私人課不是預約</li>
+              <li>姓名手機改成 LIFF 自動帶入（第 32 步）</li>
             </ul>
           </div></details>
         </div>
 
         <div class="gap">
-          <div class="ttl"><span class="minipin"></span><b>這條線還沒接</b><span>你在這裡</span></div>
-          <p>舞台上的預約頁，跟後台的名冊室之間，目前<b>完全沒有連線</b>。<br>
-             這是整張地圖的<b>分水嶺</b> —— 過了這一步預約才是真的，下面那三個風險有兩個會自動消失。</p>
-          <div class="broken">舞台<i></i>✕<i></i>後台</div>
+          <div class="ttl"><span class="minipin"></span><b>這條線接了一半</b><span>下一個分水嶺 · 第 31 步</span></div>
+          <p><b>「讀」通了</b>（第二幕，2026-08-08）—— 舞台上的預約頁現在直接讀後台的 <code>public_schedule</code>，
+             改一筆資料網頁就跟著變。風險 1 也在這一刻解除了。<br>
+             <b>「寫」還沒通。</b>客人要能真的訂課，得先蓋好後台那個<b>驗票窗口</b>（Edge Function）——
+             因為<b>沒辦法確認「你是誰」，就沒辦法讓你訂「屬於你的」課</b>。那是第 31 步，整個專案技術上最關鍵的一步。</p>
+          <div class="broken">舞台<i></i>讀 ✓　寫 ✕<i></i>後台</div>
         </div>
 
         <div class="cell wide"><b>Supabase — 後台道具間＋名冊室<span class="st done">已完工</span></b><small>東京機房 · Free 方案 · 24 小時有人值班。</small></div>
@@ -918,6 +936,15 @@
   const act = R.acts[P.currentActIndex];
   const cur = P.current, prev = P.lastDone, next = P.afterCurrent;
   const actLeft = act.steps.filter(s => !s.done).length;
+
+  // 定位釘：把它移到「目前這一幕」所在的區塊上方（SVG 基準 x = 316）
+  // 幕序 → 剖面圖上的 x：後台名冊室 / 接線處 / 後台名冊室 / LINE 大門 / 前台櫃檯
+  const PIN_X = [248, 316, 248, 895, 720];
+  const pin = document.getElementById('svg-pin');
+  if (pin) {
+    const dx = (PIN_X[P.currentActIndex] || 316) - 316;
+    pin.setAttribute('transform', 'translate(' + dx + ' 0)');
+  }
 
   document.getElementById('here-co').textContent =
     cur ? ('第 ' + cur.n + ' 步 · ' + act.no + ' · ' + act.place) : '第一階段全部完成';
