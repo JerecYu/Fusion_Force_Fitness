@@ -231,6 +231,30 @@
   .skel{height:158px;border-radius:var(--r);background:#fff;border:1px solid var(--line);
     margin-bottom:11px;animation:pulse 1.5s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.6}}
+
+  /* ── 第 19 步新增：接上真實課表之後才需要的樣式 ── */
+  .day .d small{display:block;font-size:.6rem;font-weight:400;opacity:.7;margin-top:1px;letter-spacing:.06em}
+  .cc.off{opacity:.6}
+  .cc.off .stripe{background:var(--line-2)}
+  .cc .lv:not(.beg):not(.int):not(.adv){background:var(--surface-2);color:var(--dim)}
+  .stag{font-weight:500}
+  .stag.on{color:var(--blue)}
+  .stag.off{color:var(--adv)}
+  .fullwarn{margin-top:9px;font-size:.7rem;line-height:1.6;color:var(--adv);
+    background:var(--adv-s);border-radius:var(--r-sm);padding:8px 10px}
+  .rt{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--line);
+    border-left:4px solid var(--teal);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:16px}
+  .rt-ico{flex:0 0 auto;width:19px;height:19px;border-radius:50%;background:var(--teal);color:#fff;
+    font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .rt-txt{flex:1 1 auto;min-width:0;font-size:.71rem;line-height:1.75;color:var(--dim);display:block}
+  .rt-txt b{color:var(--ink);font-weight:700}
+  .err{background:#fff;border:1px solid var(--line);border-left:4px solid var(--adv);
+    border-radius:var(--r);padding:18px 18px 20px}
+  .err-h{font-size:1rem;font-weight:700;color:var(--adv);letter-spacing:.04em;margin-bottom:8px}
+  .err-m{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--ink);display:block;
+    background:var(--surface-2);border-radius:var(--r-sm);padding:9px 11px;word-break:break-word;line-height:1.7}
+  .err-t{margin-top:11px;font-size:.71rem;line-height:1.9;color:var(--dim)}
+  .err code{font-family:'JetBrains Mono',monospace;color:var(--blue)}
 </style>
 </head>
 <body>
@@ -242,12 +266,14 @@
     <span class="chip">GT</span>
   </div>
   <div class="hd-sub">主題式團體課 · 每週固定時間開課，自由參加</div>
+  <div class="hd-sub" style="opacity:.7;font-size:.66rem;margin-top:3px">課表即時同步自資料庫</div>
   <div class="hd-stats">
-    <div class="st">每週課程 <b id="sTotal">–</b> 堂</div>
-    <div class="st">今日可預約 <b id="sOpen">–</b></div>
+    <div class="st">往後 <b id="sDays">–</b> 天有課</div>
+    <div class="st">共 <b id="sTotal">–</b> 堂</div>
+    <div class="st">這天 <b id="sOpen">–</b> 堂</div>
   </div>
   <div class="tabs">
-    <button class="tab on" data-tab="s">本週課表</button>
+    <button class="tab on" data-tab="s">課表</button>
     <button class="tab" data-tab="m">我的預約 <span id="mCount"></span></button>
   </div>
 </header>
@@ -269,6 +295,13 @@
       <span class="lg a"><i></i>進階 Advanced</span>
     </div>
 
+    <div class="rt">
+      <span class="rt-ico">i</span>
+      <span class="rt-txt"><b>這裡的課表是即時從資料庫讀出來的</b>，不是寫死在網頁裡。<br>
+        線上訂課<b>尚未開放</b> —— 要先能確認「你是誰」，才能讓你訂屬於你的課。
+        那需要 LINE 身分驗證，排在後面幾步。</span>
+    </div>
+
     <div class="days" id="days"></div>
     <div id="list"><div class="skel"></div><div class="skel"></div></div>
   </div>
@@ -276,8 +309,8 @@
   <div id="vM" style="display:none"><div id="myList"></div></div>
 
   <div class="foot">
-    每班上限 10 人，額滿可加入候補，有空位將依登記順序自動遞補。<br>
-    費用採現場現金或匯款，暫無線上支付；扣課紀錄請於團課群組查詢。
+    每班上限 10 人。額滿仍可報名，現場座位請與教練確認。<br>
+    費用採現場現金或匯款，暫無線上支付；缺席不扣課，扣課由教練課後現場核銷。
   </div>
 </div>
 
@@ -297,187 +330,220 @@
 
 <div class="toast" id="toast"><span class="dot"></span><span id="tText"></span></div>
 
+<!-- 先載入 Supabase 工廠，再載入我們的設定檔（裡面會建立 window.fffDB） -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+
 <script>
 (function(){
-  const DAYS=[{k:'mon',l:'一'},{k:'tue',l:'二'},{k:'wed',l:'三'},{k:'thu',l:'四'},
-              {k:'fri',l:'五'},{k:'sat',l:'六'},{k:'sun',l:'日'}];
-  const todayIdx=[6,0,1,2,3,4,5][new Date().getDay()];
-  const CAP=10, LV={beg:'入門',int:'中階',adv:'進階'};
+  /* ══════════════════════════════════════════════════════════════════
+     GT-booking · 第 19 步：接上真實課表
+     資料來源：Supabase 的 public_schedule 檢視表（只讀，12 個安全欄位）
 
-  const RAW={
-    mon:[{t:'09:00',n:'TRX綜合雕塑',c:'Peter',lv:'adv'},
-         {t:'12:30',n:'功能性核心',c:'Johnson',lv:'beg'},
-         {t:'19:30',n:'循環有氧',c:'Johnson',lv:'int'}],
-    tue:[{t:'09:00',n:'功能性核心',c:'Peter',lv:'adv'},
-         {t:'12:30',n:'基礎運動養成',c:'Jerec',lv:'beg'},
-         {t:'18:30',n:'交叉肌力訓練',c:'VC',lv:'adv'}],
-    wed:[{t:'12:20',n:'間歇有氧',c:'VC',lv:'adv'}],
-    thu:[{t:'10:00',n:'交叉肌力訓練',c:'Johnson',lv:'int'},
-         {t:'19:00',n:'基礎運動養成',c:'Johnson',lv:'beg'}],
-    fri:[{t:'12:20',n:'循環有氧',c:'VC',lv:'beg'},
-         {t:'19:00',n:'交叉肌力訓練',c:'Jessica',lv:'beg'}],
-    sat:[{t:'11:00',n:'功能性核心',c:'Johnson',lv:'int'},
-         {t:'16:00',n:'交叉肌力訓練',c:'VC',lv:'adv'}],
-    sun:[{t:'11:00',n:'循環有氧',c:'VC',lv:'int'}]
+     ⚠️ 這一步刻意「只能看，不能訂」。
+        訂課要等第 30 步 —— 在那之前必須先有 LINE 身分驗證（第 28 步），
+        否則任何人都能冒充別人訂課。把 BOOKING_OPEN 改成 true
+        之前，請先確認第 28、29 步都做完了。
+     ══════════════════════════════════════════════════════════════════ */
+
+  const BOOKING_OPEN = false;      // ← 第 30 步才改成 true
+  const MAX_TABS     = 14;         // 最多列出幾個有課的日子
+
+  const LV = { beg:'入門', int:'中階', adv:'進階' };
+  const WD = ['日','一','二','三','四','五','六'];
+
+  // 已知的狀態；認不得的一律照原樣顯示，不要寫死
+  const STATUS_TXT = {
+    pending  : '開放報名',
+    cancelled: '本日未開課',
+    confirmed: '確定開課',
+    settled  : '確定開課'
   };
-  const endT=t=>{const[h,m]=t.split(':').map(Number);const d=new Date(2000,0,1,h,m+60);
-    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+  const statusLabel = s => STATUS_TXT[s] || String(s || '—');
+  const isOpen      = r => r.status !== 'cancelled';
 
-  const CL=[];
-  DAYS.forEach(d=>RAW[d.k].forEach((c,i)=>CL.push({
-    id:d.k+'-'+c.t.replace(':','')+'-'+i,day:d.k,dayL:d.l,time:c.t,end:endT(c.t),
-    name:c.n,coach:c.c,lv:c.lv,cap:CAP})));
-  const forDay=k=>CL.filter(c=>c.day===k);
-  const find=id=>CL.find(c=>c.id===id);
+  let all = [], byDate = {}, dates = [], curDate = null;
+  let state = 'loading', errMsg = '';
 
-  let book={},mine=[],curDay=DAYS[todayIdx].k,pending=null,ready=false;
+  const todayStr = () => new Date().toLocaleDateString('sv-SE');   // YYYY-MM-DD（本地時區）
+  const hhmm     = t => String(t || '').slice(0, 5);
+  const esc      = s => String(s ?? '').replace(/[&<>"]/g,
+                     c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const endOf = (t, min) => {
+    const p = hhmm(t).split(':').map(Number);
+    if (p.length < 2 || isNaN(p[0])) return '';
+    const d = new Date(2000, 0, 1, p[0], p[1] + (min || 60));
+    return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  };
+  const dateBits = ds => {
+    const p = String(ds).split('-').map(Number);
+    const d = new Date(p[0], p[1]-1, p[2]);
+    return { md: p[1] + '/' + p[2], wd: '週' + WD[d.getDay()], isToday: ds === todayStr() };
+  };
 
+  /* ── 拿資料 ───────────────────────────────────────────────── */
   async function load(){
-    try{const r=await window.storage.get('gt-bookings',true);book=r?JSON.parse(r.value):{}}catch(e){book={}}
-    try{const r=await window.storage.get('gt-mine',false);mine=r?JSON.parse(r.value):[]}catch(e){mine=[]}
-    ready=true;render();
+    try{
+      if (!window.fffDB) {
+        throw new Error('supabase-config.js 沒有載入 —— 確認它跟這個檔案在同一個資料夾，而且 CDN 沒被擋住。');
+      }
+      const { data, error } = await window.fffDB
+        .from('public_schedule')
+        .select('session_id,session_date,start_time,duration_min,title,level,' +
+                'coach_name,capacity,booked_count,seats_left,is_full,status')
+        .gte('session_date', todayStr())
+        .order('session_date', { ascending: true })
+        .order('start_time',   { ascending: true })
+        .limit(300);
+      if (error) throw error;
+      all = data || [];
+      regroup();
+      state = 'ok';
+    }catch(e){
+      state  = 'error';
+      errMsg = (e && e.message) ? e.message : String(e);
+      console.error('[GT-booking] 讀取課表失敗：', e);
+    }
+    render();
   }
-  const saveB=async()=>{try{await window.storage.set('gt-bookings',JSON.stringify(book),true)}catch(e){}};
-  const saveM=async()=>{try{await window.storage.set('gt-mine',JSON.stringify(mine),false)}catch(e){}};
 
-  const conf=id=>(book[id]||[]).filter(b=>b.s==='confirmed').length;
-  const wait=id=>(book[id]||[]).filter(b=>b.s==='waitlist').length;
-  const myOf=id=>mine.find(b=>b.cid===id);
-  const gid=()=>'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  function regroup(){
+    byDate = {};
+    all.forEach(r => { (byDate[r.session_date] = byDate[r.session_date] || []).push(r); });
+    dates = Object.keys(byDate).sort().slice(0, MAX_TABS);
+    if (!curDate || dates.indexOf(curDate) < 0) curDate = dates[0] || null;
+  }
 
+  /* ── 日期分頁 ─────────────────────────────────────────────── */
   function renderDays(){
-    const w=document.getElementById('days');w.innerHTML='';
-    DAYS.forEach((d,i)=>{
-      const b=document.createElement('button');
-      b.className='day'+(d.k===curDay?' on':'')+(i===todayIdx?' today':'');
-      b.innerHTML='<span class="d">週'+d.l+'</span><span class="c">'+forDay(d.k).length+'堂</span>';
-      b.onclick=()=>{curDay=d.k;render()};
+    const w = document.getElementById('days');
+    w.innerHTML = '';
+    if (state !== 'ok') return;
+    dates.forEach(ds => {
+      const L = dateBits(ds);
+      const open = byDate[ds].filter(isOpen).length;
+      const b = document.createElement('button');
+      b.className = 'day' + (ds === curDate ? ' on' : '') + (L.isToday ? ' today' : '');
+      b.innerHTML = '<span class="d">' + L.md + '<small>' + L.wd + '</small></span>' +
+                    '<span class="c">' + (open ? open + ' 堂' : '未開課') + '</span>';
+      b.onclick = () => { curDate = ds; render(); };
       w.appendChild(b);
     });
   }
-  function gauge(c,cap){
-    const r=c/cap,cls=r>=1?'':(r>=.7?'wn':'ok');let s='';
-    for(let i=0;i<cap;i++)s+='<div class="sg '+(i<c?cls:'')+'"></div>';return s;
+
+  /* ── 課表卡片 ─────────────────────────────────────────────── */
+  function gauge(n, cap){
+    const r = cap ? n / cap : 0;
+    const cls = r >= 1 ? '' : (r >= .7 ? 'wn' : 'ok');
+    let s = '';
+    for (let i = 0; i < cap; i++) s += '<div class="sg ' + (i < n ? cls : '') + '"></div>';
+    return s;
   }
+
   function renderList(){
-    const el=document.getElementById('list');if(!ready)return;
-    const it=forDay(curDay);
-    if(!it.length){el.innerHTML='<div class="empty"><div class="h">本日無團體課</div>請選擇其他天查看課表</div>';return}
-    el.innerHTML='';
-    it.forEach(c=>{
-      const cf=conf(c.id),wl=wait(c.id),full=cf>=c.cap,m=myOf(c.id);
+    const el = document.getElementById('list');
+
+    if (state === 'loading'){ el.innerHTML = '<div class="skel"></div><div class="skel"></div>'; return; }
+
+    if (state === 'error'){
+      el.innerHTML =
+        '<div class="err"><div class="err-h">課表讀不到</div>' +
+        '<div class="err-m">' + esc(errMsg) + '</div>' +
+        '<div class="err-t">可以先試這三件事：<br>' +
+        '① 用同資料夾的 <code>connection-test.html</code> 確認金鑰還有效<br>' +
+        '② 去 Supabase 看專案是不是被自動暫停了（免費方案風險 1）<br>' +
+        '③ 按 F12 打開主控台，看有沒有紅字</div></div>';
+      return;
+    }
+
+    if (!dates.length){
+      el.innerHTML = '<div class="empty"><div class="h">今天以後還沒有課</div>' +
+                     '排程每天半夜會往前補到未來 14 天，明天再看看</div>';
+      return;
+    }
+
+    const it = byDate[curDate] || [];
+    if (!it.length){ el.innerHTML = '<div class="empty"><div class="h">這天沒有團體課</div>請選其他日期</div>'; return; }
+
+    el.innerHTML = '';
+    it.forEach(r => {
+      const open = isOpen(r);
+      const cap  = Number(r.capacity) || 0;
+      const bk   = Number(r.booked_count) || 0;
+      const full = !!r.is_full;
+      const lv   = LV[r.level] ? r.level : '';
+      const end  = endOf(r.start_time, r.duration_min);
+
       let btn;
-      if(m)btn='<button class="btn btn-2" data-x="'+c.id+'">'+(m.s==='waitlist'?'候補中 · 取消':'已預約 · 取消')+'</button>';
-      else if(full)btn='<button class="btn btn-w" data-b="'+c.id+'">加入候補'+(wl?' ('+wl+')':'')+'</button>';
-      else btn='<button class="btn btn-1" data-b="'+c.id+'">立即預約</button>';
-      const d=document.createElement('div');
-      d.className='cc '+c.lv;
-      d.innerHTML='<div class="stripe"></div><div class="body">'+
-        '<div class="cc-top"><div class="tcol"><div class="t">'+c.time+'</div>'+
-        '<div class="e">'+c.end+'</div><div class="du">60 分鐘</div></div>'+
-        '<div class="icol"><div class="cn">'+c.name+'</div><div class="meta">'+
-        '<span class="lv '+c.lv+'">'+LV[c.lv]+'</span>'+
-        '<span class="co"><span class="av">'+c.coach[0]+'</span>'+c.coach+'</span></div></div></div>'+
-        '<div class="gz">'+gauge(cf,c.cap)+'</div>'+
-        '<div class="gzl"><span>'+(full?'名額已滿':'尚有名額')+'</span><span class="n">'+cf+'/'+c.cap+'</span></div>'+
-        btn+'</div>';
+      if (!open){
+        btn = '<button class="btn btn-3" disabled>本日未開課</button>';
+      } else if (!BOOKING_OPEN){
+        btn = '<button class="btn btn-1" disabled>線上訂課尚未開放</button>';
+      } else {
+        btn = '<button class="btn btn-1" data-s="' + esc(r.session_id) + '">立即預約</button>';
+      }
+
+      const d = document.createElement('div');
+      d.className = 'cc ' + lv + (open ? '' : ' off');
+      d.innerHTML =
+        '<div class="stripe"></div><div class="body">' +
+          '<div class="cc-top">' +
+            '<div class="tcol"><div class="t">' + esc(hhmm(r.start_time)) + '</div>' +
+              (end ? '<div class="e">' + esc(end) + '</div>' : '') +
+              '<div class="du">' + esc(r.duration_min || 60) + ' 分鐘</div></div>' +
+            '<div class="icol"><div class="cn">' + esc(r.title) + '</div>' +
+              '<div class="meta">' +
+                (lv ? '<span class="lv ' + lv + '">' + LV[lv] + '</span>'
+                    : '<span class="lv">' + esc(r.level) + '</span>') +
+                '<span class="co"><span class="av">' +
+                  esc(String(r.coach_name || '?')[0]) + '</span>' +
+                  esc(r.coach_name || '教練待定') + '</span>' +
+              '</div></div>' +
+          '</div>' +
+          '<div class="gz">' + gauge(bk, cap) + '</div>' +
+          '<div class="gzl"><span class="stag ' + (open ? 'on' : 'off') + '">' +
+            esc(statusLabel(r.status)) + '</span>' +
+            '<span class="n">' + bk + ' / ' + cap + '</span></div>' +
+          (open && full
+            ? '<div class="fullwarn">已額滿 —— 仍可報名，現場座位需與教練確認</div>' : '') +
+          btn +
+        '</div>';
       el.appendChild(d);
     });
-    el.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>openM(b.dataset.b));
-    el.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>cancel(b.dataset.x));
-  }
-  function renderMine(){
-    const w=document.getElementById('myList');if(!ready)return;
-    if(!mine.length){w.innerHTML='<div class="empty"><div class="h">尚無預約紀錄</div>到「本週課表」挑選喜歡的課程吧</div>';return}
-    const ord=DAYS.map(d=>d.k);
-    const s=[...mine].sort((a,b)=>{const d=ord.indexOf(a.day)-ord.indexOf(b.day);return d||a.time.localeCompare(b.time)});
-    w.innerHTML='';
-    s.forEach(b=>{
-      const e=document.createElement('div');
-      e.className='mi'+(b.s==='waitlist'?' wait':'');
-      e.innerHTML='<div class="stripe"></div><div class="body"><div>'+
-        '<div class="dt">週'+DAYS.find(d=>d.k===b.day).l+' '+b.time+'–'+b.end+'</div>'+
-        '<div class="nm">'+b.name+'</div>'+
-        '<div class="stt '+b.s+'">'+(b.s==='waitlist'?'● 候補中，有空位將自動遞補':'● 已確認 · '+b.coach+' 教練')+'</div>'+
-        '</div><button class="btn" data-y="'+b.cid+'|'+b.bid+'">取消</button></div>';
-      w.appendChild(e);
-    });
-    w.querySelectorAll('[data-y]').forEach(b=>b.onclick=()=>{
-      const p=b.dataset.y.split('|');cancel(p[0],p[1])});
-  }
-  function renderStats(){
-    if(!ready)return;
-    document.getElementById('sTotal').textContent=CL.length;
-    let o=0;forDay(curDay).forEach(c=>o+=Math.max(0,c.cap-conf(c.id)));
-    document.getElementById('sOpen').textContent=o;
-    document.getElementById('mCount').textContent=mine.length?'('+mine.length+')':'';
-  }
-  const render=()=>{renderDays();renderList();renderMine();renderStats()};
 
-  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    // 第 30 步打開 BOOKING_OPEN 之後，這裡才會綁到東西
+    el.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
+      console.log('[GT-booking] 之後這裡會開預約視窗，session_id =', b.dataset.s);
+    });
+  }
+
+  /* ── 我的預約（等 LINE 綁定才會有） ───────────────────────── */
+  function renderMine(){
+    document.getElementById('myList').innerHTML =
+      '<div class="empty"><div class="h">還沒開放</div>' +
+      '「我的預約」要先在 LINE 裡完成身分綁定才看得到。<br>' +
+      '在那之前，系統無法確認你是誰，也就不能顯示屬於你的資料。</div>';
+  }
+
+  /* ── 上方統計 ─────────────────────────────────────────────── */
+  function renderStats(){
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    if (state !== 'ok'){ set('sDays','–'); set('sTotal','–'); set('sOpen','–'); return; }
+    set('sDays',  dates.length);
+    set('sTotal', all.length);
+    set('sOpen',  curDate ? (byDate[curDate] || []).filter(isOpen).length : 0);
+  }
+
+  const render = () => { renderDays(); renderList(); renderStats(); renderMine(); };
+
+  /* ── 上下分頁切換（維持原本行為） ─────────────────────────── */
+  document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
     b.classList.add('on');
-    document.getElementById('vS').style.display=b.dataset.tab==='s'?'block':'none';
-    document.getElementById('vM').style.display=b.dataset.tab==='m'?'block':'none';
+    document.getElementById('vS').style.display = b.dataset.tab === 's' ? 'block' : 'none';
+    document.getElementById('vM').style.display = b.dataset.tab === 'm' ? 'block' : 'none';
   });
 
-  const ov=document.getElementById('ov');
-  function openM(id){
-    const c=find(id);pending=id;
-    const full=conf(id)>=c.cap;
-    document.getElementById('mTitle').textContent=full?'加入候補名單':'預約課程';
-    document.getElementById('mSub').textContent='週'+c.dayL+' '+c.time+'–'+c.end+'｜'+c.name+'｜'+c.coach+' 教練｜'+LV[c.lv];
-    document.getElementById('mNote').innerHTML=full
-      ? '目前名額已滿。加入候補後，若有學員取消將依登記先後自動遞補，並由團課群組通知您。'
-      : '團體課單堂 <b>NT$400</b>；買 10 送 2 為 <b>NT$4,000</b>，等於上 12 堂、平均一堂 NT$333。<br>費用採現場現金或匯款，不含 FMS 評估檢測。';
-    document.getElementById('iName').value='';document.getElementById('iPhone').value='';
-    const b=document.getElementById('bConfirm');
-    b.textContent=full?'加入候補':'確認預約';
-    b.className='btn '+(full?'btn-w':'btn-1');
-    ov.classList.add('show');
-  }
-  document.getElementById('bCancel').onclick=()=>ov.classList.remove('show');
-  ov.onclick=e=>{if(e.target===ov)ov.classList.remove('show')};
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')ov.classList.remove('show')});
-
-  document.getElementById('bConfirm').onclick=async()=>{
-    const n=document.getElementById('iName').value.trim();
-    const p=document.getElementById('iPhone').value.trim();
-    if(!n||!p){toast('請填寫姓名與手機號碼',true);return}
-    const c=find(pending);
-    const s=conf(c.id)<c.cap?'confirmed':'waitlist';
-    const b={id:gid(),n:n,p:p,ts:Date.now(),s:s};
-    (book[c.id]=book[c.id]||[]).push(b);
-    mine.push({cid:c.id,bid:b.id,day:c.day,time:c.time,end:c.end,name:c.name,coach:c.coach,s:s});
-    ov.classList.remove('show');render();
-    toast(s==='confirmed'?'已預約「'+c.name+'」':'已加入候補「'+c.name+'」',s==='waitlist');
-    await saveB();await saveM();
-  };
-
-  async function cancel(cid,bid){
-    if(!bid){const m=myOf(cid);if(!m)return;bid=m.bid}
-    const l=book[cid]||[];
-    const i=l.findIndex(b=>b.id===bid);if(i>-1)l.splice(i,1);
-    const c=find(cid);
-    if(c){
-      let left=c.cap-l.filter(b=>b.s==='confirmed').length;
-      l.filter(b=>b.s==='waitlist').sort((a,b)=>a.ts-b.ts).forEach(w=>{
-        if(left<=0)return;w.s='confirmed';left--;
-        const r=mine.find(m=>m.cid===cid&&m.bid===w.id);if(r)r.s='confirmed';
-      });
-    }
-    book[cid]=l;
-    mine=mine.filter(b=>!(b.cid===cid&&b.bid===bid));
-    render();toast('已取消預約');await saveB();await saveM();
-  }
-
-  let tt;
-  function toast(m,w){
-    const t=document.getElementById('toast');
-    document.getElementById('tText').textContent=m;
-    t.classList.toggle('warn',!!w);t.classList.add('show');
-    clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2400);
-  }
   load();
 })();
 </script>

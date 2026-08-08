@@ -34,7 +34,7 @@
 window.FFF_ROADMAP = {
 
   meta: {
-    updated: '2026-08-08',
+    updated: '2026-08-08 傍晚',
     phaseName: '第一階段：官網 ＋ LINE 預約系統',
     repo: 'https://github.com/JerecYu/Fusion_Force_Fitness'
   },
@@ -139,17 +139,17 @@ window.FFF_ROADMAP = {
           warn:'測完<b>記得把 Role 切回 <code>postgres</code></b>。忘了切的話之後每個查詢都會安靜地回 0，不會報錯，你會找很久。',
           ck:'用 Publishable key 查得到課表；用同一把鑰匙查其他表，什麼都查不到。' },
 
-        { n:18, t:'把 Project URL 和 Publishable key 放進前端', where:'前端', done:false,
-          summary:'說明 ＋ 完成判準',
-          body:'設定檔在 <code>line-prototype/supabase-config.js</code>，專案網址已填好，只要貼 Publishable key。<br>驗收工具是 <code>line-prototype/connection-test.html</code>，雙擊打開會自動跑三項測試。<br><br>拿鑰匙的路徑：Supabase → 左下角齒輪 <b>Settings</b> → <b>API Keys</b>。',
-          warn:'貼完看開頭那五個字母。<code>sb_publishable_</code> 對，<code>sb_secret_</code> <b>停下來重拿</b> —— 那把鑰匙進了前端就等於整個資料庫公開，而且 RLS 也擋不住它。',
-          ck:'connection-test.html 三個區塊全綠；在檔案裡搜尋 <code>sb_secret</code> 一個字都找不到。' },
+        { n:18, t:'把 Project URL 和 Publishable key 放進前端', where:'前端', done:true,
+          summary:'做完之後驗到了什麼',
+          body:'設定檔 <code>line-prototype/supabase-config.js</code>（專案網址 ＋ Publishable key ＋ 建立連線），驗收工具 <code>line-prototype/connection-test.html</code>。<br><br><b>三項測試全綠：</b><ul><li>① 金鑰是 <code>sb_publishable_</code> 開頭，46 字元，沒有零寬字元</li><li>② 從瀏覽器讀到 <b>28 堂</b>今天以後的真實課表（含教練名、名額、狀態）</li><li>③ <code>employees</code>／<code>customers</code>／<code>class_sessions</code> 三張全部 <code>permission denied</code></li></ul>③ 這次是<b>從真正的瀏覽器、用真正會放進網站的那把鑰匙</b>測的，比第 17 步在後台切 Role 更接近客人的處境。',
+          warn:'⚠️ 「搜尋 <code>sb_secret</code> 一個字都找不到」這個判準太粗糙 —— 檔案裡本來就有 3 處註解和保險檢查會提到它。<b>正確判準是「沒有任何變數被指派成 <code>sb_secret_</code> 開頭的值」</b>。',
+          ck:'connection-test.html 三個區塊全綠。' },
 
-        { n:19, t:'GT-booking.html 改成讀真實課表（只能看，不能訂）', where:'前端', done:false,
-          summary:'說明 ＋ 完成判準',
-          body:'寫死的假資料整段拿掉，改成向 <code>public_schedule</code> 要資料。訂課按鈕先停用 —— 這一步的目標只有「看得到真的」。<br>順手把交接紀錄列的三件事一起改掉：<ul><li>移除候補邏輯（已定案不做候補）</li><li>額滿改成「可報但先提醒」，不硬擋</li><li>加上「今日未開課」狀態</li></ul>',
-          warn:'<code>status</code> 目前只看得到 <code>pending</code> 和 <code>cancelled</code>，是因為<b>還沒有任何一堂課成立過</b>。第 30 步之後會冒出第三種值。<b>不要照現在看到的兩個值寫死邏輯</b>，要寫成「不認得的狀態就照原樣顯示」。',
-          ck:'去 Supabase 把某一堂課的名稱改一個字，重新整理網頁，畫面跟著變。<b>這一刻管線就是通的。</b>' },
+        { n:19, t:'GT-booking.html 改成讀真實課表（只能看，不能訂）', where:'前端', done:true,
+          summary:'做完之後改了什麼、踩到什麼',
+          body:'寫死的 <code>RAW</code> 週課表整段拿掉，改讀 <code>public_schedule</code>。視覺設計一個像素沒動，換掉的只有資料來源。<br><br><b>① 日期分頁從「週一～週日」改成真實日期</b><br>這不是偏好，是資料逼的。<code>class_sessions</code> 存的是「2026-08-10 那一堂」，不是「每個週一」。用星期分頁的話，「今天這堂已取消、下週同一堂還在」這個差別會整個消失。<br><br><b>② 候補整套移除</b>；額滿改成「仍可報名，現場座位需與教練確認」（規則：不硬擋）<br><br><b>③ 取消的課</b>卡片轉灰、按鈕變「本日未開課」<br><br><b>④ 訂課按鈕停用</b>，腳本第一行有 <code>BOOKING_OPEN = false</code> 開關 —— 第 30 步才打開，而且要先做完 28、29 步。<br><br><b>⑤ 兩個「不寫死」</b>：認不得的 <code>status</code> 和 <code>level</code> 都照原樣顯示，不會壞掉、不會空白。',
+          warn:'踩到兩個坑，<b>兩個都不會報錯</b>：<br>① <b>CSS class 撞名</b> —— 新加的 <code>.x</code> 跟原檔的彈窗關閉鈕撞到，版面整個爛掉。在既有樣式裡加東西，class 名字一律加前綴。<br>② <b><code>const</code> 宣告的東西不會變成 <code>window</code> 的屬性</b> —— <code>supabase-config.js</code> 裡 <code>const fffDB</code> 存在，但 <code>window.fffDB</code> 是 undefined。要多寫一行 <code>window.fffDB = fffDB;</code> 才掛得上門牌。',
+          ck:'在 Table Editor 把 8/10 的「TRX綜合雕塑」改成「TRX綜合雕塑（測試中）」，網頁重新整理後跟著變 —— <b>證明這條線是活的，不是快照</b>。' },
 
         { n:20, t:'推上 GitHub Pages，用手機實測', where:'Git', done:false,
           summary:'說明 ＋ 完成判準',

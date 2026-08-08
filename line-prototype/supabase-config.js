@@ -42,6 +42,12 @@ const fffDB = window.supabase.createClient(
   SUPABASE_PUBLISHABLE_KEY
 );
 
+// ⚠️ 這一行不能省。
+//    在 <script> 裡用 const 宣告的東西，只活在「腳本作用域」，
+//    不會自動變成 window 的一個屬性 —— 也就是 window.fffDB 會是 undefined。
+//    寫這一行，等於把連線正式掛到門牌上，別的檔案才找得到。
+window.fffDB = fffDB;
+
 
 // ── ④ 提早警告 ──────────────────────────────────────────────
 //    萬一哪天有人手滑貼成 secret key，主控台會立刻大聲抗議。
