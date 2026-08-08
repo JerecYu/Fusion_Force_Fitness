@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="fff-steps-version" content="3.0 — 資料驅動">
+<title>FFF 線性步驟清單 — 從第一步到 ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1B2C; --navy:#2C4E7D; --teal:#2E8B94; --green:#2F6B54;
+    --orange:#DE7A38; --orange-deep:#A9531D;
+    --paper:#E9EEF2; --line:#C9D4DD; --muted:#5E6E7E;
+    --auto-line:#A8C9BE;
+    --pin:#D8342B; --pin-deep:#A4211A; --pin-bg:#FDECEA;
+    --fog:#8C9AA8; --fog-bg:#EFF2F5; --done-bg:#F2F6F8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);
+    font-family:"Noto Sans TC",system-ui,sans-serif;line-height:1.55;
+    padding:18px 12px 56px;-webkit-font-smoothing:antialiased}
+  .page{max-width:880px;margin:0 auto}
+
+  .top{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;
+    margin-bottom:6px;padding-bottom:12px;border-bottom:2px solid var(--ink)}
+  .top h1{font-family:"Saira Condensed",sans-serif;font-weight:700;
+    font-size:clamp(24px,5.6vw,36px);line-height:.95}
+  .top .v{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;
+    color:#fff;background:var(--ink);padding:3px 7px;border-radius:2px;align-self:center;letter-spacing:.06em}
+  .top .sub{font-size:12.5px;color:var(--muted);margin-left:auto;text-align:right;line-height:1.5}
+
+  .trail{margin-top:14px;background:#fff;border:1px solid var(--line);
+    border-top:4px solid var(--ink);border-radius:3px;padding:8px 10px 12px}
+  .trail .frame{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .trail svg{display:block;width:100%;min-width:760px;height:auto}
+  .trail .cap{font-size:12px;color:var(--muted);padding:8px 6px 0;line-height:1.6;
+    border-top:1px solid #EDF1F4;margin-top:6px}
+  .trail .cap b{color:var(--pin-deep)}
+  .swipe{display:none;font-family:"JetBrains Mono",monospace;font-size:11px;
+    color:var(--muted);text-align:center;padding:7px 0 1px;letter-spacing:.05em}
+
+  .prog{margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:3px;
+    border-top:4px solid var(--green);padding:14px 16px}
+  .prog-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+  .prog-top b{font-family:"Saira Condensed",sans-serif;font-size:19px;font-weight:700}
+  .prog-top .num{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:700;color:var(--green);margin-left:auto}
+  .bar{height:11px;background:var(--fog-bg);border:1px solid var(--line);border-radius:2px;overflow:hidden;display:flex}
+  .bar i{display:block;height:100%;font-style:normal}
+  .bar .fill{background:var(--green)}
+  .bar .cur{background:var(--pin)}
+  .prog .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--muted)}
+  .prog .legend span{display:flex;align-items:center;gap:5px}
+  .prog .legend i{width:11px;height:11px;border-radius:2px;display:block}
+  .prog .legend .g{background:var(--green)} .prog .legend .r{background:var(--pin)}
+  .prog .legend .e{background:var(--fog-bg);border:1px solid var(--line)}
+
+  .ctrl{display:flex;gap:7px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .ctrl b{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:700;
+    letter-spacing:.08em;color:var(--muted);margin-right:2px}
+  .ctrl button{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;
+    letter-spacing:.04em;padding:5px 11px;border-radius:2px;cursor:pointer;
+    background:#fff;color:var(--navy);border:1px solid var(--line);transition:.14s}
+  .ctrl button:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .ctrl button.hi{color:var(--pin-deep);border-color:#F3C9C5;background:var(--pin-bg)}
+  .ctrl button.hi:hover{background:var(--pin);color:#fff;border-color:var(--pin)}
+
+  .focus{margin-top:12px;background:#fff;border:2px solid var(--pin);border-radius:4px;
+    position:relative;overflow:hidden}
+  .focus::before{content:"";position:absolute;inset:0 auto 0 0;width:6px;background:var(--pin)}
+  .focus-top{display:flex;align-items:center;gap:9px;padding:12px 16px 10px 20px;
+    background:var(--pin-bg);border-bottom:1px solid #F3C9C5;flex-wrap:wrap}
+  .pin{width:22px;height:22px;border-radius:50% 50% 50% 0;background:var(--pin);
+    transform:rotate(-45deg);flex:none;position:relative}
+  .pin::after{content:"";position:absolute;top:7px;left:7px;width:8px;height:8px;border-radius:50%;background:#fff}
+  .focus-top h2{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:19px;color:var(--pin-deep)}
+  .focus-top em{font-style:normal;font-size:11.5px;color:var(--pin-deep);margin-left:auto;
+    font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+  .focus-body{padding:13px 16px 15px 20px;font-size:14px;line-height:1.7}
+  .focus-body b{color:var(--pin-deep)}
+  .focus-body code{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--navy)}
+
+  details.more{margin-top:7px;border-top:1px dashed var(--line);padding-top:6px}
+  details.more>summary{cursor:pointer;list-style:none;
+    font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:700;
+    letter-spacing:.06em;color:var(--navy);display:flex;align-items:center;gap:5px;
+    user-select:none;-webkit-user-select:none;padding:2px 0}
+  details.more>summary::-webkit-details-marker{display:none}
+  details.more>summary::before{content:"▸";font-size:11px;flex:none}
+  details.more[open]>summary::before{content:"▾"}
+  details.more>summary:hover{color:var(--teal)}
+  details.more .body{font-size:12.5px;color:var(--muted);line-height:1.7;padding:6px 0 2px}
+  details.more .body b{color:var(--ink)}
+  details.more .body code{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--navy)}
+  details.more .body ul{list-style:none;margin-top:4px}
+  details.more .body li{padding-left:14px;position:relative;margin-bottom:3px}
+  details.more .body li::before{content:"·";position:absolute;left:4px;color:var(--teal);font-weight:700}
+  .ck{margin-top:8px;font-size:12px;border-left:3px solid var(--auto-line);
+    padding-left:9px;color:var(--green);line-height:1.6}
+  .ck b{color:var(--green)}
+  .warn{margin-top:8px;font-size:12px;border-left:3px solid var(--orange);
+    padding-left:9px;color:var(--orange-deep);line-height:1.6}
+  .warn b{color:var(--orange-deep)}
+  .warn code{color:var(--orange-deep)!important}
+
+  .act{margin-top:22px}
+  .act-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+    padding:0 0 8px;border-bottom:2px solid var(--ink);margin-bottom:2px}
+  .act-head .no{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;
+    letter-spacing:.12em;color:#fff;padding:3px 7px;border-radius:2px;background:var(--ink)}
+  .act-head h2{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:21px}
+  .act-head .thr{font-size:12.5px;color:var(--teal);font-weight:700}
+  .act-head .cnt{margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted)}
+  .act.a1 .act-head{border-bottom-color:var(--green)} .act.a1 .act-head .no{background:var(--green)}
+  .act.a2 .act-head{border-bottom-color:var(--pin)}   .act.a2 .act-head .no{background:var(--pin)}
+  .act.a3 .act-head{border-bottom-color:var(--navy)}  .act.a3 .act-head .no{background:var(--navy)}
+  .act.a4 .act-head{border-bottom-color:var(--orange)}.act.a4 .act-head .no{background:var(--orange)}
+  .act.a5 .act-head{border-bottom-color:var(--teal)}  .act.a5 .act-head .no{background:var(--teal)}
+  .act-note{font-size:12.5px;color:var(--muted);margin:8px 0 10px;line-height:1.65}
+  .act-note b{color:var(--ink)}
+  .act-note code{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--navy)}
+
+  ol.steps{list-style:none}
+  li.step{background:#fff;border:1px solid var(--line);border-left:3px solid var(--line);
+    border-radius:2px;margin-bottom:6px;padding:9px 12px 8px}
+  li.step details.more{margin-top:5px;padding-top:5px}
+  li.step details.more>summary{padding:0}
+  li.step .row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  li.step .n{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;
+    color:var(--muted);background:var(--fog-bg);border:1px solid var(--line);
+    padding:2px 6px;border-radius:2px;flex:none}
+  li.step .t{font-size:14px;font-weight:700;line-height:1.5;flex:1 1 60%}
+  li.step .where{font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:700;
+    letter-spacing:.06em;padding:3px 6px;border-radius:2px;flex:none;white-space:nowrap;
+    background:#F2F6F9;color:var(--navy);border:1px solid var(--line)}
+
+  li.step.done{background:var(--done-bg);border-left-color:var(--green)}
+  li.step.done .t{text-decoration:line-through;text-decoration-thickness:1.5px;
+    text-decoration-color:var(--green);color:var(--muted);font-weight:500}
+  li.step.done .n{background:#E4F0EA;color:var(--green);border-color:var(--auto-line)}
+  li.step.done .n::before{content:"✓ "}
+  li.step.done .where{opacity:.6}
+  li.step.done details.more>summary{color:var(--green);opacity:.8}
+
+  li.step.now{border:2px solid var(--pin);border-left-width:6px;background:#fff;
+    box-shadow:0 2px 10px rgba(216,52,43,.13)}
+  li.step.now .n{background:var(--pin);color:#fff;border-color:var(--pin)}
+  li.step.now .t{color:var(--pin-deep);font-size:15px}
+  li.step.now .t::before{content:"📍 "}
+  li.step.now .where{background:var(--pin-bg);color:var(--pin-deep);border-color:#F3C9C5}
+  li.step.now details.more>summary{color:var(--pin-deep)}
+
+  li.step.todo{border-left-color:var(--navy)}
+  li.step.decide{border-left-color:var(--orange);background:#FEFAF6}
+  li.step.decide .n{background:#FBE9DA;color:var(--orange-deep);border-color:#EBC4A0}
+  li.step.decide:not(.now) .t::before{content:"要你決定 · ";color:var(--orange-deep);
+    font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.04em}
+
+  .mile{margin:9px 0 12px;background:#EDF5F3;border:1px solid var(--auto-line);
+    border-left:3px solid var(--green);border-radius:2px;padding:9px 12px;font-size:12.5px;line-height:1.6}
+  .mile b{font-family:"Saira Condensed",sans-serif;font-size:14px;color:var(--green);
+    display:block;margin-bottom:2px;letter-spacing:.02em}
+  .mile.pending{background:#F7FAFB;border-color:var(--line);border-left-color:var(--fog);opacity:.75}
+  .mile.pending b{color:var(--muted)}
+
+  .risks{margin-top:20px;background:#fff;border:1px solid var(--line);
+    border-top:4px solid var(--pin);border-radius:3px;padding:14px 16px}
+  .risks h3{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:18px}
+  .risks .cap{font-size:12px;color:var(--muted);margin:2px 0 11px}
+  .rk{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;
+    padding:9px 0;border-top:1px solid #EDF1F4;font-size:13px}
+  .rk:first-of-type{border-top:none}
+  .rk .n{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;
+    color:var(--pin-deep);background:var(--pin-bg);padding:2px 6px;border-radius:2px}
+  .rk small{display:block;color:var(--muted);font-size:11.5px;line-height:1.55}
+  .rk code{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--navy)}
+  .rk .cure{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;
+    padding:3px 7px;border-radius:2px;white-space:nowrap;text-align:center;line-height:1.5}
+  .rk .cure.auto{background:#E4F0EA;color:var(--green);border:1px solid var(--auto-line)}
+  .rk .cure.hand{background:#FBE9DA;color:var(--orange-deep);border:1px solid #EBC4A0}
+  .rk .cure.gone{background:#EDF1F4;color:var(--muted);border:1px solid var(--line);text-decoration:line-through}
+  .rk.cleared{opacity:.55}
+  .rk.cleared>div>b{text-decoration:line-through}
+
+  .horizon{margin-top:22px;border-radius:3px;padding:15px 17px 17px;
+    background:linear-gradient(180deg,var(--paper) 0%,var(--fog-bg) 50%,#E4E9EE 100%);
+    border:1px dashed var(--fog)}
+  .horizon h2{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:20px;color:var(--muted)}
+  .horizon .cap{font-size:12.5px;color:var(--muted);margin:3px 0 11px;line-height:1.6}
+  .horizon .cap code{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--navy)}
+  .hz-list{list-style:none;display:grid;gap:5px;grid-template-columns:1fr 1fr;align-items:start}
+  .hz-list li{background:rgba(255,255,255,.55);border:1px dashed var(--fog);border-radius:2px;
+    padding:8px 11px;font-size:13px}
+  .hz-list .m{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;color:var(--fog);margin-right:7px}
+  .hz-list b{font-weight:700;color:var(--muted)}
+  .hz-list small{display:block;font-size:11.5px;color:var(--fog);line-height:1.5;margin-top:2px}
+
+  .rules{margin-top:16px;background:#fff;border:2px solid var(--orange);border-radius:3px;padding:14px 16px}
+  .rules h3{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:17px}
+  .rules .cap{font-size:12px;color:var(--muted);margin:2px 0 10px}
+  .rules ul{list-style:none;display:grid;gap:6px}
+  .rules li{font-size:13px;padding-left:20px;position:relative;line-height:1.6}
+  .rules li::before{content:"⚠";position:absolute;left:0;color:var(--orange-deep);font-size:12px}
+  .rules li b{color:var(--orange-deep)}
+  .rules code{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--navy)}
+  .rules .at{color:var(--muted);font-size:12px}
+
+  .foot{margin-top:18px;text-align:center;font-size:12.5px;color:var(--muted);line-height:1.75}
+  .foot code{font-family:"JetBrains Mono",monospace;color:var(--navy);font-weight:700}
+
+  @media (max-width:760px){
+    .swipe{display:block}
+    .hz-list{grid-template-columns:1fr}
+    .top .sub{margin-left:0;text-align:left}
+    li.step .t{flex:1 1 100%}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <h1>FFF 線性步驟清單</h1>
+    <span class="v">v3.0</span>
+    <div class="sub">從第一步走到 ERP · 一條線，不分岔<br>劃掉的＝已經完成，不用再看</div>
+  </header>
+
+  <div class="swipe">← 左右滑動看完整路線 →</div>
+  <div class="trail">
+    <div class="frame" id="trail-frame"></div>
+    <p class="cap"><b>怎麼讀這張路線圖：</b>綠色實線是已經走過的路。紅色定位釘停在<b>你現在這一步</b>所屬的那一幕。
+      往後的灰色虛線都還沒走，越接近地平線越模糊，那是刻意的：ERP 的細節要等預約系統跑順之後才會清楚。</p>
+  </div>
+
+  <section class="prog" id="prog"></section>
+
+  <div class="ctrl">
+    <b>每一步的說明</b>
+    <button type="button" onclick="document.querySelectorAll('details.more').forEach(d=>d.open=true)">展開全部 ▾</button>
+    <button type="button" onclick="document.querySelectorAll('details.more').forEach(d=>d.open=false)">收合全部 ▸</button>
+    <button type="button" class="hi" onclick="document.querySelectorAll('details.more').forEach(d=>d.open=false);var n=document.querySelector('li.step.now details.more');if(n){n.open=true;n.scrollIntoView({block:'center',behavior:'smooth'})}">只看現在這一步 📍</button>
+  </div>
+
+  <section class="focus" id="focus"></section>
+
+  <div id="acts"></div>
+
+  <section class="risks" id="risks"></section>
+
+  <section class="horizon" id="horizon"></section>
+
+  <section class="rules" id="rules"></section>
+
+  <p class="foot" id="foot"></p>
+
+</div>
+
+<script src="roadmap-data.js"></script>
+<script>
+(function () {
+  const R = window.FFF_ROADMAP, P = window.FFF_PROGRESS;
+
+  /* ═══ 路線圖 SVG ═══ */
+  // 六個站的座標：五幕 ＋ 地平線的 ERP
+  const STATIONS = [
+    { x: 95,  y:144, color:'#2F6B54' },
+    { x: 272, y:116, color:'#D8342B' },
+    { x: 450, y:132, color:'#2C4E7D' },
+    { x: 628, y:106, color:'#DE7A38' },
+    { x: 790, y:122, color:'#2E8B94' }
+  ];
+  const ERP = { x:930, y:98 };
+  const ORIGIN = { x:42, y:156 };
+
+  function seg(a, b) {           // 兩點之間畫一段平滑曲線
+    const dx = (b.x - a.x) * 0.45;
+    return 'C ' + (a.x + dx) + ' ' + a.y + ' ' + (b.x - dx) + ' ' + b.y + ' ' + b.x + ' ' + b.y;
+  }
+
+  const pts = [ORIGIN].concat(STATIONS).concat([ERP]);
+  // 綠線走到「目前這一幕」的站；之後全部虛線
+  const cut = P.currentActIndex + 1;      // pts 裡的索引（+1 因為第 0 個是起點）
+
+  let walked = 'M ' + pts[0].x + ' ' + pts[0].y;
+  for (let i = 1; i <= cut; i++) walked += ' ' + seg(pts[i-1], pts[i]);
+
+  // 虛線在 ERP 圓圈前 22px 收尾，箭頭才不會蓋到圓圈
+  const aheadPts = pts.slice(cut).map((p, i, arr) =>
+    (i === arr.length - 1 && arr.length > 1) ? { x: p.x - 22, y: p.y + 5 } : p);
+  let ahead = 'M ' + aheadPts[0].x + ' ' + aheadPts[0].y;
+  for (let i = 1; i < aheadPts.length; i++) ahead += ' ' + seg(aheadPts[i-1], aheadPts[i]);
+
+  const LBL_Y = 196, SUB_Y = 213;
+  let svg = '<svg viewBox="0 0 1000 246" role="img" aria-label="五幕路線圖">' +
+    '<defs><marker id="tip" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">' +
+    '<path d="M0 0 L6 3 L0 6 z" fill="#8C9AA8"/></marker></defs>' +
+    // 地平線與山
+    '<path d="M844 96 L884 58 L916 84 L946 46 L1000 96 Z" fill="#DDE3E9"/>' +
+    '<path d="M898 96 L932 66 L968 96 Z" fill="#CFD7DF"/>' +
+    '<line x1="828" y1="96" x2="1000" y2="96" stroke="#8C9AA8" stroke-width="1.4" stroke-dasharray="5 4"/>' +
+    '<text x="994" y="88" text-anchor="end" font-family="\'JetBrains Mono\',monospace" font-size="9.5" font-weight="700" fill="#8C9AA8">地平線</text>' +
+    // 路徑
+    '<path d="' + walked + '" fill="none" stroke="#2F6B54" stroke-width="5" stroke-linecap="round"/>' +
+    '<path d="' + ahead + '" fill="none" stroke="#8C9AA8" stroke-width="3.4" stroke-dasharray="9 7" stroke-linecap="round" marker-end="url(#tip)"/>' +
+    // 起點
+    '<circle cx="' + ORIGIN.x + '" cy="' + ORIGIN.y + '" r="5.5" fill="#2F6B54"/>' +
+    '<text x="' + ORIGIN.x + '" y="180" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="9" fill="#5E6E7E">起點</text>';
+
+  // 標籤連接線
+  svg += '<g stroke="#C9D4DD" stroke-width="1" stroke-dasharray="2 3">';
+  STATIONS.concat([ERP]).forEach((s, i) => {
+    const isCur = i === P.currentActIndex;
+    svg += '<line x1="' + s.x + '" y1="' + (s.y + (isCur ? 30 : 17)) + '" x2="' + s.x + '" y2="176"/>';
+  });
+  svg += '</g>';
+
+  // 五幕的站
+  P.actStats.forEach((a, i) => {
+    const s = STATIONS[i];
+    if (a.state === 'done') {
+      svg += '<circle cx="' + s.x + '" cy="' + s.y + '" r="16" fill="#2F6B54"/>' +
+             '<path d="M' + (s.x-8) + ' ' + s.y + ' l6 6.4 L' + (s.x+9) + ' ' + (s.y-6) + '" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+    } else if (a.state === 'current') {
+      svg += '<circle cx="' + s.x + '" cy="' + s.y + '" r="24" fill="#FDECEA" stroke="#D8342B" stroke-width="1.6" stroke-dasharray="4 3"/>' +
+             '<path d="M' + s.x + ' ' + (s.y-20) + ' C' + (s.x-12) + ' ' + (s.y-20) + ' ' + (s.x-21) + ' ' + (s.y-11) + ' ' + (s.x-21) + ' ' + s.y +
+             ' C' + (s.x-21) + ' ' + (s.y+13) + ' ' + s.x + ' ' + (s.y+25) + ' ' + s.x + ' ' + (s.y+25) +
+             ' C' + s.x + ' ' + (s.y+25) + ' ' + (s.x+21) + ' ' + (s.y+13) + ' ' + (s.x+21) + ' ' + s.y +
+             ' C' + (s.x+21) + ' ' + (s.y-11) + ' ' + (s.x+12) + ' ' + (s.y-20) + ' ' + s.x + ' ' + (s.y-20) + ' Z" fill="#D8342B"/>' +
+             '<circle cx="' + s.x + '" cy="' + (s.y-1) + '" r="7" fill="#fff"/>';
+    } else {
+      svg += '<circle cx="' + s.x + '" cy="' + s.y + '" r="15" fill="#fff" stroke="' + s.color + '" stroke-width="2" stroke-dasharray="4 3"/>' +
+             '<text x="' + s.x + '" y="' + (s.y+5) + '" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="11" font-weight="700" fill="' + s.color + '">' + (i+1) + '</text>';
+    }
+    const labColor = a.state === 'done' ? '#2F6B54' : (a.state === 'current' ? '#A4211A' : s.color);
+    svg += '<text x="' + s.x + '" y="' + LBL_Y + '" text-anchor="middle" font-family="\'Noto Sans TC\',sans-serif" font-size="13.5" font-weight="700" fill="' + labColor + '">' + a.no + '　' + a.name + '</text>' +
+           '<text x="' + s.x + '" y="' + SUB_Y + '" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="10" font-weight="' + (a.state==='todo'?'400':'700') + '" fill="' + (a.state==='todo' ? '#5E6E7E' : labColor) + '">' +
+           a.done + ' / ' + a.total + (a.state === 'done' ? '　全部完成' : '') + '</text>';
+    if (a.state === 'current') {
+      svg += '<rect x="' + (s.x-60) + '" y="222" width="120" height="20" rx="3" fill="#D8342B"/>' +
+             '<text x="' + s.x + '" y="236" text-anchor="middle" font-family="\'Noto Sans TC\',sans-serif" font-size="11.5" font-weight="900" fill="#fff" letter-spacing="1.5">你在這裡</text>';
+    }
+  });
+
+  // ERP
+  svg += '<circle cx="' + ERP.x + '" cy="' + ERP.y + '" r="14" fill="#EFF2F5" stroke="#8C9AA8" stroke-width="1.6" stroke-dasharray="3 3"/>' +
+         '<text x="' + ERP.x + '" y="' + (ERP.y+5) + '" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="12" font-weight="700" fill="#8C9AA8">✳</text>' +
+         '<text x="' + ERP.x + '" y="' + LBL_Y + '" text-anchor="middle" font-family="\'Noto Sans TC\',sans-serif" font-size="13.5" font-weight="700" fill="#8C9AA8">ERP</text>' +
+         '<text x="' + ERP.x + '" y="' + SUB_Y + '" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="10" fill="#8C9AA8">不編號</text>' +
+         '</svg>';
+
+  document.getElementById('trail-frame').innerHTML = svg;
+
+  /* ═══ 進度條 ═══ */
+  document.getElementById('prog').innerHTML =
+    '<div class="prog-top"><b>' + R.meta.phaseName + '</b>' +
+    '<span class="num">' + P.done + ' / ' + P.total + ' 完成</span></div>' +
+    '<div class="bar"><i class="fill" style="width:' + P.pctDone.toFixed(1) + '%"></i>' +
+    '<i class="cur" style="width:' + P.pctCurrent.toFixed(1) + '%"></i></div>' +
+    '<div class="legend">' +
+      '<span><i class="g"></i>已完成 ' + P.done + ' 步</span>' +
+      '<span><i class="r"></i>你現在這一步</span>' +
+      '<span><i class="e"></i>還沒走的 ' + P.remaining + ' 步</span>' +
+    '</div>';
+
+  /* ═══ 現在只做這一件事 ═══ */
+  const cur = P.current;
+  const curAct = R.acts[P.currentActIndex];
+  document.getElementById('focus').innerHTML = cur ? (
+    '<div class="focus-top"><span class="pin"></span><h2>現在只做這一件事</h2>' +
+    '<em>第 ' + cur.n + ' 步 · ' + curAct.no + '</em></div>' +
+    '<div class="focus-body"><b>' + cur.t + '</b>' +
+    (cur.body ? '<details class="more" open><summary>' + (cur.summary || '說明') + '</summary>' +
+      '<div class="body">' + cur.body +
+      (cur.warn ? '<div class="warn">' + cur.warn + '</div>' : '') +
+      (cur.ck ? '<div class="ck"><b>完成判準：</b>' + cur.ck + '</div>' : '') +
+      '</div></details>' : '') +
+    '</div>'
+  ) : (
+    '<div class="focus-top"><span class="pin"></span><h2>36 步全部走完了</h2></div>' +
+    '<div class="focus-body">第一階段結束。接下來是地平線那一頭的 ERP —— 該重新畫一張新地圖了。</div>'
+  );
+
+  /* ═══ 五幕 ═══ */
+  let html = '';
+  R.acts.forEach((a, ai) => {
+    const st = P.actStats[ai];
+    const cntTxt = st.state === 'done' ? (st.done + ' / ' + st.total + ' 全部完成')
+                 : st.state === 'current' ? (st.done + ' / ' + st.total + ' · 你在這裡')
+                 : (st.done + ' / ' + st.total);
+    html += '<section class="act ' + a.key + '">' +
+      '<div class="act-head"><span class="no">' + a.no + '</span><h2>' + a.name + '</h2>' +
+      '<span class="thr">' + a.theatre + '</span><span class="cnt">' + cntTxt + '</span></div>' +
+      '<p class="act-note">' + a.note + '</p><ol class="steps">';
+
+    a.steps.forEach(s => {
+      const isNow = cur && s.n === cur.n;
+      const cls = ['step', s.done ? 'done' : (isNow ? 'now' : 'todo'), s.kind === 'decide' ? 'decide' : '']
+                    .filter(Boolean).join(' ');
+      html += '<li class="' + cls + '"><div class="row">' +
+        '<span class="n">' + String(s.n).padStart(2, '0') + '</span>' +
+        '<span class="t">' + s.t + '</span>' +
+        '<span class="where">' + s.where + '</span></div>';
+      if (s.body || s.ck || s.warn) {
+        html += '<details class="more"' + (isNow ? ' open' : '') + '>' +
+          '<summary>' + (s.summary || '說明') + '</summary><div class="body">' +
+          (s.body || '') +
+          (s.warn ? '<div class="warn">' + s.warn + '</div>' : '') +
+          (s.ck ? '<div class="ck"><b>完成判準：</b>' + s.ck + '</div>' : '') +
+          '</div></details>';
+      }
+      html += '</li>';
+    });
+
+    html += '</ol>';
+    if (a.milestone) {
+      const reached = st.state === 'done';
+      html += '<div class="mile' + (reached ? '' : ' pending') + '"><b>' + a.milestone.title +
+        (reached ? '' : '（還沒到）') + '</b>' + a.milestone.text + '</div>';
+    }
+    html += '</section>';
+  });
+  document.getElementById('acts').innerHTML = html;
+
+  /* ═══ 三個風險 ═══ */
+  const doneNums = new Set(R.acts.flatMap(a => a.steps).filter(s => s.done).map(s => s.n));
+  document.getElementById('risks').innerHTML =
+    '<h3>三個已知風險</h3><p class="cap">右邊那欄是「要不要你動手」，以及它會在第幾步消失</p>' +
+    R.risks.map(r => {
+      const cleared = doneNums.has(r.clearAt);
+      return '<div class="rk' + (cleared ? ' cleared' : '') + '">' +
+        '<span class="n">' + String(r.n).padStart(2, '0') + '</span>' +
+        '<div><b>' + r.t + '</b><small>' + r.d + '</small></div>' +
+        '<span class="cure ' + (cleared ? 'gone' : r.how) + '">' +
+          (cleared ? '已解除' : (r.how === 'auto' ? '第 ' + r.clearAt + ' 步<br>自動解除' : '第 ' + r.clearAt + ' 步<br>要你決定')) +
+        '</span></div>';
+    }).join('');
+
+  /* ═══ 地平線 ═══ */
+  document.getElementById('horizon').innerHTML =
+    '<h2>地平線那一頭 — ERP</h2>' +
+    '<p class="cap">刻意不編號、不排順序。這些的細節取決於預約系統跑順之後你才會發現的事 —— 現在猜，猜錯的機率很高。<br>' +
+    '<b>但有一件事已經做完了：</b>ERP 的每一個模組最後都會長在 <code>employees</code> 和 <code>customers</code> 這兩張桌子上，而你已經把地基打好了。</p>' +
+    '<ul class="hz-list">' +
+    R.horizon.map(h => '<li><span class="m">✳</span><b>' + h.t + '</b><small>' + h.d + '</small></li>').join('') +
+    '</ul>';
+
+  /* ═══ 規則 ═══ */
+  document.getElementById('rules').innerHTML =
+    '<h3>走每一步之前，先看一眼</h3>' +
+    '<p class="cap">你自己訂的規則，挑出接下來這幾幕最容易踩到的</p><ul>' +
+    R.rules.map(r => '<li><b>' + r.t + '</b>　<span class="at">' + r.at + '</span></li>').join('') +
+    '</ul>';
+
+  /* ═══ 頁尾 ═══ */
+  document.getElementById('foot').innerHTML =
+    '<code>' + P.done + ' / ' + P.total + '</code>　' +
+    (cur ? '下一步是第 ' + cur.n + ' 步：' + cur.t : '全部完成') + '<br><br>' +
+    '這一頁的每個數字都是從 <code>roadmap-data.js</code> 算出來的。<br>' +
+    '要更新進度，<b>只改那一個檔案</b>裡的 <code>done: false</code> → <code>done: true</code>，這裡全部會自己跟上。<br>' +
+    '<span style="font-size:11.5px">最後更新：' + R.meta.updated + '</span>';
+})();
+</script>
+</body>
+</html>

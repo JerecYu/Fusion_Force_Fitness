@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="fff-map-version" content="4.0 — 資料驅動">
+<title>FFF 架構地圖 v3 — 一座正在蓋的劇院</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1B2C; --navy:#2C4E7D; --teal:#2E8B94; --green:#2F6B54;
+    --orange:#DE7A38; --orange-deep:#A9531D;
+    --paper:#E9EEF2; --line:#C9D4DD; --muted:#5E6E7E;
+    --auto-bg:#EDF5F3; --auto-line:#A8C9BE;
+    --man-bg:#FCF2E8; --man-line:#EBC4A0;
+    --pin:#D8342B; --pin-deep:#A4211A; --pin-bg:#FDECEA;
+    --fog:#8C9AA8; --fog-bg:#EFF2F5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);
+    font-family:"Noto Sans TC",system-ui,sans-serif;line-height:1.55;
+    padding:18px 12px 56px;-webkit-font-smoothing:antialiased}
+  .page{max-width:1060px;margin:0 auto}
+
+  /* ── 標題 ── */
+  .top{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;
+    margin-bottom:6px;padding-bottom:12px;border-bottom:2px solid var(--ink)}
+  .top h1{font-family:"Saira Condensed",sans-serif;font-weight:700;
+    font-size:clamp(26px,6vw,40px);line-height:.95;letter-spacing:.01em}
+  .top .v{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;
+    color:#fff;background:var(--ink);padding:3px 7px;border-radius:2px;
+    align-self:center;letter-spacing:.06em}
+  .top .sub{font-size:13px;color:var(--muted);margin-left:auto;text-align:right;line-height:1.5}
+
+  /* ── 全域展開／收合 ── */
+  .ctrl{display:flex;gap:7px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .ctrl b{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:700;
+    letter-spacing:.08em;color:var(--muted);margin-right:2px}
+  .ctrl button{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;
+    letter-spacing:.04em;padding:5px 11px;border-radius:2px;cursor:pointer;
+    background:#fff;color:var(--navy);border:1px solid var(--line);transition:.14s}
+  .ctrl button:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+  /* ── 可收合註解 ── */
+  details.more{margin-top:7px;border-top:1px dashed var(--line);padding-top:6px}
+  details.more>summary{cursor:pointer;list-style:none;
+    font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:700;
+    letter-spacing:.06em;color:var(--navy);display:flex;align-items:center;gap:5px;
+    user-select:none;-webkit-user-select:none;padding:2px 0}
+  details.more>summary::-webkit-details-marker{display:none}
+  details.more>summary::before{content:"▸";font-size:11px;flex:none}
+  details.more[open]>summary::before{content:"▾"}
+  details.more>summary:hover{color:var(--teal)}
+  details.more .body{font-size:12px;color:var(--muted);line-height:1.7;padding:6px 0 2px}
+  details.more .body b{color:var(--ink)}
+  details.more .body code{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--navy)}
+  details.more .body ul{list-style:none;margin-top:4px}
+  details.more .body li{padding-left:14px;position:relative;margin-bottom:3px}
+  details.more .body li::before{content:"·";position:absolute;left:4px;color:var(--teal);font-weight:700}
+
+  /* ── 劇院剖面圖 ── */
+  .section-h{display:flex;align-items:baseline;gap:10px;margin:22px 0 4px;flex-wrap:wrap}
+  .section-h h2{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:23px}
+  .section-h em{font-style:normal;font-size:12px;color:var(--muted)}
+  .swipe{display:none;font-family:"JetBrains Mono",monospace;font-size:11px;
+    color:var(--muted);text-align:center;padding:7px 0 1px;letter-spacing:.05em}
+  .plate{background:#fff;border:1px solid var(--line);border-top:4px solid var(--ink);
+    border-radius:3px;padding:8px 10px 12px;margin-top:9px}
+  .plate .frame{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .plate svg{display:block;width:100%;min-width:820px;height:auto}
+  .plate .cap{font-size:12px;color:var(--muted);padding:9px 6px 0;line-height:1.65;
+    border-top:1px solid #EDF1F4;margin-top:8px}
+  .plate .cap b{color:var(--pin-deep)}
+
+  /* ── 你在這裡 ── */
+  .here{margin-top:14px;background:#fff;border:2px solid var(--pin);border-radius:4px;
+    position:relative;overflow:hidden}
+  .here::before{content:"";position:absolute;inset:0 auto 0 0;width:6px;background:var(--pin)}
+  .here-top{display:flex;align-items:center;gap:10px;padding:13px 16px 11px 20px;
+    background:var(--pin-bg);border-bottom:1px solid #F3C9C5;flex-wrap:wrap}
+  .pin{width:26px;height:26px;border-radius:50% 50% 50% 0;background:var(--pin);
+    transform:rotate(-45deg);flex:none;position:relative;box-shadow:0 2px 5px rgba(168,33,26,.3)}
+  .pin::after{content:"";position:absolute;top:8px;left:8px;width:10px;height:10px;
+    border-radius:50%;background:#fff}
+  .here-top h2{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:21px;
+    color:var(--pin-deep);letter-spacing:.02em}
+  .here-top .co{margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:11px;
+    color:var(--pin-deep);letter-spacing:.04em}
+  .here-line{padding:14px 16px 2px 20px;font-size:15px;font-weight:500;line-height:1.7}
+  .here-line b{color:var(--pin-deep)}
+  .here-bar{margin:2px 16px 0 20px;display:flex;align-items:center;gap:9px;
+    font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;color:var(--muted)}
+  .here-bar .track{flex:1;height:9px;background:var(--fog-bg);border:1px solid var(--line);
+    border-radius:2px;overflow:hidden;display:flex}
+  .here-bar .track i{display:block;height:100%;font-style:normal}
+  .here-bar .track .g{background:var(--green)}
+  .here-bar .track .r{background:var(--pin)}
+  .here-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--line);margin:14px 0 0}
+  .here-grid>div{background:#fff;padding:12px 16px 14px}
+  .here-grid .lbl{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;
+    letter-spacing:.1em;margin-bottom:5px}
+  .here-grid .past .lbl{color:var(--green)}
+  .here-grid .now .lbl{color:var(--pin-deep)}
+  .here-grid .next .lbl{color:var(--navy)}
+  .here-grid .now{background:var(--pin-bg)}
+  .here-grid b{display:block;font-size:14px;margin-bottom:3px}
+  .here-grid small{display:block;font-size:12px;color:var(--muted);line-height:1.55}
+
+  /* ── 劇場對照表 ── */
+  .cast{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:3px;
+    border-top:4px solid var(--teal);padding:14px 16px}
+  .cast h3{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:18px}
+  .cast .cap{font-size:12px;color:var(--muted);margin:2px 0 11px}
+  .cast-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:6px}
+  .role{display:flex;align-items:baseline;gap:7px;padding:6px 9px;background:#F7FAFB;
+    border:1px solid var(--line);border-radius:2px;font-size:12.5px}
+  .role .tech{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--navy);font-weight:700;flex:none}
+  .role .arw{color:var(--line);flex:none}
+
+  /* ── 狀態標籤 ── */
+  .st{font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:700;
+    letter-spacing:.07em;padding:2px 5px;border-radius:2px;white-space:nowrap;
+    vertical-align:middle;margin-left:6px}
+  .st.done{background:#E4F0EA;color:var(--green);border:1px solid var(--auto-line)}
+  .st.wip{background:#FBE9DA;color:var(--orange-deep);border:1px solid var(--man-line)}
+  .st.todo{background:#EDF1F4;color:var(--muted);border:1px solid var(--line)}
+  .st.fog{background:#E7EBEF;color:var(--fog);border:1px dashed var(--fog)}
+
+  /* ── 地圖畫布 ── */
+  .scroll{overflow-x:auto;overflow-y:hidden;padding:10px 0 4px;-webkit-overflow-scrolling:touch}
+  .canvas{min-width:880px;display:grid;grid-template-columns:1fr 62px 1fr;
+    grid-template-rows:auto 34px auto 40px auto 36px auto;gap:0}
+  .flr{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;
+    letter-spacing:.12em;color:#fff;padding:3px 7px;border-radius:2px}
+
+  .dev{grid-column:1/4;grid-row:1;background:#fff;border:1px solid var(--line);
+    border-top:4px solid var(--navy);border-radius:3px;padding:14px 16px}
+  .dev-head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+  .dev-head .flr{background:var(--navy)}
+  .dev-head h3{font-family:"Saira Condensed",sans-serif;font-weight:600;font-size:19px}
+  .dev-head .thr{font-size:12.5px;color:var(--teal);font-weight:700}
+  .dev-head em{font-style:normal;font-size:12px;color:var(--muted);margin-left:auto}
+  .dev-grid{display:grid;grid-template-columns:repeat(3,1fr) 1.7fr;gap:8px;margin-top:9px}
+  .tool{border:1px solid var(--line);border-radius:2px;padding:8px 10px;background:#FAFCFD}
+  .tool b{display:block;font-size:13px;font-weight:700}
+  .tool small{display:block;font-size:11px;color:var(--muted)}
+  .bldg{border:1px dashed var(--navy);border-radius:2px;padding:8px 10px;background:#F5F8FB}
+  .bldg .bl{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--navy);
+    font-weight:700;letter-spacing:.06em;margin-bottom:6px}
+  .rooms{display:flex;flex-wrap:wrap;gap:4px}
+  .rm{font-family:"JetBrains Mono",monospace;font-size:11px;padding:3px 6px;
+    background:#fff;border:1px solid var(--line);border-radius:2px}
+  .rm.ghost{border-style:dashed;color:var(--fog);background:var(--fog-bg)}
+
+  .link{display:flex;align-items:center;justify-content:center;position:relative}
+  .link::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--navy);opacity:.4}
+  .link span{position:relative;background:var(--paper);padding:2px 10px;
+    font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--navy);
+    letter-spacing:.06em;font-weight:700}
+  .push{grid-column:1/4;grid-row:2}
+
+  .land{border-radius:3px;padding:14px 14px 16px;grid-row:3}
+  .land.auto{grid-column:1;background:var(--auto-bg);border:1px solid var(--auto-line);border-top:4px solid var(--green)}
+  .land.man{grid-column:3;background:var(--man-bg);border:1px solid var(--man-line);border-top:4px solid var(--orange)}
+  .land-head{margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(0,0,0,.1)}
+  .land-head h3{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:21px;
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .land-head .dot{width:11px;height:11px;border-radius:50%;flex:none}
+  .land.auto .dot{background:var(--green)}
+  .land.man .dot{background:var(--orange)}
+  .land-head .thr{font-size:12.5px;color:var(--teal);font-weight:700}
+  .land-head p{font-size:12px;color:var(--muted);margin-top:3px}
+
+  .cells{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .cell{background:#fff;border:1px solid var(--line);border-radius:2px;padding:9px 10px}
+  .cell.wide{grid-column:1/3}
+  .cell>b{display:block;font-size:13px;font-weight:700;margin-bottom:1px}
+  .cell small{display:block;font-size:11.5px;color:var(--muted);line-height:1.5}
+  .cell small b{color:var(--ink)}
+  .land.auto .cell{border-left:3px solid var(--green)}
+  .land.man .cell{border-left:3px solid var(--orange)}
+  .cell.sub{background:#F7FBFA;margin-left:15px;position:relative}
+  .cell.sub::before{content:"└";position:absolute;left:-13px;top:7px;
+    color:var(--green);font-family:"JetBrains Mono",monospace;font-size:12px}
+  .cell.dim{background:var(--fog-bg);border-left-color:var(--fog)!important;border-style:dashed;opacity:.94}
+  .cell.dim>b{color:var(--muted)}
+  .cell.build{background:#FEF8F2;border-left-color:var(--orange)!important}
+
+  .gap{grid-column:1/3;margin:9px 0;background:var(--pin-bg);border:2px dashed var(--pin);
+    border-radius:3px;padding:11px 12px 12px 13px}
+  .gap .ttl{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap}
+  .gap .minipin{width:19px;height:19px;border-radius:50% 50% 50% 0;background:var(--pin);
+    transform:rotate(-45deg);flex:none;position:relative;
+    box-shadow:0 0 0 0 rgba(216,52,43,.55);animation:ping 2.4s ease-out infinite}
+  .gap .minipin::after{content:"";position:absolute;top:6px;left:6px;width:7px;height:7px;border-radius:50%;background:#fff}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(216,52,43,.5)}70%{box-shadow:0 0 0 13px rgba(216,52,43,0)}100%{box-shadow:0 0 0 0 rgba(216,52,43,0)}}
+  .gap .ttl b{font-family:"Saira Condensed",sans-serif;font-size:17px;font-weight:700;color:var(--pin-deep)}
+  .gap .ttl span{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;
+    color:#fff;background:var(--pin);padding:2px 6px;border-radius:2px;letter-spacing:.08em}
+  .gap p{font-size:12.5px;line-height:1.65;color:#3E2320}
+  .gap p b{color:var(--pin-deep)}
+  .broken{display:flex;align-items:center;gap:6px;margin-top:8px;
+    font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--pin-deep);font-weight:700}
+  .broken i{flex:1;height:0;border-top:2px dashed var(--pin);font-style:normal}
+
+  .holds{margin-top:10px;border-radius:2px;padding:10px}
+  .land.auto .holds{background:rgba(47,107,84,.09);border:1px solid var(--auto-line)}
+  .land.man .holds{background:rgba(222,122,56,.12);border:1px dashed var(--orange)}
+  .holds .ht{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;letter-spacing:.08em;margin-bottom:6px}
+  .land.auto .ht{color:var(--green)}
+  .land.man .ht{color:var(--orange-deep)}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{font-size:12px;padding:3px 8px;border-radius:2px;background:#fff;border:1px solid var(--line)}
+  .land.auto .chip{border-color:var(--auto-line)}
+  .land.man .chip{border-color:var(--man-line);font-weight:500}
+
+  .wall{grid-column:2;grid-row:3;position:relative;overflow:hidden;background:var(--ink);
+    border-radius:3px;display:flex;align-items:center;justify-content:center}
+  .wall::before{content:"";position:absolute;top:-20%;left:-60%;width:46px;height:140%;
+    background:var(--orange);opacity:.5;transform:skewX(-22deg)}
+  .wall::after{content:"";position:absolute;top:-20%;right:-60%;width:46px;height:140%;
+    background:var(--orange);opacity:.5;transform:skewX(-22deg)}
+  .wall span{writing-mode:vertical-rl;text-orientation:upright;color:#fff;font-size:14px;
+    font-weight:900;letter-spacing:.3em;position:relative;z-index:2;text-shadow:0 0 10px rgba(14,27,44,.9)}
+
+  .down{grid-row:4;display:flex;align-items:center;justify-content:center;position:relative}
+  .down.l{grid-column:1} .down.r{grid-column:3}
+  .down::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;opacity:.5}
+  .down.l::before{background:var(--green)} .down.r::before{background:var(--orange)}
+  .down span{position:relative;background:var(--paper);padding:3px 10px;font-size:11px;
+    font-family:"JetBrains Mono",monospace;letter-spacing:.04em;font-weight:700;text-align:center}
+  .down.l span{color:var(--green)} .down.r span{color:var(--orange-deep)}
+
+  .line-gate{grid-column:1/4;grid-row:5;background:#F6F9F7;border:1px dashed var(--fog);
+    border-top:4px solid var(--fog);border-radius:3px;padding:14px 16px}
+  .line-gate .dev-head .flr{background:var(--fog)}
+  .lg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px;align-items:start}
+  .gate{border:1px dashed var(--fog);border-radius:2px;padding:9px 10px;background:#fff}
+  .gate>b{display:block;font-size:13px;font-weight:700;color:var(--ink)}
+  .gate small{display:block;font-size:11.5px;color:var(--muted);line-height:1.5}
+  .gate small b{color:var(--orange-deep)}
+  .gate.key{border:2px solid var(--orange);background:#FEF7F1}
+  .gate.key>b{color:var(--orange-deep)}
+
+  .down2{grid-column:1/4;grid-row:6;display:flex;align-items:center;justify-content:center;position:relative}
+  .down2::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--fog);opacity:.5}
+  .down2 span{position:relative;background:var(--paper);padding:3px 10px;font-size:11px;
+    font-family:"JetBrains Mono",monospace;letter-spacing:.04em;font-weight:700;color:var(--muted)}
+
+  .client{grid-column:1/4;grid-row:7;background:#fff;border:1px solid var(--line);
+    border-top:4px solid var(--ink);border-radius:3px;padding:14px 16px}
+  .client .dev-head .flr{background:var(--ink)}
+  .can{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+  .can>div{border-radius:2px;padding:10px 12px}
+  .can .ok{background:#F1F7F4;border:1px solid var(--auto-line)}
+  .can .no{background:#FCF2EC;border:1px solid var(--man-line)}
+  .can .t{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;letter-spacing:.08em;margin-bottom:6px}
+  .can .ok .t{color:var(--green)} .can .no .t{color:var(--orange-deep)}
+  .can ul{list-style:none;display:flex;flex-wrap:wrap;gap:4px 10px}
+  .can li{font-size:13px;position:relative;padding-left:14px}
+  .can .ok li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700}
+  .can .no li::before{content:"✕";position:absolute;left:0;color:var(--orange);font-weight:700}
+
+  /* ── 地平線 ── */
+  .horizon{margin-top:20px;border-radius:3px;padding:16px 18px 18px;
+    background:linear-gradient(180deg,var(--paper) 0%,var(--fog-bg) 45%,#E4E9EE 100%);
+    border:1px dashed var(--fog);position:relative;overflow:hidden}
+  .horizon::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;
+    background:repeating-linear-gradient(90deg,var(--fog) 0 7px,transparent 7px 15px)}
+  .hz-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:3px}
+  .hz-head h3{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:20px;color:var(--muted)}
+  .hz-head em{font-style:normal;font-size:12px;color:var(--fog);margin-left:auto}
+  .horizon>p{font-size:12.5px;color:var(--muted);margin-bottom:12px;max-width:74ch}
+  .hz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px}
+  .hz{border:1px dashed var(--fog);border-radius:2px;padding:8px 10px;background:rgba(255,255,255,.55)}
+  .hz b{display:block;font-size:12.5px;font-weight:700;color:var(--muted)}
+  .hz small{display:block;font-size:11px;color:var(--fog);line-height:1.45}
+  .hz-note{margin-top:11px;font-size:12px;color:var(--muted);
+    border-left:3px solid var(--orange);padding-left:10px;line-height:1.6}
+
+  /* ── 風險 ── */
+  .risks{margin-top:14px;background:#fff;border:1px solid var(--line);
+    border-top:4px solid var(--pin);border-radius:3px;padding:14px 16px}
+  .risks h3{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:18px}
+  .risks .cap{font-size:12px;color:var(--muted);margin:2px 0 11px}
+  .rk{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;
+    padding:9px 0;border-top:1px solid #EDF1F4;font-size:13px}
+  .rk:first-of-type{border-top:none}
+  .rk .n{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;
+    color:var(--pin-deep);background:var(--pin-bg);padding:2px 6px;border-radius:2px}
+  .rk small{display:block;color:var(--muted);font-size:11.5px;line-height:1.55}
+  .rk code{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--navy)}
+  .rk .cure{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;
+    padding:3px 7px;border-radius:2px;white-space:nowrap;text-align:center}
+  .rk .cure.auto{background:#E4F0EA;color:var(--green);border:1px solid var(--auto-line)}
+  .rk .cure.hand{background:#FBE9DA;color:var(--orange-deep);border:1px solid var(--man-line)}
+
+  /* ── 邊欄 ── */
+  .margin{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:10px;margin-top:14px}
+  .box{background:#fff;border:1px solid var(--line);border-radius:3px;padding:14px 16px}
+  .box h3{font-family:"Saira Condensed",sans-serif;font-weight:700;font-size:17px;margin-bottom:2px}
+  .box .cap{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .lg{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12.5px;border-top:1px solid #EDF1F4}
+  .lg:first-of-type{border-top:none}
+  .sw{width:14px;height:14px;border-radius:2px;flex:none;margin-top:3px}
+  .sw.g{background:var(--green)} .sw.o{background:var(--orange)} .sw.n{background:var(--navy)}
+  .sw.k{background:var(--ink)} .sw.f{background:var(--fog)} .sw.p{background:var(--pin)}
+  .box.red{border:2px solid var(--orange)}
+  .box.red ol{list-style:none;counter-reset:r}
+  .box.red li{counter-increment:r;position:relative;padding:7px 0 7px 38px;
+    border-top:1px solid #EDF1F4;font-size:13.5px}
+  .box.red li:first-child{border-top:none}
+  .box.red li::before{content:counter(r,decimal-leading-zero);position:absolute;left:0;top:7px;
+    font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;
+    color:var(--orange-deep);background:#FCF2E8;padding:2px 6px;border-radius:2px}
+  .box.red small{display:block;color:var(--muted);font-size:11.5px}
+
+  .foot{margin-top:18px;text-align:center;font-size:12.5px;color:var(--muted);line-height:1.7}
+  .foot code{font-family:"JetBrains Mono",monospace;color:var(--navy);font-weight:700}
+
+  @media (max-width:900px){
+    .margin{grid-template-columns:1fr}
+    .here-grid{grid-template-columns:1fr}
+    .dev-grid{grid-template-columns:1fr 1fr}
+    .dev-grid .bldg{grid-column:1/3}
+    .lg-grid{grid-template-columns:1fr 1fr}
+    .swipe{display:block}
+    .scroll{overflow-x:visible}
+    .canvas{min-width:0;display:block}
+    .land.auto{border-radius:3px 3px 0 0}
+    .land.man{border-radius:0 0 3px 3px;border-top:none}
+    .wall{grid-column:auto;height:34px;border-radius:0}
+    .wall span{writing-mode:horizontal-tb;letter-spacing:.35em;font-size:12px}
+    .gap{grid-column:auto}
+    .link,.down,.down2{height:36px}
+    .down.r{display:none}
+    .down.l span{color:var(--ink)} .down.l::before{background:var(--ink)}
+  }
+  @media (max-width:560px){
+    .can,.dev-grid,.lg-grid,.cells{grid-template-columns:1fr}
+    .dev-grid .bldg,.cell.wide{grid-column:auto}
+    .cell.sub{margin-left:13px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <h1>FFF 架構地圖</h1>
+    <span class="v">v4.0</span>
+    <div class="sub">諧動空間 Fusion Force Fitness<br>一座正在蓋的劇院 · 2026-08-08</div>
+  </header>
+
+  <div class="ctrl">
+    <b>全部註解</b>
+    <button type="button" onclick="document.querySelectorAll('details.more').forEach(d=>d.open=true)">展開全部 ▾</button>
+    <button type="button" onclick="document.querySelectorAll('details.more').forEach(d=>d.open=false)">收合全部 ▸</button>
+    <span style="font-size:11.5px;color:var(--muted);margin-left:4px">灰色的 <b style="font-family:'JetBrains Mono',monospace;color:var(--navy)">▸</b> 都可以點開，長篇說明藏在裡面</span>
+  </div>
+
+  <!-- ══════════ 劇院剖面圖 ══════════ -->
+  <div class="section-h">
+    <h2>劇院剖面圖</h2>
+    <em>把牆切開一半，從側面看整座建築 —— 紅色定位釘就是你現在站的地方</em>
+  </div>
+  <div class="swipe">← 左右滑動看完整剖面 →</div>
+
+  <div class="plate">
+    <div class="frame">
+    <svg viewBox="0 0 1000 512" role="img" aria-label="FFF 劇院剖面圖：後台、斷線處、舞台、觀眾席、LINE 大門">
+      <defs>
+        <pattern id="hatchOrange" width="8" height="8" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0" y2="8" stroke="#DE7A38" stroke-width="2.4" opacity=".28"/>
+        </pattern>
+        <pattern id="hatchGround" width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0" y2="10" stroke="#8C9AA8" stroke-width="1.6" opacity=".45"/>
+        </pattern>
+        <pattern id="hatchFog" width="9" height="9" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0" y2="9" stroke="#8C9AA8" stroke-width="2" opacity=".18"/>
+        </pattern>
+        <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+          <path d="M0 0 L7 3.2 L0 6.4 z" fill="#2C4E7D"/>
+        </marker>
+      </defs>
+
+      <!-- ── 編劇室（脫離建築、浮在上面） ── -->
+      <rect x="380" y="14" width="300" height="76" rx="3" fill="#F5F8FB" stroke="#2C4E7D" stroke-width="1.6" stroke-dasharray="5 4"/>
+      <rect x="380" y="14" width="300" height="4" fill="#2C4E7D"/>
+      <text x="396" y="42" font-family="'Noto Sans TC',sans-serif" font-size="14" font-weight="700" fill="#0E1B2C">編劇室 · 你的電腦</text>
+      <text x="396" y="61" font-family="'Noto Sans TC',sans-serif" font-size="11" fill="#5E6E7E">VS Code ＋ Claude Code ＋ Git</text>
+      <text x="396" y="79" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#2C4E7D">金鑰只留在這裡 · 關機就停 · 不上雲</text>
+
+      <!-- 兩條下行線 -->
+      <path d="M380 52 H176 V142" fill="none" stroke="#2C4E7D" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+      <text x="186" y="46" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#2C4E7D">SQL Editor</text>
+      <path d="M560 90 V142" fill="none" stroke="#2C4E7D" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+      <text x="570" y="118" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#2C4E7D">git push</text>
+
+      <!-- ── 定位釘（釘在斷線處正上方） ── -->
+      <rect x="256" y="66" width="120" height="24" rx="3" fill="#D8342B"/>
+      <text x="316" y="83" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="13" font-weight="900" fill="#fff" letter-spacing="2">你在這裡</text>
+      <path d="M316 100 C303 100 293 110 293 122 C293 137 316 148 316 148 C316 148 339 137 339 122 C339 110 329 100 316 100 Z" fill="#D8342B"/>
+      <circle cx="316" cy="121" r="7.5" fill="#fff"/>
+
+      <!-- ── 建築外殼 ── -->
+      <rect x="40" y="148" width="920" height="322" fill="#fff" stroke="#0E1B2C" stroke-width="2"/>
+
+      <!-- ══ 後台 Supabase ══ -->
+      <rect x="42" y="150" width="258" height="318" fill="#EDF5F3"/>
+      <rect x="42" y="150" width="258" height="30" fill="#2F6B54"/>
+      <text x="54" y="171" font-family="'Noto Sans TC',sans-serif" font-size="13" font-weight="700" fill="#fff">後台　Supabase</text>
+      <text x="248" y="171" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#C9E4D8">已完工</text>
+      <text x="54" y="200" font-family="'Noto Sans TC',sans-serif" font-size="11" fill="#2F6B54">道具間 ＋ 名冊室 · 東京機房 · 24 小時值班</text>
+
+      <!-- 七張桌子＝七個上鎖的抽屜 -->
+      <rect x="56" y="212" width="230" height="120" rx="2" fill="#fff" stroke="#2F6B54" stroke-width="1.4"/>
+      <text x="64" y="228" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#2F6B54">七張桌子 · 每一張都上了鎖</text>
+      <g fill="#F1F7F4" stroke="#A8C9BE" stroke-width="1.2">
+        <rect x="64" y="236" width="52" height="42" rx="2"/><rect x="122" y="236" width="52" height="42" rx="2"/>
+        <rect x="180" y="236" width="52" height="42" rx="2"/><rect x="238" y="236" width="40" height="42" rx="2"/>
+        <rect x="64" y="284" width="52" height="42" rx="2"/><rect x="122" y="284" width="52" height="42" rx="2"/>
+        <rect x="180" y="284" width="52" height="42" rx="2"/>
+      </g>
+      <g fill="#2F6B54">
+        <circle cx="90" cy="253" r="3.4"/><circle cx="148" cy="253" r="3.4"/><circle cx="206" cy="253" r="3.4"/><circle cx="258" cy="253" r="3.4"/>
+        <circle cx="90" cy="301" r="3.4"/><circle cx="148" cy="301" r="3.4"/><circle cx="206" cy="301" r="3.4"/>
+      </g>
+      <g font-family="'JetBrains Mono',monospace" font-size="7.5" fill="#5E6E7E" text-anchor="middle">
+        <text x="90" y="270">employees</text><text x="148" y="270">customers</text>
+        <text x="206" y="270">templates</text><text x="258" y="270">sessions</text>
+        <text x="90" y="318">bookings</text><text x="148" y="318">ledger</text><text x="206" y="318">pt_req</text>
+      </g>
+      <text x="242" y="303" font-family="'JetBrains Mono',monospace" font-size="8" fill="#8C9AA8">＋檢視表</text>
+      <text x="242" y="315" font-family="'JetBrains Mono',monospace" font-size="8" fill="#8C9AA8">credits</text>
+
+      <!-- 場記 pg_cron -->
+      <circle cx="98" cy="392" r="28" fill="#fff" stroke="#2F6B54" stroke-width="1.8"/>
+      <line x1="98" y1="392" x2="98" y2="372" stroke="#2F6B54" stroke-width="2.4" stroke-linecap="round"/>
+      <line x1="98" y1="392" x2="98" y2="376" stroke="#2F6B54" stroke-width="2.4" stroke-linecap="round" transform="rotate(6 98 392)"/>
+      <circle cx="98" cy="392" r="2.6" fill="#2F6B54"/>
+      <text x="98" y="437" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10.5" font-weight="700" fill="#2F6B54">場記 pg_cron</text>
+      <text x="98" y="452" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#5E6E7E">每天 00:00 巡場</text>
+
+      <!-- 驗票窗口 Edge Function（未動工） -->
+      <rect x="150" y="358" width="136" height="72" rx="2" fill="url(#hatchFog)" stroke="#8C9AA8" stroke-width="1.4" stroke-dasharray="5 4"/>
+      <text x="218" y="384" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="11.5" font-weight="700" fill="#5E6E7E">驗票窗口</text>
+      <text x="218" y="400" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8.5" fill="#8C9AA8">Edge Function</text>
+      <text x="218" y="418" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#8C9AA8">未動工</text>
+
+      <!-- ══ 斷線處 ══ -->
+      <rect x="300" y="150" width="32" height="318" fill="#FDECEA"/>
+      <line x1="301" y1="150" x2="301" y2="468" stroke="#D8342B" stroke-width="2.4" stroke-dasharray="7 5"/>
+      <line x1="331" y1="150" x2="331" y2="468" stroke="#D8342B" stroke-width="2.4" stroke-dasharray="7 5"/>
+      <path d="M320 226 L307 268 L317 268 L306 310" fill="none" stroke="#D8342B" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/>
+      <text x="316" y="352" font-family="'Noto Sans TC',sans-serif" font-size="13" font-weight="900" fill="#A4211A"
+            transform="rotate(90 316 352)" text-anchor="middle" letter-spacing="4">線還沒接</text>
+
+      <!-- ══ 舞台 GitHub Pages ══ -->
+      <rect x="332" y="150" width="278" height="318" fill="#fff"/>
+      <rect x="332" y="150" width="278" height="30" fill="#0E1B2C"/>
+      <text x="344" y="171" font-family="'Noto Sans TC',sans-serif" font-size="13" font-weight="700" fill="#fff">舞台　GitHub Pages</text>
+      <text x="558" y="171" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#A8BCCE">純靜態</text>
+
+      <!-- 布幕 -->
+      <rect x="334" y="182" width="274" height="20" fill="#2C4E7D"/>
+      <path d="M334 202 q17 14 34 0 q17 14 34 0 q17 14 34 0 q17 14 34 0 q17 14 34 0 q17 14 34 0 q17 14 34 0 q17 14 34 0 L608 202 Z" fill="#2C4E7D"/>
+      <g fill="#2C4E7D">
+        <path d="M334 202 h34 v112 q-17 12 -34 0 Z"/>
+        <path d="M574 202 h34 v112 q-17 12 -34 0 Z"/>
+      </g>
+      <g stroke="#4A6E9E" stroke-width="1.4" opacity=".7">
+        <line x1="344" y1="206" x2="344" y2="312"/><line x1="356" y1="206" x2="356" y2="314"/>
+        <line x1="586" y1="206" x2="586" y2="314"/><line x1="598" y1="206" x2="598" y2="312"/>
+      </g>
+
+      <!-- 台上兩個「演員」 -->
+      <rect x="373" y="248" width="92" height="104" rx="2" fill="#F1F7F4" stroke="#2F6B54" stroke-width="1.6"/>
+      <text x="419" y="276" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="12" font-weight="700" fill="#0E1B2C">官網</text>
+      <text x="419" y="294" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#5E6E7E">index.html</text>
+      <text x="419" y="312" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#2F6B54">v1.3.1</text>
+      <circle cx="419" cy="334" r="10" fill="#2F6B54"/>
+      <path d="M414 334 l3.6 3.8 L425 330" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="419" y="366" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#2F6B54">正在上演</text>
+
+      <rect x="477" y="248" width="92" height="104" rx="2" fill="url(#hatchOrange)" stroke="#DE7A38" stroke-width="1.8" stroke-dasharray="6 4"/>
+      <text x="523" y="276" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="12" font-weight="700" fill="#A9531D">預約頁</text>
+      <text x="523" y="294" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="#A9531D">booking/</text>
+      <text x="523" y="312" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#A9531D">5 個原型</text>
+      <path d="M516 328 h14 M523 328 v10 M514 344 h18" stroke="#A9531D" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+      <text x="523" y="366" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#A9531D">布景已搭 · 未接電</text>
+
+      <!-- 台板 -->
+      <rect x="334" y="382" width="274" height="14" fill="#0E1B2C"/>
+      <text x="471" y="416" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10.5" fill="#5E6E7E">觀眾看得見的，只有這座台上的東西</text>
+      <text x="471" y="436" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#A9531D">零金鑰 → 永遠不能收金流</text>
+
+      <!-- ══ 觀眾席 ══ -->
+      <rect x="610" y="150" width="222" height="318" fill="#F7FAFB"/>
+      <rect x="610" y="150" width="222" height="30" fill="#2E8B94"/>
+      <text x="622" y="171" font-family="'Noto Sans TC',sans-serif" font-size="13" font-weight="700" fill="#fff">觀眾席　客人的手機</text>
+      <text x="622" y="202" font-family="'Noto Sans TC',sans-serif" font-size="11" fill="#2E8B94">能做的事很少 —— 這是刻意的</text>
+      <g fill="#fff" stroke="#2E8B94" stroke-width="1.3">
+        <g><rect x="624" y="222" width="30" height="12" rx="2"/><rect x="627" y="234" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="664" y="222" width="30" height="12" rx="2"/><rect x="667" y="234" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="704" y="222" width="30" height="12" rx="2"/><rect x="707" y="234" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="744" y="222" width="30" height="12" rx="2"/><rect x="747" y="234" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="784" y="222" width="30" height="12" rx="2"/><rect x="787" y="234" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="624" y="256" width="30" height="12" rx="2"/><rect x="627" y="268" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="664" y="256" width="30" height="12" rx="2"/><rect x="667" y="268" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="704" y="256" width="30" height="12" rx="2"/><rect x="707" y="268" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="744" y="256" width="30" height="12" rx="2"/><rect x="747" y="268" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="784" y="256" width="30" height="12" rx="2"/><rect x="787" y="268" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="624" y="290" width="30" height="12" rx="2"/><rect x="627" y="302" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="664" y="290" width="30" height="12" rx="2"/><rect x="667" y="302" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="704" y="290" width="30" height="12" rx="2"/><rect x="707" y="302" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="744" y="290" width="30" height="12" rx="2"/><rect x="747" y="302" width="24" height="7" rx="1.5"/></g>
+        <g><rect x="784" y="290" width="30" height="12" rx="2"/><rect x="787" y="302" width="24" height="7" rx="1.5"/></g>
+      </g>
+
+      <!-- 前台櫃檯（人工領地） -->
+      <rect x="624" y="336" width="192" height="86" rx="2" fill="#FCF2E8" stroke="#DE7A38" stroke-width="1.8"/>
+      <rect x="624" y="336" width="192" height="4" fill="#DE7A38"/>
+      <rect x="638" y="378" width="164" height="30" rx="2" fill="#DE7A38" opacity=".22"/>
+      <circle cx="650" cy="362" r="10" fill="#DE7A38"/>
+      <path d="M640 378 a10 10 0 0 1 20 0 z" fill="#DE7A38"/>
+      <text x="742" y="360" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="12" font-weight="700" fill="#A9531D">前台櫃檯</text>
+      <text x="742" y="375" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8.5" fill="#A9531D">真人 · 這層才是安全邊界</text>
+      <text x="720" y="399" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9.5" fill="#A9531D">開通帳號 · 加堂 · 退費 · 收款</text>
+      <text x="720" y="443" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#A9531D">🔒 完整手機／傷病史／金流　永不上雲</text>
+
+      <!-- ══ LINE 大門 ══ -->
+      <rect x="832" y="150" width="126" height="318" fill="#EFF2F5"/>
+      <rect x="832" y="150" width="126" height="30" fill="#8C9AA8"/>
+      <text x="843" y="171" font-family="'Noto Sans TC',sans-serif" font-size="13" font-weight="700" fill="#fff">大門　LINE</text>
+      <text x="895" y="202" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="11" fill="#5E6E7E">整層尚未動工</text>
+      <rect x="848" y="222" width="94" height="196" rx="3" fill="url(#hatchFog)" stroke="#8C9AA8" stroke-width="1.8" stroke-dasharray="6 4"/>
+      <circle cx="930" cy="322" r="4.5" fill="#8C9AA8"/>
+      <rect x="864" y="246" width="62" height="76" rx="2" fill="#fff" stroke="#8C9AA8" stroke-width="1.3" stroke-dasharray="4 3"/>
+      <text x="895" y="278" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#5E6E7E">LIFF</text>
+      <text x="895" y="296" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#8C9AA8">通往舞台</text>
+      <text x="895" y="309" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#8C9AA8">的小門</text>
+      <text x="895" y="346" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10.5" font-weight="700" fill="#5E6E7E">圖文選單</text>
+      <text x="895" y="361" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#8C9AA8">＝門上指示牌</text>
+      <text x="895" y="388" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10.5" font-weight="700" fill="#5E6E7E">官方帳號</text>
+      <text x="895" y="403" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#8C9AA8">＝大門本身</text>
+      <text x="895" y="443" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10" font-weight="700" fill="#A9531D">客人從這裡進來</text>
+
+      <!-- 地面 -->
+      <line x1="18" y1="470" x2="982" y2="470" stroke="#0E1B2C" stroke-width="3"/>
+      <rect x="18" y="471" width="964" height="26" fill="url(#hatchGround)"/>
+    </svg>
+    </div>
+    <p class="cap">
+      <b>怎麼讀這張圖：</b>後台（左，實心綠）＝已完工。舞台（中）上有兩位演員：官網正在演，預約頁的布景搭好了但沒接電。
+      兩者之間那條紅色虛線就是<b>還沒接上的線 —— 你在那裡</b>。右邊的觀眾席已經有座位，但大門（LINE）整層還是灰色斜線＝尚未動工。
+      橘色的前台櫃檯畫在觀眾席旁邊，代表它<b>不會被自動化取代</b>，那是刻意的設計。
+    </p>
+  </div>
+
+  <!-- ══════════ 你在這裡 ══════════ -->
+  <section class="here">
+    <div class="here-top">
+      <span class="pin"></span>
+      <h2>你在這裡</h2>
+      <span class="co" id="here-co">讀取中…</span>
+    </div>
+    <p class="here-line" id="here-line"></p>
+    <div class="here-bar" id="here-bar"></div>
+    <div class="here-grid" id="here-grid"></div>
+  </section>
+
+  <!-- ══════════ 劇場對照表 ══════════ -->
+  <section class="cast">
+    <h3>誰在演誰</h3>
+    <p class="cap">左邊是技術名詞，右邊是這座劇院裡的角色。整張地圖都用右邊那套稱呼。</p>
+    <div class="cast-grid">
+      <div class="role"><span class="tech">VS Code</span><span class="arw">→</span><span>編劇室的桌子</span></div>
+      <div class="role"><span class="tech">Claude Code</span><span class="arw">→</span><span>坐在你旁邊的編劇</span></div>
+      <div class="role"><span class="tech">Git</span><span class="arw">→</span><span>每一版劇本的存檔</span></div>
+      <div class="role"><span class="tech">GitHub</span><span class="arw">→</span><span>劇本保管處（正本）</span></div>
+      <div class="role"><span class="tech">GitHub Pages</span><span class="arw">→</span><span>舞台（觀眾看得見）</span></div>
+      <div class="role"><span class="tech">Supabase</span><span class="arw">→</span><span>後台道具間 ＋ 名冊室</span></div>
+      <div class="role"><span class="tech">資料表</span><span class="arw">→</span><span>後台那七個上鎖的抽屜</span></div>
+      <div class="role"><span class="tech">RLS</span><span class="arw">→</span><span>每個抽屜自己的鎖</span></div>
+      <div class="role"><span class="tech">pg_cron</span><span class="arw">→</span><span>半夜巡場的場記</span></div>
+      <div class="role"><span class="tech">Edge Function</span><span class="arw">→</span><span>驗票窗口</span></div>
+      <div class="role"><span class="tech">LINE 官方帳號</span><span class="arw">→</span><span>劇院大門</span></div>
+      <div class="role"><span class="tech">LIFF</span><span class="arw">→</span><span>大門內通往舞台的小門</span></div>
+      <div class="role"><span class="tech">圖文選單</span><span class="arw">→</span><span>大門上的指示牌</span></div>
+      <div class="role"><span class="tech">前台櫃檯</span><span class="arw">→</span><span>真人售票員（你和教練）</span></div>
+      <div class="role"><span class="tech">客人的手機</span><span class="arw">→</span><span>觀眾席</span></div>
+    </div>
+    <details class="more">
+      <summary>為什麼要用劇場比喻</summary>
+      <div class="body">
+        因為劇場把「誰看得見什麼」講得最清楚，而這正是整套系統的核心問題。
+        <ul>
+          <li>觀眾只看得到舞台 —— 所以舞台上不能放任何祕密（<code>sb_secret_</code> 永遠不能進前端）</li>
+          <li>後台跟舞台之間有一道門 —— 那道門就是 RLS，鎖在門上，不是靠把道具藏起來</li>
+          <li>編劇室不在劇院裡 —— 你的電腦關機，戲照演，因為劇本已經送去保管處了</li>
+          <li>櫃檯有真人 —— 有些事刻意不自動化，因為面對面驗身分免費又可靠</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <div class="section-h">
+    <h2>樓層清單</h2>
+    <em>剖面圖的文字版 —— 每一格的細節、狀態、和踩過的坑</em>
+  </div>
+  <div class="swipe">← 左右滑動看完整地圖 →</div>
+
+  <div class="scroll">
+  <div class="canvas">
+
+    <!-- ── 樓層 −1 ── -->
+    <section class="dev">
+      <div class="dev-head">
+        <span class="flr">樓層 −1</span><h3>你的電腦</h3><span class="thr">＝ 編劇室</span>
+        <em>只有你進得去 · 關機就停 · 金鑰留在這裡</em>
+      </div>
+      <div class="dev-grid">
+        <div class="tool"><b>VS Code</b><small>編劇桌 · 內含 Claude Code</small></div>
+        <div class="tool"><b>Node.js</b><small>水電 · 讓工具能運作</small></div>
+        <div class="tool"><b>npm 倉庫</b><small>網路上的道具供應商</small></div>
+        <div class="bldg">
+          <div class="bl">fff-platform/ — FFF 大樓（已交給 Git 版控）</div>
+          <div class="rooms">
+            <span class="rm">index.html</span><span class="rm">db/</span><span class="rm">assets/</span>
+            <span class="rm">HANDOVER.md</span><span class="rm ghost">booking/</span>
+            <span class="rm ghost">admin/ 🔒</span><span class="rm ghost">training/</span><span class="rm ghost">marketing/</span>
+          </div>
+        </div>
+      </div>
+      <details class="more">
+        <summary>三條線同時進行時的規矩</summary>
+        <div class="body">
+          你用不同設備開不同對話，分頭處理三條線：<b>A 線</b>官網細節打磨、<b>B 線</b>預約系統、<b>C 線</b>ERP 架構討論。
+          <ul>
+            <li><b><code>index.html</code> 只由 A 線改動。</b>已經撞過一次：B 線做的「手機版教練卡左右排列」被 A 線改成上下堆疊</li>
+            <li>其他線需要動它時，先請你提供最新檔案，<b>不要憑記憶改</b></li>
+            <li>不要在 GitHub 網頁上直接改檔案 —— 會造成雲端比本機新，下次 push 被拒</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <div class="link push"><span>git push — 只推程式碼，金鑰留在本機</span></div>
+
+    <!-- ── 自動化領地 ── -->
+    <section class="land auto">
+      <div class="land-head">
+        <h3><span class="dot"></span>自動化領地<span class="thr">＝ 舞台與後台</span></h3>
+        <p>你關機也照常運作 · 沒有人看著</p>
+      </div>
+      <div class="cells">
+        <div class="cell wide"><b>GitHub — 劇本保管處<span class="st done">已完工</span></b><small>正本存放。commit 是拍快照，push 才是寄出去。</small>
+          <details class="more"><summary>commit 和 push 差在哪</summary><div class="body">
+            <code>git add</code> 挑出要記錄的檔案 → <code>git commit</code> 沖洗成一張版本快照貼進你電腦裡的相簿 → <code>git push</code> 把相簿寄一份到 GitHub 的保險箱。<br>
+            <b>commit 完但沒 push，GitHub 上什麼都看不到</b>，電腦這時候壞掉紀錄一樣會消失。<br>
+            這個設計是有用的：可以整個下午連續 commit 五次，收工時 push 一次。而且沒網路也能 commit。<br>
+            訊息類型：<code>feat</code>／<code>fix</code>／<code>docs</code>／<code>style</code>／<code>chore</code>。<b>寫「為什麼改」，不要寫「改了 index.html」</b> —— Git 自己會記錄改了哪個檔案。
+          </div></details>
+        </div>
+
+        <div class="cell wide"><b>GitHub Pages — 舞台<span class="st done">已完工</span></b><small>觀眾看得見的那一面。純靜態、零金鑰，所以永遠不能收金流。</small></div>
+        <div class="cell sub wide"><b>index.html — 官網 v1.3.1<span class="st done">已上演</span></b><small>A 線獨占，其他線不要動。</small>
+          <details class="more"><summary>兩個還沒解決的問題</summary><div class="body">
+            <b>1. 部署卡住</b>：build 成功但 deploy 一直 <code>deployment_queued</code> 逾時。這是 GitHub 端的已知問題，不是設定錯誤。解法是重試（可能要多次）或推空 commit，備案是改用 Cloudflare Pages。<br>
+            註：這是「網站部署」卡住，跟 <code>git push</code> 是兩回事 —— 部署卡住不代表程式碼沒上傳。<br><br>
+            <b>2. 年齡層資訊矛盾</b>：首頁寫「12+」，但服務課程頁有「6–14 兒童體適能」卡片、聯絡頁 FAQ 寫「服務 6 歲到 100 歲」。這是服務範圍的商業決定，還沒定案。<br><br>
+            <b>版本編號規則</b>：大 1.x.x 動架構或加模組｜中 x.1.x 加新區塊或新功能｜小 x.x.1 改文字、價格、換照片。
+          </div></details>
+        </div>
+        <div class="cell sub wide build"><b>booking/ — 預約頁的布景<span class="st wip">布景已搭 · 未接電</span></b><small>五個 HTML 原型：A-entry／GT／PGT／PT／pricing。資料只存在瀏覽器記憶體。</small>
+          <details class="more"><summary>接電時要順手改掉的三件事</summary><div class="body">
+            <ul>
+              <li><code>GT-booking.html</code>：移除候補邏輯（已定案不做候補）；額滿改成「可報但先提醒」；加上「今日未開課」狀態</li>
+              <li><code>PT</code>／<code>PGT-booking.html</code>：「確認預約」改成「送出需求」—— 私人課不是預約</li>
+              <li>全部：姓名手機改成 LIFF 自動帶入，資料寫進 Supabase</li>
+            </ul>
+          </div></details>
+        </div>
+
+        <div class="gap">
+          <div class="ttl"><span class="minipin"></span><b>這條線還沒接</b><span>你在這裡</span></div>
+          <p>舞台上的預約頁，跟後台的名冊室之間，目前<b>完全沒有連線</b>。<br>
+             這是整張地圖的<b>分水嶺</b> —— 過了這一步預約才是真的，下面那三個風險有兩個會自動消失。</p>
+          <div class="broken">舞台<i></i>✕<i></i>後台</div>
+        </div>
+
+        <div class="cell wide"><b>Supabase — 後台道具間＋名冊室<span class="st done">已完工</span></b><small>東京機房 · Free 方案 · 24 小時有人值班。</small></div>
+        <div class="cell sub wide"><b>七張桌子<span class="st done">已完工</span></b><small><code>employees</code>／<code>customers</code>／<code>class_templates</code>／<code>class_sessions</code>／<code>bookings</code>／<code>credit_ledger</code>／<code>pt_requests</code>　＋檢視表 <code>customer_credits</code></small>
+          <details class="more"><summary>幾個設計決定的理由</summary><div class="body">
+            <ul>
+              <li><b><code>class_sessions</code> 複製範本欄位</b>而非每次查範本：範本會改，歷史紀錄不該跟著變</li>
+              <li><b>剩餘堂數存流水帳不存數字</b>：客人問「為什麼少一堂」要查得到，扣錯要追得回</li>
+              <li><b>離職改 <code>is_active</code> 不刪除</b>：刪掉會讓歷史課堂失去教練資訊</li>
+              <li><b><code>customers.phone</code> 設 unique</b>：為了之後 LINE 綁定時比對名單</li>
+            </ul>
+            目前資料：教練 6 位、課表範本 14 堂、課堂數量每天由排程自動增長（<b>不再是固定的 28</b>，看到它變動是正常的）。
+          </div></details>
+        </div>
+        <div class="cell sub wide"><b>RLS — 每個抽屜自己的鎖<span class="st done">已完工</span></b><small>真正的安全邊界。前端把按鈕藏起來不算安全，鎖在這裡才算。</small>
+          <details class="more"><summary>三條不能破的線</summary><div class="body">
+            <ul>
+              <li><b><code>credit_ledger</code> 客人只能讀，永遠不能寫</b> —— 能寫就能自己加堂數</li>
+              <li><b><code>bookings</code> 的取消時限寫在 RLS 裡</b>，不是只靠前端藏按鈕</li>
+              <li><b><code>employees</code> 不對客人開放</b> —— 網站要顯示教練資料，另開只含安全欄位的公開檢視表</li>
+            </ul>
+            金鑰對照：畫面上的 <code>Publishable key</code>（舊稱 anon key）可以進前端；<code>Secret key</code>（舊稱 service_role）<b>絕對不行</b>。金鑰存在你的密碼管理工具，不在專案資料夾裡。
+          </div></details>
+        </div>
+        <div class="cell sub wide"><b>pg_cron — 半夜巡場的場記<span class="st done">已上工</span></b><small><code>0 16 * * *</code>（UTC）＝台灣 00:00，2026-08-08 首次自動執行成功。</small>
+          <details class="more"><summary>當時想清楚的三個細節</summary><div class="body">
+            <ul>
+              <li><b>為什麼是 16 不是 0</b>：資料庫排程用 UTC 計時，台灣快 8 小時。寫 <code>0 0 * * *</code> 實際會在台灣早上 8 點才跑，那時早課已經開始。已用查詢向資料庫求證過，不是憑算術</li>
+              <li><b>為什麼函式前面要加 <code>public.</code></b>：排程是半夜由背景程序執行的，那個環境預設會找哪些 schema 不一定跟 SQL Editor 一樣。寫上等於直接給門牌號碼，不靠猜</li>
+              <li><b>為什麼要先確認函式存在才排程</b>：排程失敗是<b>安靜的</b>。名字打錯照樣建得起來、<code>active</code> 照樣 true，但每天半夜撞牆，可能兩週後才發現課表沒長</li>
+            </ul>
+            排程註冊在資料庫內部，跟你的瀏覽器無關 —— 關機、出國兩週，它照樣每天台灣 00:00 執行。<br>
+            ☢️ <b>絕對不要下 <code>drop extension pg_cron;</code></b> —— 會把所有排程連同設定一起永久刪除，救不回來。要停用請用 <code>select cron.unschedule('daily-class-job');</code>
+          </div></details>
+        </div>
+        <div class="cell sub wide dim"><b>Edge Functions — 驗票窗口<span class="st todo">未動工</span></b><small>之後 LINE 登入的憑證要在這裡核對，密鑰也放這裡。沒有它，LIFF 拿到的身分就只是一串可以被改掉的字串。</small></div>
+      </div>
+      <div class="holds">
+        <div class="ht">✓ 這裡只放外洩也不至於出事的東西</div>
+        <div class="chips">
+          <span class="chip">課表與名額</span><span class="chip">預約紀錄</span>
+          <span class="chip">課卡餘額（只追加）</span><span class="chip">會員名字</span><span class="chip">手機末三碼</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="wall"><span>不得越界</span></div>
+
+    <!-- ── 人工領地 ── -->
+    <section class="land man">
+      <div class="land-head">
+        <h3><span class="dot"></span>人工領地<span class="thr">＝ 前台櫃檯</span></h3>
+        <p>需要有人在場 · 這層才是安全邊界</p>
+      </div>
+      <div class="cells">
+        <div class="cell"><b>發啟用碼</b><small>六位數 · 30 分鐘 · 一次性</small></div>
+        <div class="cell"><b>面對面驗身分</b><small>比線上驗證可靠，而且免費</small></div>
+        <div class="cell"><b>課卡異動</b><small>開卡 · 加堂 · 退費 · 補堂</small></div>
+        <div class="cell"><b>收款</b><small>現金或刷卡，當面完成</small></div>
+        <div class="cell wide"><b>課後點名核銷<span class="st todo">未動工</span></b><small>扣課時機在課後，由教練現場點名。缺席不扣課。</small></div>
+        <div class="cell wide"><b>私人課敲定<span class="st todo">未動工</span></b><small>客人只能「送出需求」，教練聯繫後才敲定 —— 那不是預約。</small></div>
+        <div class="cell wide"><b>會員端永遠只能送出請求</b><small>所有異動進待處理清單，等教練按下確認才生效。</small></div>
+        <div class="cell wide"><b>九條已定案的業務規則</b><small>取消：課前 1 小時｜結算：當天 00:00｜缺席不扣課｜課後點名核銷｜預約無上限｜剩 0 堂也能訂｜不做候補｜額滿只提醒不硬擋｜私人課只送需求</small>
+          <details class="more"><summary>00:00 那一刻真正發生的事</summary><div class="body">
+            <b>00:00 是「結算」，不是「關閉報名」。</b>很多人第一次會誤會這點。
+            <ul>
+              <li>00:00 之前 —— 教練持續等待，有人報就成立</li>
+              <li>00:00 <b>結算</b>：有人（≥1）→ ✅ 成立，<b>當天仍可加入</b>（未滿 10 人，課程進行中也能插入）</li>
+              <li>00:00 <b>結算</b>：無人（=0）→ ❌ 取消，之後有人報名也不開課、不扣課</li>
+            </ul>
+          </div></details>
+        </div>
+        <div class="cell wide"><b>為什麼刻意留這麼多人工</b><small>面對面驗身分免費又可靠；金流一自動化就必須搬離 GitHub Pages。這套設計的成本是人力，換到的是緩期。</small></div>
+      </div>
+      <div class="holds">
+        <div class="ht">🔒 櫃檯保險箱 — 離線保管，永不上雲</div>
+        <div class="chips">
+          <span class="chip">完整手機號碼</span><span class="chip">健康與傷病史</span>
+          <span class="chip">合約發票</span><span class="chip">緊急聯絡人</span><span class="chip">金流紀錄</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="down l"><span>載入網頁 ↓<br>讀寫資料 ↕</span></div>
+    <div class="down r"><span>開通帳號 ↓<br>課卡異動 ↓</span></div>
+
+    <!-- ── LINE 大門 ── -->
+    <section class="line-gate">
+      <div class="dev-head">
+        <span class="flr">樓層 1</span><h3>LINE 官方帳號</h3><span class="thr">＝ 劇院大門</span>
+        <em>整層尚未動工 —— 但它會決定客人怎麼進場</em>
+      </div>
+      <div class="lg-grid">
+        <div class="gate"><b>官方帳號<span class="st todo">未開</span></b><small>大門本身。客人加好友＝走到門口。</small></div>
+        <div class="gate"><b>圖文選單<span class="st todo">未動工</span></b><small>大門上的指示牌：訂課／我的課／剩幾堂。</small></div>
+        <div class="gate"><b>LIFF<span class="st todo">未動工</span></b><small>大門裡通往舞台的小門。在 LINE 內開一層網頁蓋在對話上 —— 客人全程不離開 LINE，但本質仍是網頁。</small></div>
+        <div class="gate key"><b>身分怎麼驗<span class="st todo">最關鍵</span></b><small><b>這一步做錯，後面所有的鎖都只是裝飾。</b></small>
+          <details class="more"><summary>正確與錯誤的做法</summary><div class="body">
+            ❌ <b>錯</b>：LIFF 取得 <code>line_user_id</code>，前端直接拿它查資料庫 → 任何人改一個字串就能查別人的資料<br><br>
+            ✅ <b>對</b>：<br>
+            LIFF 取得 ID Token（LINE 簽章過的憑證）<br>
+            ↓ 送到 Supabase Edge Function<br>
+            ↓ 向 LINE 官方驗證<br>
+            ↓ 發一張 Supabase 登入憑證<br>
+            之後所有查詢用 <code>auth.uid()</code> 判斷身分<br><br>
+            <b>綁定流程</b>：客人第一次開 LIFF → 輸入手機 → 比對既有名單 → 寫入 <code>line_user_id</code>。<code>customers.phone</code> 設成 unique 就是為了這個。<br><br>
+            簡單查詢（如「剩幾堂」）可以用機器人純文字回覆，不用開網頁。
+          </div></details>
+        </div>
+      </div>
+    </section>
+
+    <div class="down2"><span>加好友 ↓　開小門 ↓　驗票 ↕</span></div>
+
+    <!-- ── 觀眾席 ── -->
+    <section class="client">
+      <div class="dev-head">
+        <span class="flr">樓層 2</span><h3>客人的手機</h3><span class="thr">＝ 觀眾席</span>
+        <em>能做的事很少 — 這是刻意的</em>
+      </div>
+      <div class="can">
+        <div class="ok">
+          <div class="t">可以自己做（座位上就能完成）</div>
+          <ul><li>查課卡餘額</li><li>訂團體課</li><li>取消自己的課</li><li>看課表</li><li>送出私人課需求</li></ul>
+        </div>
+        <div class="no">
+          <div class="t">必須走到櫃檯（真人經手）</div>
+          <ul><li>開通帳號</li><li>加課堂</li><li>退費補堂</li><li>付款</li><li>看別人資料</li></ul>
+        </div>
+      </div>
+    </section>
+
+  </div>
+  </div>
+
+  <!-- ══════════ 地平線 ══════════ -->
+  <section class="horizon">
+    <div class="hz-head"><h3>地平線那一頭 — ERP</h3><em>看得到方向，還沒有路</em></div>
+    <p>你的終極目標是一套掌管整間企業的系統。這些是遠方的輪廓，<b>現在刻意畫得淡</b> —— 因為它們的細節取決於預約系統跑順之後你才會發現的事。</p>
+    <div class="hz-grid">
+      <div class="hz"><b>金流與發票<span class="st fog">地平線</span></b><small>一碰這個就必須搬離 GitHub Pages</small></div>
+      <div class="hz"><b>教練排班與薪資<span class="st fog">地平線</span></b><small>建在 employees 這塊地基上</small></div>
+      <div class="hz"><b>營收與出席報表<span class="st fog">地平線</span></b><small>資料其實已經在累積了</small></div>
+      <div class="hz"><b>會員關係與續約<span class="st fog">地平線</span></b><small>建在 customers 這塊地基上</small></div>
+      <div class="hz"><b>器材與庫存<span class="st fog">地平線</span></b><small>目前完全沒動</small></div>
+      <div class="hz"><b>多店擴張<span class="st fog">地平線</span></b><small>資料表要先有「場館」欄位</small></div>
+    </div>
+    <p class="hz-note"><b>為什麼現在不畫細：</b>ERP 的每一個模組，最後都會長在 <code>employees</code> 和 <code>customers</code> 這兩張桌子上。你已經把地基打好了 —— 這就是往 ERP 走最重要的一步，而它已經完成了。</p>
+  </section>
+
+  <!-- ══════════ 風險 ══════════ -->
+  <section class="risks">
+    <h3>地圖上的三個坑</h3>
+    <p class="cap">全部都還在。右邊那欄是「要不要你動手」—— 有兩個會因為你踏出下一步而自己消失。</p>
+    <div class="rk">
+      <span class="n">01</span>
+      <div><b>免費方案專案會被自動暫停</b><small>連續約一週幾乎沒有外部請求就會停。專案一停，場記也不出勤 —— 課堂不會長、結算不會做，而且沒有人會通知你。</small></div>
+      <span class="cure auto">接上前端<br>自動解除</span>
+    </div>
+    <div class="rk">
+      <span class="n">02</span>
+      <div><b>漏跑的那幾天永遠不會被補結算</b><small><code>daily_class_job()</code> 只結算「今天」。中間漏掉的日子會永遠卡在 <code>pending</code>。改法是把 <code>=</code> 改成 <code>&lt;=</code>。</small></div>
+      <span class="cure hand">要你決定<br>商業判斷</span>
+    </div>
+    <div class="rk">
+      <span class="n">03</span>
+      <div><b>在有客人之前，每天的課都會被自動取消</b><small>這不是錯誤，是照規則正確運作。<code>bookings</code> 空的 → 每天 00:00 判定「無人報名 → 取消」。看到一整排 <code>cancelled</code> 不用緊張。</small></div>
+      <span class="cure auto">有客人後<br>自動解除</span>
+    </div>
+  </section>
+
+  <!-- ══════════ 邊欄 ══════════ -->
+  <div class="margin">
+    <div class="box">
+      <h3>圖例 · 顏色</h3>
+      <p class="cap">顏色代表誰負責</p>
+      <div class="lg"><span class="sw n"></span><div><b>藍</b> — 你的編劇室，只有你碰得到</div></div>
+      <div class="lg"><span class="sw g"></span><div><b>綠</b> — 機器自己跑，不需要人</div></div>
+      <div class="lg"><span class="sw o"></span><div><b>橘</b> — 一定要真人經手，不自動化</div></div>
+      <div class="lg"><span class="sw k"></span><div><b>黑</b> — 分界線與終端</div></div>
+      <div class="lg"><span class="sw f"></span><div><b>灰斜線</b> — 還沒動工的區域</div></div>
+      <div class="lg"><span class="sw p"></span><div><b>紅</b> — 你現在的位置</div></div>
+    </div>
+
+    <div class="box">
+      <h3>圖例 · 狀態</h3>
+      <p class="cap">每個方塊右上角的小標籤</p>
+      <div class="lg"><span class="st done" style="margin:2px 0 0">已完工</span><div>蓋好了，而且驗證過能動</div></div>
+      <div class="lg"><span class="st wip" style="margin:2px 0 0">未接電</span><div>看得到、摸得到，但還沒真的運作</div></div>
+      <div class="lg"><span class="st todo" style="margin:2px 0 0">未動工</span><div>知道要蓋，還沒開始</div></div>
+      <div class="lg"><span class="st fog" style="margin:2px 0 0">地平線</span><div>看得到方向，還沒有路</div></div>
+    </div>
+
+    <div class="box red">
+      <h3>什麼時候這張地圖會失效</h3>
+      <p class="cap">碰到任一條，就該搬去 Cloudflare 或更完整的系統鏈</p>
+      <ol>
+        <li>要收線上金流<small>沒有討論空間，GitHub Pages 條款明確禁止</small></li>
+        <li>要存健康或傷病資料<small>個資法特種個資，責任等級不同</small></li>
+        <li>會員超過約 300 人<small>或教練每天手動處理超過 30 分鐘</small></li>
+        <li>需要頻繁自動通知<small>課前提醒、LINE 雙向互動</small></li>
+      </ol>
+    </div>
+  </div>
+
+  <p class="foot">
+    這套設計的成本是人力，換到的是緩期。<br>
+    <code>81 位會員可以 · 300 位會很痛</code><br><br>
+    後台蓋完了，舞台搭好了。<br>
+    <b>你缺的不是一整棟樓，是一條線。</b><br><br>
+    <span style="font-size:11.5px">
+      這張地圖的「你在這裡」和旁邊的
+      <a href="fff-roadmap-steps.html" style="color:var(--navy);font-weight:700">步驟清單</a>
+      共用同一份 <code>roadmap-data.js</code>。<br>
+      改那一個檔案，兩份文件同時更新 —— <b>它們永遠不會互相矛盾。</b>
+    </span>
+  </p>
+
+</div>
+
+<script src="roadmap-data.js"></script>
+<script>
+(function () {
+  const R = window.FFF_ROADMAP, P = window.FFF_PROGRESS;
+  const act = R.acts[P.currentActIndex];
+  const cur = P.current, prev = P.lastDone, next = P.afterCurrent;
+  const actLeft = act.steps.filter(s => !s.done).length;
+
+  document.getElementById('here-co').textContent =
+    cur ? ('第 ' + cur.n + ' 步 · ' + act.no + ' · ' + act.place) : '第一階段全部完成';
+
+  document.getElementById('here-line').innerHTML = cur ? (
+    '第一階段 ' + P.total + ' 步，你已經走完 <b>' + P.done + ' 步</b>。<br>' +
+    '現在站的位置是<b>' + act.place + '</b> —— ' + act.no + '「' + act.name + '」，這一幕還剩 ' + actLeft + ' 步。<br>' +
+    '腳下這一步是<b>第 ' + cur.n + ' 步：' + cur.t + '</b>'
+  ) : ('第一階段 ' + P.total + ' 步全部走完。接下來是地平線那一頭的 ERP —— 該重新畫一張新地圖了。');
+
+  document.getElementById('here-bar').innerHTML =
+    '<span>' + P.done + ' / ' + P.total + '</span>' +
+    '<span class="track"><i class="g" style="width:' + P.pctDone.toFixed(1) + '%"></i>' +
+    '<i class="r" style="width:' + P.pctCurrent.toFixed(1) + '%"></i></span>' +
+    '<span>' + R.meta.updated + '</span>';
+
+  const cell = (cls, lbl, title, sub) =>
+    '<div class="' + cls + '"><div class="lbl">' + lbl + '</div><b>' + title + '</b><small>' + sub + '</small></div>';
+
+  document.getElementById('here-grid').innerHTML =
+    cell('past', '← 剛走完的路',
+         prev ? ('第 ' + prev.n + ' 步　' + prev.t) : '還沒開始',
+         '已完成 ' + P.done + ' / ' + P.total + ' 步。' + (prev && prev.ck ? '完成判準：' + prev.ck : '')) +
+    cell('now', '◉ 你腳下這一格',
+         cur ? ('第 ' + cur.n + ' 步　' + cur.t) : '全部完成',
+         cur ? ('在' + cur.where + '做。' + (cur.ck ? '完成判準：' + cur.ck : '')) : '') +
+    cell('next', '→ 前方第一格',
+         next ? ('第 ' + next.n + ' 步　' + next.t) : '這一階段的最後一步',
+         next ? ('在' + next.where + '做。做完這一步之前不用想它。') : '');
+})();
+</script>
+</body>
+</html>
