@@ -262,6 +262,28 @@
 (function () {
   const R = window.FFF_ROADMAP, P = window.FFF_PROGRESS;
 
+  // ── 找不到資料檔的話，給看得懂的提示，不要丟原始 JS 錯誤 ──────────
+  //    最常見的原因：只單獨打開這一個 HTML（例如在聊天室的預覽視窗裡），
+  //    旁邊沒有 roadmap-data.js。三個檔案必須放在同一個資料夾。
+  if (!R || !P) {
+    const box = document.createElement('div');
+    box.setAttribute('style',
+      'max-width:760px;margin:26px auto;padding:18px 20px;border:2px solid #D8342B;' +
+      'border-radius:3px;background:#FDECEA;color:#A4211A;line-height:1.85;' +
+      'font-family:"Noto Sans TC",system-ui,sans-serif;font-size:14px');
+    box.innerHTML =
+      '<b style="font-size:16px">找不到 <code>roadmap-data.js</code></b><br><br>' +
+      '這一頁的所有數字都是從旁邊那支資料檔算出來的，單獨打開會是空白的。<br><br>' +
+      '<b>兩個常見原因：</b><br>' +
+      '① 你在聊天室或線上預覽視窗開這個檔 —— 那裡只有單一檔案，看不到隔壁的資料檔。<br>' +
+      '② 三個檔案沒放在同一個資料夾。<br><br>' +
+      '<b>正確做法：</b>把 <code>roadmap-data.js</code>、<code>fff-roadmap-steps.html</code>、' +
+      '<code>fff-architecture-map.html</code> 放在同一個 <code>plan/</code> 資料夾裡，直接雙擊 HTML 開啟。';
+    document.body.prepend(box);
+    document.querySelectorAll('#here-co,#here-line').forEach(el => el.textContent = '');
+    return;
+  }
+
   /* ═══ 路線圖 SVG ═══ */
   // 六個站的座標：五幕 ＋ 地平線的 ERP
   const STATIONS = [

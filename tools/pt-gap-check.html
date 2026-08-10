@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FFF PT 名單缺口盤點</title>
+<style>
+  :root{
+    --ink:#0E1B2C; --navy:#2C4E7D; --teal:#2E8B94; --green:#2F6B54;
+    --orange:#DE7A38; --orange-deep:#A9531D;
+    --paper:#E9EEF2; --line:#C9D4DD; --muted:#5E6E7E;
+    --pin:#D8342B; --pin-deep:#A4211A; --pin-bg:#FDECEA;
+    --ok-bg:#EDF5F3; --ok-line:#A8C9BE; --fog-bg:#EFF2F5;
+    --mono:ui-monospace,"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);
+    font-family:"Noto Sans TC",system-ui,-apple-system,sans-serif;line-height:1.6;
+    padding:20px 14px 70px;-webkit-font-smoothing:antialiased}
+  .page{max-width:1000px;margin:0 auto}
+  h1{font-size:25px;font-weight:900;letter-spacing:.02em;padding-bottom:12px;border-bottom:2px solid var(--ink)}
+  h1 small{display:block;font-size:12.5px;font-weight:400;color:var(--muted);margin-top:5px;letter-spacing:0}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:3px;padding:15px 17px;margin-top:14px}
+  .card>h2{font-size:16.5px;font-weight:700;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .card>h2 .no{font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;
+    background:var(--ink);padding:3px 7px;border-radius:2px;letter-spacing:.08em}
+  .card>p.cap{font-size:12.5px;color:var(--muted);margin:5px 0 12px;line-height:1.7}
+  .card.priv{border-top:4px solid var(--green);background:var(--ok-bg)}
+  .card.priv h2{color:var(--green)}
+
+  textarea{width:100%;min-height:110px;font-family:var(--mono);font-size:12px;line-height:1.65;
+    padding:10px 12px;border:1px solid var(--line);border-radius:3px;background:#FBFDFE;color:var(--ink);resize:vertical}
+  textarea:focus{outline:2px solid var(--teal);outline-offset:-1px}
+  .lbl{font-size:12.5px;font-weight:700;margin:12px 0 5px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .lbl .tag{font-family:var(--mono);font-size:10.5px;font-weight:700;color:#fff;background:var(--navy);
+    padding:2px 7px;border-radius:2px;letter-spacing:.06em}
+  .lbl .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:13px}
+  button{font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.05em;
+    padding:10px 17px;border-radius:3px;cursor:pointer;border:1px solid var(--navy);
+    background:var(--navy);color:#fff;transition:.14s}
+  button:hover{background:var(--ink);border-color:var(--ink)}
+  button.ghost{background:#fff;color:var(--navy)}
+  button.ghost:hover{background:var(--navy);color:#fff}
+  button.danger{background:#fff;color:var(--pin-deep);border-color:#F3C9C5}
+  button.danger:hover{background:var(--pin);color:#fff;border-color:var(--pin)}
+
+  .sheet{margin-top:13px;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+  .sheet>.hd{background:var(--navy);color:#fff;padding:9px 13px;font-size:14px;font-weight:700;
+    display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .sheet>.hd .n{font-family:var(--mono);font-size:11.5px;margin-left:auto;opacity:.85}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #EDF1F4;vertical-align:top}
+  th{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.06em;background:#F7FAFB;border-bottom:1px solid var(--line)}
+  td.mono{font-family:var(--mono);font-size:11.5px}
+  td.num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+
+  .big{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);
+    margin-top:13px;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+  .big>div{background:#fff;padding:13px 15px}
+  .big .k{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+  .big .v{font-size:27px;font-weight:900;line-height:1.25;font-variant-numeric:tabular-nums}
+  .big .s{font-size:11.5px;color:var(--muted)}
+  .big>div.bad{background:var(--pin-bg)} .big>div.bad .v{color:var(--pin-deep)} .big>div.bad .k{color:var(--pin-deep)}
+  .big>div.good{background:var(--ok-bg)} .big>div.good .v{color:var(--green)} .big>div.good .k{color:var(--green)}
+
+  .find{margin-top:13px;border-radius:3px;border:1px solid var(--line);overflow:hidden}
+  .find>.hd{padding:9px 13px;font-size:13.5px;font-weight:700;display:flex;gap:9px;flex-wrap:wrap;align-items:baseline}
+  .find.bad>.hd{background:var(--pin-bg);color:var(--pin-deep);border-bottom:1px solid #F3C9C5}
+  .find.warn>.hd{background:#FBE9DA;color:var(--orange-deep);border-bottom:1px solid #EFC9A6}
+  .find.ok>.hd{background:#E4F0EA;color:var(--green);border-bottom:1px solid var(--ok-line)}
+  .find.info>.hd{background:#EEF4F8;color:var(--navy);border-bottom:1px solid var(--line)}
+  .find>.bd{padding:10px 13px;font-size:12.5px;line-height:1.8;color:var(--muted)}
+  .find>.bd b{color:var(--ink)}
+  .find>.hd .n{margin-left:auto;font-family:var(--mono);font-size:11.5px}
+
+  .vals{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+  .v2{font-family:var(--mono);font-size:11px;background:#EEF4F8;border:1px solid var(--line);
+    padding:2px 7px;border-radius:2px;color:var(--navy)}
+  .v2 i{font-style:normal;color:var(--muted)}
+  .v2.blank{background:var(--pin-bg);border-color:#F3C9C5;color:var(--pin-deep)}
+
+  details.secret{margin-top:14px;border:2px solid var(--pin);border-radius:3px;background:var(--pin-bg)}
+  details.secret>summary{cursor:pointer;padding:11px 14px;font-size:13.5px;font-weight:900;color:var(--pin-deep);list-style:none}
+  details.secret>summary::-webkit-details-marker{display:none}
+  details.secret>summary::before{content:"▸ ";font-family:var(--mono)}
+  details.secret[open]>summary::before{content:"▾ "}
+  details.secret>.bd{padding:0 14px 14px;font-size:12.5px}
+  details.secret .warnbar{background:var(--pin);color:#fff;font-size:11.5px;font-weight:700;
+    padding:7px 11px;border-radius:2px;margin-bottom:10px;font-family:var(--mono)}
+  details.secret table{background:#fff;border:1px solid #F3C9C5;border-radius:2px}
+
+  code{font-family:var(--mono);font-size:11.5px;color:var(--navy);background:var(--fog-bg);padding:1px 5px;border-radius:2px}
+  .foot{margin-top:22px;text-align:center;font-size:12px;color:var(--muted);line-height:1.9}
+  .err{background:var(--pin-bg);border:1px solid #F3C9C5;color:var(--pin-deep);
+    padding:11px 13px;border-radius:3px;margin-top:13px;font-size:13px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>FFF PT 名單缺口盤點
+    <small>PT 學員只存在於流水帳，但 customers.phone 是 not null unique —— 先量清楚有幾個人沒有手機</small>
+  </h1>
+
+  <section class="card priv">
+    <h2>🔒 完全不連網</h2>
+    <p class="cap" style="margin-bottom:0">
+      這一頁沒有任何一行程式碼會連上網路（按 <code>F12</code> → <code>Network</code> 自己驗，請求數是 0）。<br><br>
+      <b>上半部的報告不含任何姓名，可以整份截圖給我。</b>
+      需要看到姓名的部分全部關在下面紅色的「🔒 只給你自己看」區塊裡，預設是收合的 —— <b>那一段不要截圖。</b>
+    </p>
+  </section>
+
+  <section class="card">
+    <h2><span class="no">1</span>貼兩份資料</h2>
+    <p class="cap">
+      在試算表選取<b>含標題列</b>的整個範圍 → <code>Ctrl+C</code> → 貼進對應的框。<br>
+      欄位名稱我會自動偵測，偵測到什麼會列給你看 —— <b>對不上就跟我說，不要硬跑。</b>
+    </p>
+
+    <div class="lbl"><span class="tag">A</span> 舊系統的 <code>members</code> 分頁
+      <span class="hint">需要「姓名」和「手機」兩欄</span></div>
+    <textarea id="rawM" placeholder="含標題列整個範圍 Ctrl+C → 這裡 Ctrl+V"></textarea>
+
+    <div class="lbl"><span class="tag">B</span> PT / PGT 流水帳分頁
+      <span class="hint">需要「學員」欄，其他欄有的話一起分析</span></div>
+    <textarea id="rawP" placeholder="含標題列整個範圍 Ctrl+C → 這裡 Ctrl+V"></textarea>
+
+    <div class="row">
+      <button id="go">產生報告</button>
+      <button class="ghost" id="csv" disabled>下載「待補手機」清單</button>
+      <button class="danger" id="clr">全部清掉</button>
+    </div>
+  </section>
+
+  <div id="out"></div>
+
+  <p class="foot">拋棄式工具，搬遷做完就可以刪掉。</p>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  /* ── 貼進來的是 TSV（Excel 複製出來就是 tab 分隔）─────────── */
+  function parse(text){
+    const lines = String(text||'').replace(/\r/g,'').split('\n').filter(l => l.trim() !== '');
+    if (lines.length < 2) return null;
+    const head = lines[0].split('\t').map(h => h.trim());
+    const rows = lines.slice(1).map(l => {
+      const c = l.split('\t');
+      const o = {};
+      head.forEach((h,i) => o[h] = (c[i] ?? '').trim());
+      o.__row = null;
+      return o;
+    });
+    rows.forEach((r,i) => r.__row = i + 2);   // Excel 的實際列號（標題是第 1 列）
+    return { head, rows };
+  }
+
+  /* ── 姓名正規化：全形→半形、去空白、統一大小寫 ───────────── */
+  function normName(s){
+    return String(s||'')
+      .replace(/[！-～]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+      .replace(/[\s　·・.,、]/g, '')
+      .toLowerCase();
+  }
+
+  /* ── 編輯距離（只用來抓疑似錯字，上限 2）──────────────────── */
+  function dist(a,b){
+    if (Math.abs(a.length - b.length) > 2) return 9;
+    const m = a.length, n = b.length;
+    let prev = Array.from({length:n+1}, (_,j) => j);
+    for (let i=1;i<=m;i++){
+      const cur = [i];
+      for (let j=1;j<=n;j++){
+        cur[j] = Math.min(prev[j]+1, cur[j-1]+1, prev[j-1] + (a[i-1]===b[j-1] ? 0 : 1));
+      }
+      prev = cur;
+    }
+    return prev[n];
+  }
+
+  /* ── 欄位自動偵測 ─────────────────────────────────────────── */
+  function pick(head, patterns){
+    for (const p of patterns){
+      const hit = head.find(h => p.test(h));
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  const isBlank = v => v === '' || v == null;
+  const numOf = v => {
+    const s = String(v||'').trim();
+    if (s === '') return null;
+    return /^-?\d+(\.\d+)?$/.test(s) ? Number(s) : NaN;   // NaN = 有東西但不是純數字
+  };
+
+  let gapList = [];   // 待補手機名單（給 CSV 用）
+
+  /* ── 值域統計（安全，這些不是個資）───────────────────────── */
+  function tally(rows, col){
+    const m = new Map();
+    rows.forEach(r => {
+      const v = isBlank(r[col]) ? '（空白）' : String(r[col]).trim();
+      m.set(v, (m.get(v)||0) + 1);
+    });
+    return [...m.entries()].sort((a,b) => b[1]-a[1]);
+  }
+  function chips(pairs, limit){
+    return '<div class="vals">' + pairs.slice(0, limit||40).map(([v,n]) =>
+      '<span class="v2'+(v==='（空白）'?' blank':'')+'">'+esc(v)+' <i>×'+n+'</i></span>').join('')
+      + (pairs.length > (limit||40) ? '<span class="v2"><i>…還有 '+(pairs.length-(limit||40))+' 種</i></span>' : '')
+      + '</div>';
+  }
+
+  function run(){
+    const out = $('out');
+    out.innerHTML = '';
+    gapList = [];
+    $('csv').disabled = true;
+
+    const M = parse($('rawM').value);
+    const P = parse($('rawP').value);
+    if (!M || !P){
+      out.innerHTML = '<div class="err">兩個框都要貼，而且要含標題列（至少 2 行）。</div>';
+      return;
+    }
+
+    /* 欄位偵測 */
+    const mName  = pick(M.head, [/^(姓名|name|memberName|會員姓名)$/i, /姓名|name/i]);
+    const mPhone = pick(M.head, [/^(手機|電話|phone|mobile|tel)$/i, /手機|電話|phone|mobile/i]);
+    const pStu   = pick(P.head, [/^學員$/, /學員|會員|客人|姓名/]);
+    const pWay   = pick(P.head, [/銷課方式/]);
+    const pCnt   = pick(P.head, [/上課人數/]);
+    const pLes   = pick(P.head, [/上課堂數/]);
+    const pPre   = pick(P.head, [/預付堂數/]);
+    const pUsed  = pick(P.head, [/已銷課堂數/]);
+    const pCoach = pick(P.head, [/^教練$/, /教練(?!.*抽成)/]);
+    const pDate  = pick(P.head, [/上課日期|日期/]);
+    const pRev   = pick(P.head, [/業績/]);
+
+    let html = '';
+
+    /* ── 欄位偵測結果 ── */
+    html += '<div class="sheet"><div class="hd">欄位偵測<span class="n">對不上就先別跑</span></div>';
+    html += '<table><thead><tr><th>需要的欄位</th><th>找到的標題</th><th>狀態</th></tr></thead><tbody>';
+    const det = [
+      ['members 姓名', mName], ['members 手機', mPhone],
+      ['流水帳 學員', pStu], ['流水帳 銷課方式', pWay], ['流水帳 上課人數', pCnt],
+      ['流水帳 上課堂數', pLes], ['流水帳 預付堂數', pPre], ['流水帳 已銷課堂數', pUsed],
+      ['流水帳 教練', pCoach], ['流水帳 上課日期', pDate], ['流水帳 業績', pRev]
+    ];
+    det.forEach(([k,v]) => {
+      html += '<tr><td>'+esc(k)+'</td><td class="mono">'+(v?esc(v):'—')+'</td><td>'+
+        (v ? '<span style="color:var(--green)">✅ 找到</span>'
+           : '<span style="color:var(--pin-deep)">❌ 沒找到</span>')+'</td></tr>';
+    });
+    html += '</tbody></table></div>';
+
+    if (!mName || !mPhone || !pStu){
+      out.innerHTML = html + '<div class="err">「members 姓名」「members 手機」「流水帳 學員」這三個一定要偵測到才能比對。把實際的標題文字告訴我，我調整偵測規則。</div>';
+      return;
+    }
+
+    /* ── 名單比對 ── */
+    const memByName = new Map();          // 正規化姓名 → [原始姓名]
+    let mNoPhone = 0, mDupName = 0;
+    M.rows.forEach(r => {
+      const raw = String(r[mName]||'').trim();
+      if (raw === '') return;
+      if (isBlank(r[mPhone])) mNoPhone++;
+      const k = normName(raw);
+      if (memByName.has(k)) mDupName++;
+      else memByName.set(k, raw);
+    });
+
+    const stuSet = new Map();             // 正規化 → { raw, rows:[] }
+    P.rows.forEach(r => {
+      const raw = String(r[pStu]||'').trim();
+      if (raw === '') return;
+      const k = normName(raw);
+      if (!stuSet.has(k)) stuSet.set(k, { raw, rows: [] });
+      stuSet.get(k).rows.push(r.__row);
+    });
+
+    const matched = [], missing = [], typo = [];
+    const memKeys = [...memByName.keys()];
+    stuSet.forEach((info, k) => {
+      if (memByName.has(k)) { matched.push(info); return; }
+      // 找疑似錯字
+      let best = null, bd = 9;
+      for (const mk of memKeys){
+        const d = dist(k, mk);
+        if (d < bd){ bd = d; best = mk; }
+      }
+      if (best && bd <= 1 && k.length >= 2){
+        typo.push({ stu: info, mem: memByName.get(best), d: bd });
+      } else {
+        missing.push(info);
+      }
+    });
+
+    gapList = missing.map(i => i.raw);
+
+    /* ── 摘要 ── */
+    html += '<div class="big">';
+    html += '<div><div class="k">流水帳列數</div><div class="v">'+P.rows.length+'</div><div class="s">PT ／ PGT</div></div>';
+    html += '<div><div class="k">不重複學員</div><div class="v">'+stuSet.size+'</div><div class="s">正規化後</div></div>';
+    html += '<div class="good"><div class="k">對得上 MEMBERS</div><div class="v">'+matched.length+'</div><div class="s">有手機，可直接搬</div></div>';
+    html += '<div class="'+(missing.length? 'bad':'good')+'"><div class="k">缺手機</div><div class="v">'+missing.length+'</div><div class="s">'+(missing.length?'要補才搬得進去':'沒有缺口')+'</div></div>';
+    if (typo.length) html += '<div><div class="k">疑似錯字</div><div class="v" style="color:var(--orange-deep)">'+typo.length+'</div><div class="s">先確認再算缺口</div></div>';
+    html += '</div>';
+
+    /* ── members 本身的問題 ── */
+    if (mNoPhone || mDupName){
+      html += '<div class="find bad"><div class="hd">members 本身有問題<span class="n">會讓比對失準</span></div><div class="bd">'
+        + (mNoPhone ? '<b>'+mNoPhone+' 人沒有手機</b> —— 這些人自己就進不了 <code>customers</code>。<br>' : '')
+        + (mDupName ? '<b>'+mDupName+' 組同名同姓</b> —— 用姓名比對會有歧義，這幾個要人工確認。' : '')
+        + '</div></div>';
+    }
+
+    /* ── 規則一致性檢查（你講的三條規則，資料裡真的成立嗎）── */
+    if (pWay && pPre){
+      const ways = tally(P.rows, pWay);
+      html += '<div class="sheet"><div class="hd">銷課方式的實際值<span class="n">'+ways.length+' 種</span></div><div class="bd" style="padding:11px 13px">'+chips(ways)+'</div></div>';
+
+      const reBuy = /購買|購課|買/, reDed = /扣預收|扣課|預收/, reOne = /單堂|單次/;
+      let vBuy=0, vDed=0, vOne=0, unknown=0;
+      const bad = { buyHasLesson:0, dedNoPre:0, oneHasPre:0, preNotNum:0 };
+      P.rows.forEach(r => {
+        const w = String(r[pWay]||'').trim();
+        const pre = numOf(r[pPre]);
+        const les = pLes ? numOf(r[pLes]) : null;
+        if (pre !== null && Number.isNaN(pre)) bad.preNotNum++;
+        if (reBuy.test(w)) { vBuy++;  if (les !== null && !Number.isNaN(les) && les > 0) bad.buyHasLesson++; }
+        else if (reDed.test(w)) { vDed++; if (pre === null) bad.dedNoPre++; }
+        else if (reOne.test(w)) { vOne++; if (pre !== null) bad.oneHasPre++; }
+        else if (w !== '') unknown++;
+      });
+
+      const checks = [
+        ['「購買」的列不該填上課堂數', bad.buyHasLesson, vBuy],
+        ['「扣預收」的列一定要有預付堂數', bad.dedNoPre, vDed],
+        ['「單堂」的列不該有預付堂數', bad.oneHasPre, vOne],
+        ['預付堂數必須是純數字', bad.preNotNum, P.rows.length],
+        ['銷課方式認不得的值', unknown, P.rows.length]
+      ];
+      html += '<div class="sheet"><div class="hd">規則一致性<span class="n">你講的規則，資料裡真的成立嗎</span></div>';
+      html += '<table><thead><tr><th>檢查</th><th style="text-align:right">例外</th><th style="text-align:right">母數</th><th>結果</th></tr></thead><tbody>';
+      checks.forEach(([k,n,d]) => {
+        html += '<tr><td>'+esc(k)+'</td><td class="num">'+n+'</td><td class="num">'+d+'</td><td>'+
+          (n===0 ? '<span style="color:var(--green)">✅ 成立</span>'
+                 : '<span style="color:var(--pin-deep)">❌ 有例外</span>')+'</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    /* ── 其他值域（都不是個資）── */
+    const domains = [];
+    if (pCnt)   domains.push(['上課人數', tally(P.rows, pCnt)]);
+    if (pLes)   domains.push(['上課堂數', tally(P.rows, pLes)]);
+    if (pPre)   domains.push(['預付堂數', tally(P.rows, pPre)]);
+    if (pCoach) domains.push(['教練', tally(P.rows, pCoach)]);
+    if (domains.length){
+      html += '<div class="sheet"><div class="hd">欄位實際值<span class="n">寫轉換器要用</span></div><div style="padding:11px 13px">';
+      domains.forEach(([k,v]) => {
+        html += '<div style="margin-bottom:9px"><b style="font-size:12.5px">'+esc(k)+'</b>（'+v.length+' 種）'+chips(v, 30)+'</div>';
+      });
+      html += '</div></div>';
+    }
+
+    /* ── 日期範圍 ── */
+    if (pDate){
+      const ds = P.rows.map(r => String(r[pDate]||'').trim()).filter(s => s !== '').sort();
+      if (ds.length){
+        html += '<div class="find info"><div class="hd">日期範圍<span class="n">'+ds.length+' 列有日期</span></div><div class="bd">'
+          + '最早 <b>'+esc(ds[0])+'</b>　→　最晚 <b>'+esc(ds[ds.length-1])+'</b><br>'
+          + '<span style="font-size:11.5px">（文字排序。格式不一致的話這兩個值會怪怪的 —— 那本身就是要修的線索）</span></div></div>';
+      }
+    }
+
+    /* ── 🔒 私密區 ── */
+    if (missing.length || typo.length){
+      html += '<details class="secret"><summary>🔒 只給你自己看 —— 這一段有姓名，不要截圖</summary><div class="bd">';
+      html += '<div class="warnbar">下面是姓名。截圖傳出去之前先把這一段收合起來。</div>';
+
+      if (typo.length){
+        html += '<b style="font-size:13px">疑似錯字（'+typo.length+' 組）</b>'
+          + '<p style="font-size:12px;color:var(--muted);margin:4px 0 7px">流水帳的寫法跟 members 差一個字。是同一個人的話，改成一致就不算缺口。</p>'
+          + '<table><thead><tr><th>流水帳寫的</th><th>members 寫的</th><th>出現在第幾列</th></tr></thead><tbody>';
+        typo.forEach(t => {
+          html += '<tr><td class="mono">'+esc(t.stu.raw)+'</td><td class="mono">'+esc(t.mem)+'</td><td class="mono">'
+            + esc(t.stu.rows.slice(0,8).join(', ')) + (t.stu.rows.length>8 ? ' …共'+t.stu.rows.length+'列' : '') + '</td></tr>';
+        });
+        html += '</tbody></table><br>';
+      }
+
+      if (missing.length){
+        html += '<b style="font-size:13px">缺手機（'+missing.length+' 人）</b>'
+          + '<p style="font-size:12px;color:var(--muted);margin:4px 0 7px">這些名字在 members 找不到。按上面的「下載清單」拿到 CSV，補完手機再回來。</p>'
+          + '<table><thead><tr><th>姓名</th><th>出現幾列</th><th>第幾列</th></tr></thead><tbody>';
+        missing.forEach(m => {
+          html += '<tr><td class="mono">'+esc(m.raw)+'</td><td class="mono">'+m.rows.length+'</td><td class="mono">'
+            + esc(m.rows.slice(0,8).join(', ')) + (m.rows.length>8 ? ' …' : '') + '</td></tr>';
+        });
+        html += '</tbody></table>';
+      }
+      html += '</div></details>';
+      $('csv').disabled = missing.length === 0;
+    } else {
+      html += '<div class="find ok"><div class="hd">沒有缺口<span class="n">可以直接寫轉換器</span></div>'
+        + '<div class="bd">流水帳裡每一個學員都在 <code>members</code> 找得到，全部有手機。</div></div>';
+    }
+
+    out.innerHTML = html;
+  }
+
+  $('go').onclick = run;
+  $('clr').onclick = () => { $('rawM').value=''; $('rawP').value=''; $('out').innerHTML=''; $('csv').disabled=true; gapList=[]; };
+  $('csv').onclick = () => {
+    if (!gapList.length) return;
+    const csv = '﻿姓名,手機\n' + gapList.map(n => '"'+String(n).replace(/"/g,'""')+'",\n').join('');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+    a.download = 'pt-phone-todo.csv';   // ⚠️ 中文檔名在 file:// 開啟時會被瀏覽器丟掉（規則 5）
+    a.style.display = 'none';
+    document.body.appendChild(a);      // ⚠️ 不掛進 DOM 的話，download 檔名不會生效
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  };
+})();
+</script>
+</body>
+</html>
