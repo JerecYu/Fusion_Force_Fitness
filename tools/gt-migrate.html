@@ -156,7 +156,7 @@
     <h2><span class="no">3</span>檢查結果</h2>
     <div id="chkOut"></div>
     <div class="row">
-      <button class="dl" id="gen" disabled>③ 產生四支 SQL</button>
+      <button class="dl" id="gen" disabled>③ 產生 SQL</button>
       <span id="genNote" style="font-size:12px;color:var(--muted)"></span>
     </div>
     <div id="dlOut"></div>
@@ -336,7 +336,7 @@
       $('cardGen').classList.remove('off'); $('gen').disabled = true; return;
     }
 
-    const P = { cust:[], led:[], ses:[], bk:[] };
+    const P = { cust:[], led:[], ses:[], bk:[], fb:[] };
     const issues = [], notes = [];
     const idMap = new Map();      // 舊會員 ID → uuid
     const sesMap = new Map();     // 舊課次 ID → uuid
@@ -373,7 +373,7 @@
     /* class_sessions */
     const S = DATA.S, sm = MAP.S;
     const CUT = $('cut').value || '9999-12-31';
-    const futureSes = new Set();
+    const futureSes = new Map();   // skey → {date,time,title}，g5 要用
     if (S){
       let noDate=0, noTime=0, dup=0, future=0; const seen=new Set();
       S.rows.forEach(r => {
@@ -381,7 +381,11 @@
         if (!d){ noDate++; return; }
         if (!t){ noTime++; return; }
         const oid = skey(r[sm.cls], r[sm.date]);
-        if (d > CUT){ future++; futureSes.add(oid); return; }   // 未來的課不匯入
+        if (d > CUT){                                          // 未來的課不匯入
+          future++;
+          futureSes.set(oid, { date:d, time:t, title:String(r[sm.title]||'').trim() });
+          return;
+        }
         if (seen.has(oid)){ dup++; return; }
         seen.add(oid);
         const id = uuid(); sesMap.set(oid, id);
@@ -438,7 +442,14 @@
         const cid = idMap.get(mkey(r[bm.mid]));
         const sid = sesMap.get(skey(r[bm.cls], r[bm.cdate]));
         if (!sid){
-          if (futureSes.has(skey(r[bm.cls], r[bm.cdate]))) futureBk++; else noSes++;
+          const fs = futureSes.get(skey(r[bm.cls], r[bm.cdate]));
+          if (fs){
+            futureBk++;
+            const ph = mkey(r[bm.mid]);
+            if (idMap.has(ph)) P.fb.push({ phone: ph, date: fs.date, time: fs.time, title: fs.title,
+              stat: BSTAT[lc(r[bm.stat])] || 'booked',
+              at: (bm.at ? toStamp(r[bm.at]) : null) || (fs.date + ' 00:00+08') });
+          } else noSes++;
           return;
         }
         if (!cid){ noMem++; return; }
@@ -459,9 +470,10 @@
       });
       best.forEach(v => P.bk.push(v));
       if (noSes) issues.push(['預約對不到課次', noSes + ' 列被跳過', noSes]);
-      if (futureBk) issues.push(['未來課程的預約',
-        futureBk + ' 筆跟著未來課次一起跳過。<b>切換日那天這些人要人工處理</b> —— '
-        + '他們在舊系統報了名，新系統裡沒有那筆預約', futureBk]);
+      if (futureBk) notes.push(['未來課程的預約',
+        futureBk + ' 筆。那些課次在新系統是 <code>pg_cron</code> 產生的、id 不一樣，'
+        + '所以<b>另外產生 <code>g5</code></b>，用「日期 ＋ 時間」自動對回去。<br>'
+        + '⚠️ 對不到的（例如排程還沒排到那麼遠）<code>g5</code> 會列出來，那些才要人工處理。']);
       if (noMem) issues.push(['預約對不到人', noMem + ' 列被跳過', noMem]);
       if (dupRows) notes.push(['同一堂同一人有多筆',
         dupRows + ' 列被<b>合併</b>（不是丟掉）。留最有效的那一筆：完成 &gt; 已報名 &gt; 缺席 &gt; 取消；'
@@ -511,6 +523,7 @@
     html += '<div class="good"><div class="k">CREDIT_LEDGER</div><div class="v">'+P.led.length+'</div><div class="s">筆流水</div></div>';
     html += '<div class="good"><div class="k">CLASS_SESSIONS</div><div class="v">'+P.ses.length+'</div><div class="s">堂課</div></div>';
     html += '<div class="good"><div class="k">BOOKINGS</div><div class="v">'+P.bk.length+'</div><div class="s">筆預約</div></div>';
+    if (P.fb.length) html += '<div><div class="k">未來預約 G5</div><div class="v" style="color:var(--orange-deep)">'+P.fb.length+'</div><div class="s">自動對回課次</div></div>';
     const skipped = issues.reduce((a,i)=>a+(i[2]||0),0);
     html += '<div class="'+(skipped?'bad':'good')+'"><div class="k">被跳過</div><div class="v">'+skipped+'</div><div class="s">'+(skipped?'看下面':'沒有')+'</div></div>';
     html += '</div>';
@@ -537,7 +550,7 @@
   };
 
   /* ── ③ 產生 SQL ───────────────────────────────────────── */
-  const HEADER = (title, tbl, n) =>
+  const HEADER = (title, tbl, n, where) =>
 `-- ═══════════════════════════════════════════════════════════
 -- ${title}
 -- 由 tools/gt-migrate.html 產生 · 共 ${n} 列
@@ -550,9 +563,9 @@
 -- ── 保險絲：已經有資料就中止，一列都不會進去 ──────────────
 do $$
 begin
-  if exists (select 1 from public.${tbl}) then
-    raise exception '⛔ ${tbl} 已有 % 筆資料，這支已經跑過了。要重來請先清空。',
-      (select count(*) from public.${tbl});
+  if exists (select 1 from public.${tbl} ${where || ''}) then
+    raise exception '⛔ ${tbl} 已有 % 筆${where ? '「匯入進來的」' : ''}資料，這支已經跑過了。要重來請先清空。',
+      (select count(*) from public.${tbl} ${where || ''});
   end if;
 end $$;
 
@@ -583,7 +596,11 @@ end $$;
       + '-- 驗收：每人每種商品的餘額\nselect product as 商品, count(*) as 人數, sum(balance) as 總堂數\n'
       + '  from public.customer_credits group by product;\n';
 
-    out['g3-class-sessions.sql'] = HEADER('class_sessions — 舊系統 LessonInstances（GT 歷史課堂）', 'class_sessions', P.ses.length)
+    out['g3-class-sessions.sql'] = HEADER('class_sessions — 舊系統 LessonInstances（GT 歷史課堂）', 'class_sessions', P.ses.length,
+        'where template_id is null')
+      + '-- ⚠️ 保險絲只看「template_id 是空的」那些 —— 也就是匯入進來的歷史課堂。\n'
+      + '--    資料庫裡本來就有 pg_cron 產生的課（那些 template_id 有值），\n'
+      + '--    如果保險絲改看「有沒有任何課」，這支永遠跑不起來。\n\n'
       + '-- template_id 一律留空：四年來課表改過，不能套現行的 14 堂範本\n'
       + '--\n'
       + '-- ⚠️ level 全部是 \'beg\'，那是佔位不是事實。\n'
@@ -593,8 +610,18 @@ end $$;
       + batch(P.ses, 'id, session_date, start_time, title, level, capacity, status, product', 'class_sessions',
           s => '  ('+q(s.id)+', '+q(s.date)+'::date, '+q(s.time)+'::time, '+q(s.title)+', '
                + q(s.level)+', '+s.cap+', '+q(s.stat)+", 'GT')", 400)
-      + '-- 驗收\nselect product as 商品, count(*) as 堂數, min(session_date) as 最早, max(session_date) as 最晚\n'
-      + '  from public.class_sessions group by product;\n';
+      + '-- 驗收 ①：進來了幾堂\n'
+      + 'select product as 商品, count(*) as 堂數, min(session_date) as 最早, max(session_date) as 最晚\n'
+      + '  from public.class_sessions group by product;\n\n'
+      + '-- 驗收 ②：☢️ 同一天同一時段有沒有兩堂課（必須 0 列）\n'
+      + '--   有的話代表匯入的歷史課次跟 pg_cron 產生的課撞在一起，\n'
+      + '--   客人會在課表上看到重複。解法是把工具的「日期上限」再往前調。\n'
+      + 'select session_date as 日期, start_time as 時間, count(*) as 幾堂,\n'
+      + '       count(*) filter (where template_id is null) as 匯入的,\n'
+      + '       count(*) filter (where template_id is not null) as 排程產生的\n'
+      + '  from public.class_sessions\n'
+      + ' group by session_date, start_time having count(*) > 1\n'
+      + ' order by session_date;\n';
 
     const ts = v => v ? q(v)+'::timestamptz' : 'now()';
     out['g4-bookings.sql'] = HEADER('bookings — 舊系統 Bookings', 'bookings', P.bk.length)
@@ -607,14 +634,69 @@ end $$;
                + ts(b.at) + ', ' + (b.cancelled ? ts(b.at) : 'null') + ')', 400)
       + '-- 驗收\nselect status as 狀態, count(*) as 筆數 from public.bookings group by status;\n';
 
+    if (P.fb.length){
+      out['g5-future-bookings.sql'] =
+'-- ═══════════════════════════════════════════════════════════\n'
++ '-- g5 — 未來課程的預約　共 ' + P.fb.length + ' 筆\n'
++ '--\n'
++ '-- 這些人在舊系統報了「日期上限之後」的課。那些課次沒有匯入\n'
++ '--（新系統由 pg_cron 產生，id 不一樣），所以改用\n'
++ '--「上課日期 ＋ 開始時間」對回我們自己的課次。\n'
++ '--\n'
++ '-- ☢️ 含姓名手機。放 migration-local/，絕不進 Git。\n'
++ '-- ⚠️ 一定要在 g1（customers）之後跑。\n'
++ '-- ⚠️ 可以重複執行（on conflict do nothing），不需要保險絲。\n'
++ '-- ═══════════════════════════════════════════════════════════\n\n'
++ '-- 暫存表：不用 on commit drop，這樣「整張跑」和「一段一段跑」都會動\n'
++ 'drop table if exists _fb;\n'
++ 'create temp table _fb (phone text, d date, t time, stat text, at timestamptz, title text);\n\n'
++ 'insert into _fb (phone, d, t, stat, at, title) values\n'
++ P.fb.map(f => '  ('+q(f.phone)+', '+q(f.date)+', '+q(f.time)+', '+q(f.stat)+', '+q(f.at)+', '+q(f.title)+')').join(',\n') + ';\n\n\n'
++ '-- ── ① 先看對不到的（在寫入之前看，才來得及處理）──────────\n'
++ "select '★對不到' as 這是哪一段, f.phone as 手機, f.d as 日期, f.t as 時間, f.title as 課程,\n"
++ "       case when c.id is null then '找不到這個人（g1 跑了嗎？）'\n"
++ "            else '新系統還沒有這一堂課 —— pg_cron 只排到 +14 天，或這時段已經沒開'\n"
++ '       end as 原因\n'
++ '  from _fb f\n'
++ '  left join public.customers c on c.phone = f.phone\n'
++ '  left join public.class_sessions s\n'
++ "    on s.session_date = f.d and s.start_time = f.t and s.product = 'GT'\n"
++ ' where c.id is null or s.id is null\n'
++ ' order by f.d, f.t;\n\n\n'
++ '-- ── ② 對得到的寫進去 ──────────────────────────────────────\n'
++ 'insert into public.bookings (session_id, customer_id, paid_by_customer_id, status, booked_at)\n'
++ 'select s.id, c.id, c.id, f.stat, f.at\n'
++ '  from _fb f\n'
++ '  join public.customers c on c.phone = f.phone\n'
++ '  join public.class_sessions s\n'
++ "    on s.session_date = f.d and s.start_time = f.t and s.product = 'GT'\n"
++ 'on conflict (session_id, customer_id) do nothing;\n\n\n'
++ '-- ── ③ 驗收 ────────────────────────────────────────────────\n'
++ "select '★驗收' as 這是哪一段,\n"
++ '       (select count(*) from _fb) as 應該處理,\n'
++ '       (select count(*) from _fb f\n'
++ '          join public.customers c on c.phone = f.phone\n'
++ '          join public.class_sessions s\n'
++ "            on s.session_date = f.d and s.start_time = f.t and s.product = 'GT') as 對得到,\n"
++ '       (select count(*) from _fb f\n'
++ '          left join public.customers c on c.phone = f.phone\n'
++ '          left join public.class_sessions s\n'
++ "            on s.session_date = f.d and s.start_time = f.t and s.product = 'GT'\n"
++ '         where c.id is null or s.id is null) as 要人工處理;\n\n\n'
++ '-- ── ④ 收尾 ────────────────────────────────────────────────\n'
++ 'drop table if exists _fb;\n';
+    }
+
     return out;
   }
 
   $('gen').onclick = function(){
     const files = build();
-    let html = '<div class="find ok"><div class="hd">四支產生完成<span class="n">一支一支下載</span></div><div class="bd">'
-      + '<b>執行順序：g1 → g2 → g3 → g4。</b>後面的會參照前面的 id，順序錯了會失敗（那是好事，代表 FK 有在守）。<br>'
-      + '每一支都有保險絲，重複執行會中止。</div></div>';
+    const n = Object.keys(files).length;
+    let html = '<div class="find ok"><div class="hd">'+n+' 支產生完成<span class="n">一支一支下載</span></div><div class="bd">'
+      + '<b>執行順序：'+Object.keys(files).map(f=>f.slice(0,2)).join(' → ')+'。</b>'
+      + '後面的會參照前面的 id，順序錯了會失敗（那是好事，代表 FK 有在守）。<br>'
+      + 'g1～g4 有保險絲，重複執行會中止；g5 可以重複執行。</div></div>';
     html += '<div class="row" style="margin-top:11px">';
     Object.keys(files).forEach(fn => {
       const kb = (new Blob([files[fn]]).size/1024).toFixed(0);
