@@ -127,6 +127,10 @@
     <textarea id="rawS" placeholder="含標題列整個範圍"></textarea>
     <div class="lbl"><span class="tag">Bookings</span> 預約<span class="hint">→ bookings</span></div>
     <textarea id="rawB" placeholder="含標題列整個範圍"></textarea>
+    <div class="lbl">日期上限
+      <span class="hint">只匯入這一天（含）以前的課次。之後的課由我們自己的排程產生，重複匯入會變成同一時段兩堂課</span></div>
+    <input type="date" id="cut" style="font-family:var(--mono);font-size:13px;padding:7px 10px;
+      border:1px solid var(--line);border-radius:3px;background:#fff;color:var(--ink)">
     <div class="row">
       <button id="read">① 讀取並對應欄位</button>
       <button class="danger" id="clr">全部清掉</button>
@@ -137,7 +141,12 @@
     <h2><span class="no">2</span>確認欄位對應</h2>
     <p class="cap">
       我猜的對應在下面。<b>★ 是必填</b>，紅色的代表我沒猜到，你自己從下拉選單挑。<br>
-      挑錯的話後面全錯 —— <b>這一步花 30 秒，比事後查幾千列便宜。</b>
+      挑錯的話後面全錯 —— <b>這一步花 30 秒，比事後查幾千列便宜。</b><br><br>
+      <b>兩個舊系統的特性已經內建：</b><br>
+      ① <b>會員是用「手機」認的</b>，不是 memberId。手機會先正規化（去符號、+886→0），
+      所以 <code>0912-345-678</code> 和 <code>0912345678</code> 算同一個人。<br>
+      ② <b>課次是用「classId ＋ 上課日期」兩欄一起認的</b>。<code>Bookings</code> 沒有 lessonId，
+      它就是靠這兩欄指向一堂課。
     </p>
     <div id="mapOut"></div>
     <div class="row"><button id="check">② 檢查資料</button></div>
@@ -178,13 +187,15 @@
   /* ── 每張表要哪些欄位。req = 必填 ─────────────────────────── */
   const SPEC = {
     M: { name:'members', title:'會員 → customers', fields:[
-      { k:'id',    label:'舊會員 ID',   req:true,  pat:[/^(id|memberid|會員id|編號)$/i, /(^|_)id$/i] },
+      { k:'id',    label:'會員識別（這系統用手機）', req:true,
+        pat:[/^(phone|mobile|手機|電話)$/i, /^(id|memberid|會員id|編號)$/i, /phone|手機/i] },
       { k:'name',  label:'姓名',        req:true,  pat:[/^(name|membername|姓名)$/i, /姓名|name/i] },
       { k:'phone', label:'手機',        req:true,  pat:[/^(phone|mobile|tel|手機|電話)$/i, /手機|電話|phone|mobile/i] },
       { k:'bday',  label:'生日',        req:false, pat:[/^(birthday|birth|生日)$/i, /生日|birth/i] }
     ]},
     L: { name:'PassLedger', title:'堂數流水 → credit_ledger', fields:[
-      { k:'mid',   label:'舊會員 ID',   req:true,  pat:[/^(memberid|member_id|會員id)$/i, /member.*id/i] },
+      { k:'mid',   label:'會員識別（這系統用手機）', req:true,
+        pat:[/^(phone|mobile|手機|電話)$/i, /^(memberid|member_id|會員id)$/i, /phone|手機/i] },
       { k:'type',  label:'類型 type',   req:true,  pat:[/^(type|kind|類型)$/i, /type|類型/i] },
       { k:'delta', label:'異動堂數',    req:true,  pat:[/^(delta|change|異動)$/i, /delta|異動|堂數/i] },
       { k:'at',    label:'發生時間',    req:true,  pat:[/^(createdat|created_at|date|時間|日期)$/i, /created|date|時間|日期/i] },
@@ -192,8 +203,8 @@
       { k:'note',  label:'備註',        req:false, pat:[/^(note|memo|備註)$/i, /note|備註/i] }
     ]},
     S: { name:'LessonInstances', title:'課次 → class_sessions', fields:[
-      { k:'id',    label:'舊課次 ID',   req:true,  pat:[/^(id|lessonid|instanceid)$/i, /(^|_)id$/i] },
-      { k:'date',  label:'上課日期',    req:true,  pat:[/^(date|lessondate|日期)$/i, /date|日期/i] },
+      { k:'cls',   label:'課程 classId', req:true, pat:[/^(classid|class_id|範本id)$/i, /class.*id/i] },
+      { k:'date',  label:'上課日期',    req:true,  pat:[/^(classdate|lessondate|date|日期)$/i, /date|日期/i] },
       { k:'time',  label:'開始時間',    req:true,  pat:[/^(time|starttime|start_time|時間)$/i, /time|時間/i] },
       { k:'title', label:'課程名稱',    req:true,  pat:[/^(title|classname|課程|課名)$/i, /title|課名|課程|name/i] },
       { k:'coach', label:'教練',        req:false, pat:[/^(coach|coachname|教練)$/i, /coach|教練/i] },
@@ -202,8 +213,10 @@
       { k:'stat',  label:'狀態',        req:false, pat:[/^(status|狀態)$/i, /status|狀態/i] }
     ]},
     B: { name:'Bookings', title:'預約 → bookings', fields:[
-      { k:'sid',   label:'舊課次 ID',   req:true,  pat:[/^(lessonid|lesson_id|instanceid|sessionid)$/i, /lesson.*id|session.*id/i] },
-      { k:'mid',   label:'舊會員 ID',   req:true,  pat:[/^(memberid|member_id|會員id)$/i, /member.*id/i] },
+      { k:'cls',   label:'課程 classId', req:true, pat:[/^(classid|class_id)$/i, /class.*id/i] },
+      { k:'cdate', label:'上課日期 classDate', req:true, pat:[/^(classdate|lessondate|date|日期)$/i, /date|日期/i] },
+      { k:'mid',   label:'會員識別（這系統用手機）', req:true,
+        pat:[/^(phone|mobile|手機|電話)$/i, /^(memberid|member_id|會員id)$/i, /phone|手機/i] },
       { k:'stat',  label:'狀態 status', req:true,  pat:[/^(status|狀態)$/i, /status|狀態/i] },
       { k:'head',  label:'人數 headCount', req:false, pat:[/^(headcount|人數)$/i, /headcount|人數/i] },
       { k:'at',    label:'報名時間',    req:false, pat:[/^(createdat|created_at|bookedat|時間)$/i, /created|booked|時間/i] }
@@ -220,6 +233,12 @@
   }
 
   /* ── ① 讀取 ────────────────────────────────────────────── */
+  // 日期上限預設今天
+  (function(){
+    const d = new Date();
+    $('cut').value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  })();
+
   $('read').onclick = function(){
     const src = { M:$('rawM').value, L:$('rawL').value, S:$('rawS').value, B:$('rawB').value };
     let html = '', missing = 0, gotAny = false;
@@ -299,6 +318,16 @@
   }
   const uuid = () => crypto.randomUUID();
 
+  // 會員鑰匙。舊系統用手機當識別，所以看起來像手機就正規化 ——
+  // 不然 members 寫 0912-345-678、PassLedger 寫 0912345678，就變成兩個人。
+  const mkey = v => {
+    const raw = String(v||'').trim(); if (!raw) return '';
+    const d = normPhone(raw);
+    return d.length >= 9 ? d : raw.toLowerCase();
+  };
+  // 課次鑰匙 = classId ＋ 上課日期。舊系統的 Bookings 就是用這兩欄指向一堂課的。
+  const skey = (cls, date) => String(cls||'').trim().toLowerCase() + '|' + (toDate(date) || '');
+
   /* ── ② 檢查 ────────────────────────────────────────────── */
   $('check').onclick = function(){
     const bad = [...$('mapOut').querySelectorAll('select')].filter(s => s.dataset.req==='1' && !s.value);
@@ -319,7 +348,7 @@
       const seenPhone = new Map(), seenId = new Set();
       let noPhone=0, noName=0, dupPhone=0, dupId=0, fixedPhone=0, badPhone=0;
       M.rows.forEach(r => {
-        const oid = String(r[mm.id]||'').trim();
+        const oid = mkey(r[mm.id]);
         const name = String(r[mm.name]||'').trim();
         const raw = String(r[mm.phone]||'').trim();
         const ph = normPhone(raw);
@@ -343,16 +372,19 @@
 
     /* class_sessions */
     const S = DATA.S, sm = MAP.S;
+    const CUT = $('cut').value || '9999-12-31';
+    const futureSes = new Set();
     if (S){
-      let noDate=0, noTime=0, dup=0; const seen=new Set();
+      let noDate=0, noTime=0, dup=0, future=0; const seen=new Set();
       S.rows.forEach(r => {
-        const oid = String(r[sm.id]||'').trim();
         const d = toDate(r[sm.date]), t = toTime(r[sm.time]);
         if (!d){ noDate++; return; }
         if (!t){ noTime++; return; }
-        if (oid && seen.has(oid)){ dup++; return; }
-        if (oid) seen.add(oid);
-        const id = uuid(); if (oid) sesMap.set(oid, id);
+        const oid = skey(r[sm.cls], r[sm.date]);
+        if (d > CUT){ future++; futureSes.add(oid); return; }   // 未來的課不匯入
+        if (seen.has(oid)){ dup++; return; }
+        seen.add(oid);
+        const id = uuid(); sesMap.set(oid, id);
         P.ses.push({ id, date:d, time:t,
           title: String(r[sm.title]||'').trim() || '（未命名）',
           coach: sm.coach ? String(r[sm.coach]||'').trim() : '',
@@ -362,7 +394,10 @@
       });
       if (noDate) issues.push(['課次日期讀不出來', noDate + ' 列被跳過', noDate]);
       if (noTime) issues.push(['課次時間讀不出來', noTime + ' 列被跳過', noTime]);
-      if (dup)    issues.push(['舊課次 ID 重複', dup + ' 列被跳過', dup]);
+      if (dup)    issues.push(['同一堂課出現兩次', dup + ' 列被跳過', dup]);
+      if (future) notes.push(['未來的課次不匯入',
+        future + ' 堂在 <b>' + CUT + '</b> 之後，<b>刻意跳過</b>。那些時段由我們自己的 pg_cron 產生，'
+        + '兩邊都匯入的話，客人會在課表上看到同一時段兩堂課']);
     }
 
     /* credit_ledger */
@@ -371,7 +406,7 @@
       let orphan=0, badDelta=0, unknownType=0;
       const tset = new Map();
       L.rows.forEach(r => {
-        const oid = String(r[lm.mid]||'').trim();
+        const oid = mkey(r[lm.mid]);
         const cid = idMap.get(oid);
         const dl = intOf(r[lm.delta]);
         const ty = lc(r[lm.type]);
@@ -393,36 +428,53 @@
     /* bookings */
     const B = DATA.B, bm = MAP.B;
     if (B){
-      let noSes=0, noMem=0, dup=0, multi=0; const seen=new Set();
+      // 同一堂同一人有多筆時「留最有效的那一筆」，不是留第一筆。
+      // 舊系統常見情況是「先取消、後來又報名並上課」——
+      // 留第一筆會留到 cancelled、把 settled 丟掉，歷史就變成「他缺席」。
+      const RANK = { attended:4, booked:3, absent:2, cancelled:1 };
+      let noSes=0, noMem=0, multi=0, dupRows=0, dupMixed=0, futureBk=0;
+      const best = new Map();
       B.rows.forEach(r => {
-        const cid = idMap.get(String(r[bm.mid]||'').trim());
-        const sid = sesMap.get(String(r[bm.sid]||'').trim());
-        if (!sid){ noSes++; return; }
+        const cid = idMap.get(mkey(r[bm.mid]));
+        const sid = sesMap.get(skey(r[bm.cls], r[bm.cdate]));
+        if (!sid){
+          if (futureSes.has(skey(r[bm.cls], r[bm.cdate]))) futureBk++; else noSes++;
+          return;
+        }
         if (!cid){ noMem++; return; }
-        const k = sid+'|'+cid;
-        if (seen.has(k)){ dup++; return; }
-        seen.add(k);
         const hc = bm.head ? intOf(r[bm.head]) : null;
         if (hc && hc > 1) multi++;
         const ses = P.ses.find(x => x.id === sid);
-        P.bk.push({ id:uuid(), sid, cid,
-          stat: BSTAT[lc(r[bm.stat])] || 'booked',
-          cancelled: lc(r[bm.stat]) === 'cancelled',
+        const st  = BSTAT[lc(r[bm.stat])] || 'booked';
+        const rec = { id:uuid(), sid, cid, stat: st, cancelled: st === 'cancelled',
           // 沒有報名時間就退回用「那堂課的日期」—— 絕不能讓幾千筆舊預約都變成今天
           at: (bm.at ? toStamp(r[bm.at]) : null) || (ses ? ses.date + ' 00:00+08' : null),
-          head: hc });
+          head: hc };
+        const k = sid+'|'+cid, prev = best.get(k);
+        if (!prev){ best.set(k, rec); return; }
+        dupRows++;
+        if (prev.stat !== st) dupMixed++;
+        if (RANK[st] > RANK[prev.stat] ||
+            (RANK[st] === RANK[prev.stat] && rec.at && prev.at && rec.at < prev.at)) best.set(k, rec);
       });
+      best.forEach(v => P.bk.push(v));
       if (noSes) issues.push(['預約對不到課次', noSes + ' 列被跳過', noSes]);
+      if (futureBk) issues.push(['未來課程的預約',
+        futureBk + ' 筆跟著未來課次一起跳過。<b>切換日那天這些人要人工處理</b> —— '
+        + '他們在舊系統報了名，新系統裡沒有那筆預約', futureBk]);
       if (noMem) issues.push(['預約對不到人', noMem + ' 列被跳過', noMem]);
-      if (dup)   issues.push(['同一堂同一人重複報名', dup + ' 列被跳過 —— 資料表有 unique 限制', dup]);
-      if (multi) notes.push(['headCount > 1 的列', multi + ' 筆（只匯入代表人，人數寫進備註欄位不可用，改記在 note）']);
+      if (dupRows) notes.push(['同一堂同一人有多筆',
+        dupRows + ' 列被<b>合併</b>（不是丟掉）。留最有效的那一筆：完成 &gt; 已報名 &gt; 缺席 &gt; 取消；'
+        + '一樣有效就留報名時間較早的。其中 <b>' + dupMixed + ' 組狀態不一樣</b>（例如先取消、後來又上了）']);
+      if (multi) notes.push(['headCount > 1 的列',
+        multi + ' 筆（只匯入代表人。人數是舊系統的欄位，新系統一人一列，不帶過去）']);
     }
 
     /* 帳本自洽（每人 delta 加總 vs 最後 balanceAfter）*/
     if (L && MAP.L.bal){
       const byM = new Map();
       L.rows.forEach(r => {
-        const oid = String(r[MAP.L.mid]||'').trim(); if (!oid) return;
+        const oid = mkey(r[MAP.L.mid]); if (!oid) return;
         if (!byM.has(oid)) byM.set(oid, []);
         byM.get(oid).push(r);
       });
@@ -438,6 +490,19 @@
                  : ['帳本自洽', checked + ' 人全部通過（delta 加總 = 最後餘額）']);
     }
 
+    /* 日期範圍 —— 直接回答「舊系統到底留了多久的歷史」 */
+    const span = (arr, get, label) => {
+      const ds = arr.map(get).filter(Boolean).sort();
+      if (!ds.length) return;
+      const a0 = new Date(ds[0]+'T00:00:00Z'), b0 = new Date(ds[ds.length-1]+'T00:00:00Z');
+      const days = Math.round((b0-a0)/86400000);
+      notes.push([label, '<b>'+ds[0]+'</b> ～ <b>'+ds[ds.length-1]+'</b>　共 '+days+' 天（約 '
+        + (days/30.4).toFixed(1) + ' 個月）']);
+    };
+    span(P.ses, x => x.date, '課次日期範圍');
+    span(P.led, x => x.at ? x.at.slice(0,10) : null, '流水日期範圍');
+    span(P.bk,  x => x.at ? x.at.slice(0,10) : null, '預約日期範圍');
+
     BUILT = P;
 
     /* 報告 */
@@ -452,12 +517,12 @@
 
     if (issues.length){
       html += '<div class="find bad"><div class="hd">要處理的<span class="n">'+issues.length+' 項</span></div><div class="bd">';
-      issues.forEach(i => html += '<b>'+esc(i[0])+'</b> —— '+esc(i[1])+'<br>');
+      issues.forEach(i => html += '<b>'+esc(i[0])+'</b> —— '+i[1]+'<br>');
       html += '</div></div>';
     }
     if (notes.length){
       html += '<div class="find warn"><div class="hd">知道就好<span class="n">'+notes.length+' 項</span></div><div class="bd">';
-      notes.forEach(i => html += '<b>'+esc(i[0])+'</b> —— '+esc(i[1])+'<br>');
+      notes.forEach(i => html += '<b>'+esc(i[0])+'</b> —— '+i[1]+'<br>');   // notes 允許少量 HTML
       html += '</div></div>';
     }
     if (!issues.length){
@@ -519,7 +584,12 @@ end $$;
       + '  from public.customer_credits group by product;\n';
 
     out['g3-class-sessions.sql'] = HEADER('class_sessions — 舊系統 LessonInstances（GT 歷史課堂）', 'class_sessions', P.ses.length)
-      + '-- template_id 一律留空：四年來課表改過，不能套現行的 14 堂範本\n\n'
+      + '-- template_id 一律留空：四年來課表改過，不能套現行的 14 堂範本\n'
+      + '--\n'
+      + '-- ⚠️ level 全部是 \'beg\'，那是佔位不是事實。\n'
+      + '--    舊系統的 LessonInstances 沒有記程度，但 class_sessions.level 是 not null\n'
+      + '--    而且只認 beg/int/adv，所以只能填一個。\n'
+      + '--    要看歷史課程的程度，去看 title（課名）或翻舊 Excel —— 不要拿這一欄做分析。\n\n'
       + batch(P.ses, 'id, session_date, start_time, title, level, capacity, status, product', 'class_sessions',
           s => '  ('+q(s.id)+', '+q(s.date)+'::date, '+q(s.time)+'::time, '+q(s.title)+', '
                + q(s.level)+', '+s.cap+', '+q(s.stat)+", 'GT')", 400)
@@ -568,6 +638,7 @@ end $$;
     ['rawM','rawL','rawS','rawB'].forEach(i => $(i).value = '');
     $('mapOut').innerHTML=''; $('chkOut').innerHTML=''; $('dlOut').innerHTML='';
     $('cardMap').classList.add('off'); $('cardGen').classList.add('off'); BUILT=null;
+    const d=new Date(); $('cut').value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   };
 })();
 </script>
