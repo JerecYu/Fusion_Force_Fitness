@@ -8,6 +8,22 @@
 -- create or replace 可以安全重複執行，跑幾次結果都一樣。
 -- ═══════════════════════════════════════════════════════════
 
+-- ══ 順序守門員 ══════════════════════════════════════════════
+-- 這支的 where 需要 class_sessions.product，那一欄是 11-alter-migration 建的。
+-- 所以從零重建時，正確順序是：00→09 → 11 → 10
+-- （檢視表的定義只有這一個地方寫著，所以寧可換順序，也不要複製一份到 12）
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'class_sessions' and column_name = 'product'
+  ) then
+    raise exception
+      '⛔ 要先跑 11-alter-migration.sql。這支的 where 需要 class_sessions.product 欄位。重建順序：00→09 → 11 → 10';
+  end if;
+end $$;
+
+
 create or replace view public.public_schedule as
 select
   x.session_id,

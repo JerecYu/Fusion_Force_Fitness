@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FFF GT 搬遷工具</title>
+<style>
+  :root{
+    --ink:#0E1B2C; --navy:#2C4E7D; --teal:#2E8B94; --green:#2F6B54;
+    --orange:#DE7A38; --orange-deep:#A9531D;
+    --paper:#E9EEF2; --line:#C9D4DD; --muted:#5E6E7E;
+    --pin:#D8342B; --pin-deep:#A4211A; --pin-bg:#FDECEA;
+    --ok-bg:#EDF5F3; --ok-line:#A8C9BE; --fog-bg:#EFF2F5;
+    --mono:ui-monospace,"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);
+    font-family:"Noto Sans TC",system-ui,-apple-system,sans-serif;line-height:1.6;
+    padding:20px 14px 70px;-webkit-font-smoothing:antialiased}
+  .page{max-width:1040px;margin:0 auto}
+  h1{font-size:25px;font-weight:900;letter-spacing:.02em;padding-bottom:12px;border-bottom:2px solid var(--ink)}
+  h1 small{display:block;font-size:12.5px;font-weight:400;color:var(--muted);margin-top:5px;letter-spacing:0}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:3px;padding:15px 17px;margin-top:14px}
+  .card>h2{font-size:16.5px;font-weight:700;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .card>h2 .no{font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;
+    background:var(--ink);padding:3px 7px;border-radius:2px;letter-spacing:.08em}
+  .card>p.cap{font-size:12.5px;color:var(--muted);margin:5px 0 12px;line-height:1.7}
+  .card.priv{border-top:4px solid var(--pin);background:var(--pin-bg)}
+  .card.priv h2{color:var(--pin-deep)}
+  .card.priv p.cap{color:var(--pin-deep)}
+  .card.off{opacity:.45;pointer-events:none}
+
+  textarea{width:100%;min-height:78px;font-family:var(--mono);font-size:11.5px;line-height:1.6;
+    padding:9px 11px;border:1px solid var(--line);border-radius:3px;background:#FBFDFE;color:var(--ink);resize:vertical}
+  textarea:focus{outline:2px solid var(--teal);outline-offset:-1px}
+  .lbl{font-size:12.5px;font-weight:700;margin:12px 0 5px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .lbl .tag{font-family:var(--mono);font-size:10.5px;font-weight:700;color:#fff;background:var(--navy);
+    padding:2px 7px;border-radius:2px;letter-spacing:.06em}
+  .lbl .hint{font-weight:400;color:var(--muted);font-size:11.5px}
+
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:13px}
+  button{font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.05em;
+    padding:10px 17px;border-radius:3px;cursor:pointer;border:1px solid var(--navy);
+    background:var(--navy);color:#fff;transition:.14s}
+  button:hover:not(:disabled){background:var(--ink);border-color:var(--ink)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.ghost{background:#fff;color:var(--navy)}
+  button.ghost:hover:not(:disabled){background:var(--navy);color:#fff}
+  button.danger{background:#fff;color:var(--pin-deep);border-color:#F3C9C5}
+  button.danger:hover{background:var(--pin);color:#fff;border-color:var(--pin)}
+  button.dl{background:var(--green);border-color:var(--green)}
+  button.dl:hover:not(:disabled){background:#245442;border-color:#245442}
+
+  select{font-family:var(--mono);font-size:12px;padding:5px 8px;border:1px solid var(--line);
+    border-radius:2px;background:#fff;color:var(--ink);min-width:170px}
+  select.miss{border-color:var(--pin);background:var(--pin-bg);color:var(--pin-deep)}
+
+  .sheet{margin-top:13px;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+  .sheet>.hd{background:var(--navy);color:#fff;padding:9px 13px;font-size:14px;font-weight:700;
+    display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .sheet>.hd .n{font-family:var(--mono);font-size:11.5px;margin-left:auto;opacity:.85}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:6px 10px;border-bottom:1px solid #EDF1F4;vertical-align:middle}
+  th{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.06em;background:#F7FAFB;border-bottom:1px solid var(--line)}
+  td.mono{font-family:var(--mono);font-size:11.5px}
+  td.num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+  tr.req td:first-child::after{content:" ★";color:var(--pin)}
+
+  .big{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--line);
+    margin-top:13px;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+  .big>div{background:#fff;padding:12px 14px}
+  .big .k{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+  .big .v{font-size:25px;font-weight:900;line-height:1.25;font-variant-numeric:tabular-nums}
+  .big .s{font-size:11.5px;color:var(--muted)}
+  .big>div.bad{background:var(--pin-bg)} .big>div.bad .v{color:var(--pin-deep)} .big>div.bad .k{color:var(--pin-deep)}
+  .big>div.good{background:var(--ok-bg)} .big>div.good .v{color:var(--green)} .big>div.good .k{color:var(--green)}
+
+  .find{margin-top:13px;border-radius:3px;border:1px solid var(--line);overflow:hidden}
+  .find>.hd{padding:9px 13px;font-size:13.5px;font-weight:700;display:flex;gap:9px;flex-wrap:wrap;align-items:baseline}
+  .find.bad>.hd{background:var(--pin-bg);color:var(--pin-deep);border-bottom:1px solid #F3C9C5}
+  .find.warn>.hd{background:#FBE9DA;color:var(--orange-deep);border-bottom:1px solid #EFC9A6}
+  .find.ok>.hd{background:#E4F0EA;color:var(--green);border-bottom:1px solid var(--ok-line)}
+  .find>.bd{padding:10px 13px;font-size:12.5px;line-height:1.8;color:var(--muted)}
+  .find>.bd b{color:var(--ink)}
+  .find>.hd .n{margin-left:auto;font-family:var(--mono);font-size:11.5px}
+
+  .vals{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+  .v2{font-family:var(--mono);font-size:11px;background:#EEF4F8;border:1px solid var(--line);
+    padding:2px 7px;border-radius:2px;color:var(--navy)}
+  .v2 i{font-style:normal;color:var(--muted)}
+  .v2.blank{background:var(--pin-bg);border-color:#F3C9C5;color:var(--pin-deep)}
+
+  code{font-family:var(--mono);font-size:11.5px;color:var(--navy);background:var(--fog-bg);padding:1px 5px;border-radius:2px}
+  .foot{margin-top:22px;text-align:center;font-size:12px;color:var(--muted);line-height:1.9}
+  .err{background:var(--pin-bg);border:1px solid #F3C9C5;color:var(--pin-deep);
+    padding:11px 13px;border-radius:3px;margin-top:13px;font-size:13px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>FFF GT 搬遷工具
+    <small>舊系統匯出 → 四支 SQL。先確認欄位對應，再產生 —— 猜錯一欄，幾千列一起錯</small>
+  </h1>
+
+  <section class="card priv">
+    <h2>☢️ 產出的 SQL 含完整姓名和手機</h2>
+    <p class="cap" style="margin-bottom:0">
+      這一頁不連網（<code>F12</code> → <code>Network</code> 自己驗，請求數 0），但<b>它產生的檔案是個資</b>。<br><br>
+      <b>① 先改 <code>.gitignore</code> 加一行 <code>migration-local/</code>，再產生檔案。</b>順序反了的話，檔案可能在你改之前就被 Git 看到。<br>
+      <b>② 下載的四支 SQL 放進 <code>migration-local/</code>，絕不放 <code>db/</code>，絕不貼進聊天室。</b><br>
+      <b>③ 四支必須來自同一次產生</b> —— 客人的 id 是這一次隨機給的，混用不同批次會對不起來。
+    </p>
+  </section>
+
+  <section class="card">
+    <h2><span class="no">1</span>把四個分頁貼進來</h2>
+    <p class="cap">
+      舊系統匯出檔 → 切到分頁 → 選取<b>含標題列</b>的整個範圍 → <code>Ctrl+C</code> → 貼進對應的框。
+    </p>
+    <div class="lbl"><span class="tag">members</span> 會員<span class="hint">→ customers</span></div>
+    <textarea id="rawM" placeholder="含標題列整個範圍"></textarea>
+    <div class="lbl"><span class="tag">PassLedger</span> 堂數流水<span class="hint">→ credit_ledger</span></div>
+    <textarea id="rawL" placeholder="含標題列整個範圍"></textarea>
+    <div class="lbl"><span class="tag">LessonInstances</span> 課次<span class="hint">→ class_sessions</span></div>
+    <textarea id="rawS" placeholder="含標題列整個範圍"></textarea>
+    <div class="lbl"><span class="tag">Bookings</span> 預約<span class="hint">→ bookings</span></div>
+    <textarea id="rawB" placeholder="含標題列整個範圍"></textarea>
+    <div class="row">
+      <button id="read">① 讀取並對應欄位</button>
+      <button class="danger" id="clr">全部清掉</button>
+    </div>
+  </section>
+
+  <section class="card off" id="cardMap">
+    <h2><span class="no">2</span>確認欄位對應</h2>
+    <p class="cap">
+      我猜的對應在下面。<b>★ 是必填</b>，紅色的代表我沒猜到，你自己從下拉選單挑。<br>
+      挑錯的話後面全錯 —— <b>這一步花 30 秒，比事後查幾千列便宜。</b>
+    </p>
+    <div id="mapOut"></div>
+    <div class="row"><button id="check">② 檢查資料</button></div>
+  </section>
+
+  <section class="card off" id="cardGen">
+    <h2><span class="no">3</span>檢查結果</h2>
+    <div id="chkOut"></div>
+    <div class="row">
+      <button class="dl" id="gen" disabled>③ 產生四支 SQL</button>
+      <span id="genNote" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <div id="dlOut"></div>
+  </section>
+
+  <p class="foot">拋棄式工具，切換日跑完就可以刪掉。</p>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const q = s => "'" + String(s ?? '').replace(/'/g, "''") + "'";     // SQL 字串
+  const qn = s => (s === null || s === undefined || s === '') ? 'null' : q(s);
+
+  function parse(text){
+    const lines = String(text||'').replace(/\r/g,'').split('\n').filter(l => l.trim() !== '');
+    if (lines.length < 2) return null;
+    const head = lines[0].split('\t').map(h => h.trim());
+    const rows = lines.slice(1).map((l,i) => {
+      const c = l.split('\t'); const o = { __row: i + 2 };
+      head.forEach((h,j) => o[h] = (c[j] ?? '').trim());
+      return o;
+    });
+    return { head, rows };
+  }
+
+  /* ── 每張表要哪些欄位。req = 必填 ─────────────────────────── */
+  const SPEC = {
+    M: { name:'members', title:'會員 → customers', fields:[
+      { k:'id',    label:'舊會員 ID',   req:true,  pat:[/^(id|memberid|會員id|編號)$/i, /(^|_)id$/i] },
+      { k:'name',  label:'姓名',        req:true,  pat:[/^(name|membername|姓名)$/i, /姓名|name/i] },
+      { k:'phone', label:'手機',        req:true,  pat:[/^(phone|mobile|tel|手機|電話)$/i, /手機|電話|phone|mobile/i] },
+      { k:'bday',  label:'生日',        req:false, pat:[/^(birthday|birth|生日)$/i, /生日|birth/i] }
+    ]},
+    L: { name:'PassLedger', title:'堂數流水 → credit_ledger', fields:[
+      { k:'mid',   label:'舊會員 ID',   req:true,  pat:[/^(memberid|member_id|會員id)$/i, /member.*id/i] },
+      { k:'type',  label:'類型 type',   req:true,  pat:[/^(type|kind|類型)$/i, /type|類型/i] },
+      { k:'delta', label:'異動堂數',    req:true,  pat:[/^(delta|change|異動)$/i, /delta|異動|堂數/i] },
+      { k:'at',    label:'發生時間',    req:true,  pat:[/^(createdat|created_at|date|時間|日期)$/i, /created|date|時間|日期/i] },
+      { k:'bal',   label:'當時餘額',    req:false, pat:[/^(balanceafter|balance|餘額)$/i, /balance|餘額/i] },
+      { k:'note',  label:'備註',        req:false, pat:[/^(note|memo|備註)$/i, /note|備註/i] }
+    ]},
+    S: { name:'LessonInstances', title:'課次 → class_sessions', fields:[
+      { k:'id',    label:'舊課次 ID',   req:true,  pat:[/^(id|lessonid|instanceid)$/i, /(^|_)id$/i] },
+      { k:'date',  label:'上課日期',    req:true,  pat:[/^(date|lessondate|日期)$/i, /date|日期/i] },
+      { k:'time',  label:'開始時間',    req:true,  pat:[/^(time|starttime|start_time|時間)$/i, /time|時間/i] },
+      { k:'title', label:'課程名稱',    req:true,  pat:[/^(title|classname|課程|課名)$/i, /title|課名|課程|name/i] },
+      { k:'coach', label:'教練',        req:false, pat:[/^(coach|coachname|教練)$/i, /coach|教練/i] },
+      { k:'cap',   label:'容量',        req:false, pat:[/^(capacity|cap|容量|人數上限)$/i, /capacity|容量/i] },
+      { k:'level', label:'程度',        req:false, pat:[/^(level|難度|程度)$/i, /level|難度|程度/i] },
+      { k:'stat',  label:'狀態',        req:false, pat:[/^(status|狀態)$/i, /status|狀態/i] }
+    ]},
+    B: { name:'Bookings', title:'預約 → bookings', fields:[
+      { k:'sid',   label:'舊課次 ID',   req:true,  pat:[/^(lessonid|lesson_id|instanceid|sessionid)$/i, /lesson.*id|session.*id/i] },
+      { k:'mid',   label:'舊會員 ID',   req:true,  pat:[/^(memberid|member_id|會員id)$/i, /member.*id/i] },
+      { k:'stat',  label:'狀態 status', req:true,  pat:[/^(status|狀態)$/i, /status|狀態/i] },
+      { k:'head',  label:'人數 headCount', req:false, pat:[/^(headcount|人數)$/i, /headcount|人數/i] },
+      { k:'at',    label:'報名時間',    req:false, pat:[/^(createdat|created_at|bookedat|時間)$/i, /created|booked|時間/i] }
+    ]}
+  };
+
+  const DATA = {};   // key → {head, rows}
+  const MAP  = {};   // key → { fieldKey: 標題文字 }
+  let BUILT = null;
+
+  function autoPick(head, pats){
+    for (const p of pats){ const h = head.find(x => p.test(x)); if (h) return h; }
+    return '';
+  }
+
+  /* ── ① 讀取 ────────────────────────────────────────────── */
+  $('read').onclick = function(){
+    const src = { M:$('rawM').value, L:$('rawL').value, S:$('rawS').value, B:$('rawB').value };
+    let html = '', missing = 0, gotAny = false;
+    Object.keys(SPEC).forEach(key => {
+      const d = parse(src[key]);
+      DATA[key] = d; MAP[key] = {};
+      const sp = SPEC[key];
+      html += '<div class="sheet"><div class="hd">'+esc(sp.name)+'　'+esc(sp.title)
+            + '<span class="n">'+(d ? d.rows.length+' 列 · '+d.head.length+' 欄' : '沒有貼')+'</span></div>';
+      if (!d){ html += '<div style="padding:11px 13px;font-size:12.5px;color:var(--pin-deep)">這一張沒有貼，會跳過。</div></div>'; return; }
+      gotAny = true;
+      html += '<table><thead><tr><th style="width:32%">需要的欄位</th><th>對應到哪一欄</th></tr></thead><tbody>';
+      sp.fields.forEach(f => {
+        const guess = autoPick(d.head, f.pat);
+        MAP[key][f.k] = guess;
+        if (f.req && !guess) missing++;
+        const opts = ['<option value="">—（不使用）—</option>'].concat(
+          d.head.map(h => '<option value="'+esc(h)+'"'+(h===guess?' selected':'')+'>'+esc(h)+'</option>')).join('');
+        html += '<tr'+(f.req?' class="req"':'')+'><td>'+esc(f.label)+'</td><td>'
+             +  '<select data-k="'+key+'" data-f="'+f.k+'" data-req="'+(f.req?1:0)+'"'
+             +  (f.req && !guess ? ' class="miss"' : '')+'>'+opts+'</select></td></tr>';
+      });
+      html += '</tbody></table></div>';
+    });
+    if (!gotAny){ $('mapOut').innerHTML = '<div class="err">四個框都是空的。</div>'; $('cardMap').classList.remove('off'); return; }
+    $('mapOut').innerHTML = html;
+    $('cardMap').classList.remove('off');
+    $('mapOut').querySelectorAll('select').forEach(sel => {
+      sel.onchange = () => {
+        MAP[sel.dataset.k][sel.dataset.f] = sel.value;
+        sel.classList.toggle('miss', sel.dataset.req === '1' && !sel.value);
+      };
+    });
+    $('cardMap').scrollIntoView({behavior:'smooth', block:'start'});
+  };
+
+  /* ── 值轉換 ────────────────────────────────────────────── */
+  const REASON = { checkin:'class', manual_deduction:'adjust', topup:'purchase',
+                   bonus:'bonus', refund:'refund', purchase:'purchase' };
+  const BSTAT  = { booked:'booked', cancelled:'cancelled', settled:'attended',
+                   attended:'attended', absent:'absent', 'no-show':'absent' };
+  const LEVEL  = { beginner:'beg', intermediate:'int', advanced:'adv',
+                   beg:'beg', int:'int', adv:'adv' };
+  const SSTAT  = { pending:'pending', confirmed:'confirmed', cancelled:'cancelled',
+                   completed:'completed', settled:'completed', done:'completed' };
+
+  const lc = s => String(s||'').trim().toLowerCase();
+  const intOf = v => { const s = String(v||'').trim(); return /^-?\d+$/.test(s) ? parseInt(s,10) : null; };
+
+  // 日期 → YYYY-MM-DD；認不得就回 null
+  function toDate(v){
+    const s = String(v||'').trim(); if (!s) return null;
+    let m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+    if (m) return m[1]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0');
+    return null;
+  }
+  // 時間 → HH:MM
+  function toTime(v){
+    const s = String(v||'').trim(); if (!s) return null;
+    let m = s.match(/(\d{1,2}):(\d{2})/);
+    if (m) return String(m[1]).padStart(2,'0')+':'+m[2];
+    m = s.match(/^(\d{3,4})$/);
+    if (m){ const t=m[1].padStart(4,'0'); return t.slice(0,2)+':'+t.slice(2); }
+    return null;
+  }
+  // 時間戳 → ISO；抓不到就回 null（SQL 端用 default now() 或 null）
+  function toStamp(v){
+    const d = toDate(v); if (!d) return null;
+    const t = toTime(v); return d + ' ' + (t || '00:00') + '+08';
+  }
+  function normPhone(v){
+    let s = String(v||'').replace(/[！-～]/g, ch => String.fromCharCode(ch.charCodeAt(0)-0xFEE0));
+    s = s.replace(/\D/g,'');
+    if (s.startsWith('886')) s = '0' + s.slice(3);
+    if (/^9\d{8}$/.test(s)) s = '0' + s;
+    return s;
+  }
+  const uuid = () => crypto.randomUUID();
+
+  /* ── ② 檢查 ────────────────────────────────────────────── */
+  $('check').onclick = function(){
+    const bad = [...$('mapOut').querySelectorAll('select')].filter(s => s.dataset.req==='1' && !s.value);
+    if (bad.length){
+      $('chkOut').innerHTML = '<div class="err">還有 '+bad.length+' 個必填欄位沒對應（紅色那些）。對應完再檢查。</div>';
+      $('cardGen').classList.remove('off'); $('gen').disabled = true; return;
+    }
+
+    const P = { cust:[], led:[], ses:[], bk:[] };
+    const issues = [], notes = [];
+    const idMap = new Map();      // 舊會員 ID → uuid
+    const sesMap = new Map();     // 舊課次 ID → uuid
+
+    /* customers */
+    const M = DATA.M, mm = MAP.M;
+    if (!M){ issues.push(['members 沒有貼', '沒有客人就沒有東西可以連結', 1]); }
+    else {
+      const seenPhone = new Map(), seenId = new Set();
+      let noPhone=0, noName=0, dupPhone=0, dupId=0, fixedPhone=0, badPhone=0;
+      M.rows.forEach(r => {
+        const oid = String(r[mm.id]||'').trim();
+        const name = String(r[mm.name]||'').trim();
+        const raw = String(r[mm.phone]||'').trim();
+        const ph = normPhone(raw);
+        if (!name) { noName++; return; }
+        if (!ph)   { noPhone++; return; }
+        if (ph !== raw) fixedPhone++;
+        if (!/^09\d{8}$/.test(ph)) badPhone++;
+        if (seenPhone.has(ph)) { dupPhone++; return; }
+        if (oid && seenId.has(oid)) { dupId++; return; }
+        seenPhone.set(ph, 1); if (oid) seenId.add(oid);
+        const id = uuid(); if (oid) idMap.set(oid, id);
+        P.cust.push({ id, name, phone: ph, bday: mm.bday ? toDate(r[mm.bday]) : null });
+      });
+      if (noName)  issues.push(['姓名空白', noName + ' 列被跳過', noName]);
+      if (noPhone) issues.push(['手機空白', noPhone + ' 列被跳過 —— phone 是 not null', noPhone]);
+      if (dupPhone)issues.push(['手機重複', dupPhone + ' 列被跳過 —— phone 是 unique', dupPhone]);
+      if (dupId)   issues.push(['舊會員 ID 重複', dupId + ' 列被跳過', dupId]);
+      if (badPhone)notes.push(['手機格式不是 09 開頭 10 碼', badPhone + ' 筆（仍會匯入，但綁定 LINE 時會對不上）']);
+      if (fixedPhone) notes.push(['手機被自動整理過', fixedPhone + ' 筆（去掉符號 / +886 → 0）']);
+    }
+
+    /* class_sessions */
+    const S = DATA.S, sm = MAP.S;
+    if (S){
+      let noDate=0, noTime=0, dup=0; const seen=new Set();
+      S.rows.forEach(r => {
+        const oid = String(r[sm.id]||'').trim();
+        const d = toDate(r[sm.date]), t = toTime(r[sm.time]);
+        if (!d){ noDate++; return; }
+        if (!t){ noTime++; return; }
+        if (oid && seen.has(oid)){ dup++; return; }
+        if (oid) seen.add(oid);
+        const id = uuid(); if (oid) sesMap.set(oid, id);
+        P.ses.push({ id, date:d, time:t,
+          title: String(r[sm.title]||'').trim() || '（未命名）',
+          coach: sm.coach ? String(r[sm.coach]||'').trim() : '',
+          cap:   sm.cap ? (intOf(r[sm.cap]) ?? 10) : 10,
+          level: LEVEL[lc(sm.level ? r[sm.level] : '')] || 'beg',
+          stat:  SSTAT[lc(sm.stat ? r[sm.stat] : '')] || 'completed' });
+      });
+      if (noDate) issues.push(['課次日期讀不出來', noDate + ' 列被跳過', noDate]);
+      if (noTime) issues.push(['課次時間讀不出來', noTime + ' 列被跳過', noTime]);
+      if (dup)    issues.push(['舊課次 ID 重複', dup + ' 列被跳過', dup]);
+    }
+
+    /* credit_ledger */
+    const L = DATA.L, lm = MAP.L;
+    if (L){
+      let orphan=0, badDelta=0, unknownType=0;
+      const tset = new Map();
+      L.rows.forEach(r => {
+        const oid = String(r[lm.mid]||'').trim();
+        const cid = idMap.get(oid);
+        const dl = intOf(r[lm.delta]);
+        const ty = lc(r[lm.type]);
+        tset.set(ty || '（空白）', (tset.get(ty||'（空白）')||0)+1);
+        if (!cid){ orphan++; return; }
+        if (dl === null){ badDelta++; return; }
+        const reason = REASON[ty] || null;
+        if (!reason) unknownType++;
+        P.led.push({ id:uuid(), cid, delta:dl, reason: reason || 'adjust',
+          at: toStamp(r[lm.at]),
+          note: (lm.note ? String(r[lm.note]||'').trim() : '') || (reason ? '' : '舊 type='+ty) });
+      });
+      if (orphan)      issues.push(['流水對不到人', orphan + ' 列被跳過 —— 會員 ID 在 members 裡找不到', orphan]);
+      if (badDelta)    issues.push(['異動堂數不是整數', badDelta + ' 列被跳過', badDelta]);
+      if (unknownType) notes.push(['認不得的 type', unknownType + ' 列（一律當成 adjust，原值寫進備註）']);
+      notes.push(['type 實際出現的值', [...tset.entries()].map(([k,v])=>k+'×'+v).join('　')]);
+    }
+
+    /* bookings */
+    const B = DATA.B, bm = MAP.B;
+    if (B){
+      let noSes=0, noMem=0, dup=0, multi=0; const seen=new Set();
+      B.rows.forEach(r => {
+        const cid = idMap.get(String(r[bm.mid]||'').trim());
+        const sid = sesMap.get(String(r[bm.sid]||'').trim());
+        if (!sid){ noSes++; return; }
+        if (!cid){ noMem++; return; }
+        const k = sid+'|'+cid;
+        if (seen.has(k)){ dup++; return; }
+        seen.add(k);
+        const hc = bm.head ? intOf(r[bm.head]) : null;
+        if (hc && hc > 1) multi++;
+        const ses = P.ses.find(x => x.id === sid);
+        P.bk.push({ id:uuid(), sid, cid,
+          stat: BSTAT[lc(r[bm.stat])] || 'booked',
+          cancelled: lc(r[bm.stat]) === 'cancelled',
+          // 沒有報名時間就退回用「那堂課的日期」—— 絕不能讓幾千筆舊預約都變成今天
+          at: (bm.at ? toStamp(r[bm.at]) : null) || (ses ? ses.date + ' 00:00+08' : null),
+          head: hc });
+      });
+      if (noSes) issues.push(['預約對不到課次', noSes + ' 列被跳過', noSes]);
+      if (noMem) issues.push(['預約對不到人', noMem + ' 列被跳過', noMem]);
+      if (dup)   issues.push(['同一堂同一人重複報名', dup + ' 列被跳過 —— 資料表有 unique 限制', dup]);
+      if (multi) notes.push(['headCount > 1 的列', multi + ' 筆（只匯入代表人，人數寫進備註欄位不可用，改記在 note）']);
+    }
+
+    /* 帳本自洽（每人 delta 加總 vs 最後 balanceAfter）*/
+    if (L && MAP.L.bal){
+      const byM = new Map();
+      L.rows.forEach(r => {
+        const oid = String(r[MAP.L.mid]||'').trim(); if (!oid) return;
+        if (!byM.has(oid)) byM.set(oid, []);
+        byM.get(oid).push(r);
+      });
+      let checked=0, mismatch=0;
+      byM.forEach(rs => {
+        const sum = rs.reduce((a,r)=> a + (intOf(r[MAP.L.delta]) ?? 0), 0);
+        const last = intOf(rs[rs.length-1][MAP.L.bal]);
+        if (last === null) return;
+        checked++; if (sum !== last) mismatch++;
+      });
+      if (checked) (mismatch ? issues : notes).push(
+        mismatch ? ['帳本不自洽', mismatch + ' / ' + checked + ' 人的 delta 加總 ≠ 最後餘額', mismatch]
+                 : ['帳本自洽', checked + ' 人全部通過（delta 加總 = 最後餘額）']);
+    }
+
+    BUILT = P;
+
+    /* 報告 */
+    let html = '<div class="big">';
+    html += '<div class="good"><div class="k">CUSTOMERS</div><div class="v">'+P.cust.length+'</div><div class="s">人</div></div>';
+    html += '<div class="good"><div class="k">CREDIT_LEDGER</div><div class="v">'+P.led.length+'</div><div class="s">筆流水</div></div>';
+    html += '<div class="good"><div class="k">CLASS_SESSIONS</div><div class="v">'+P.ses.length+'</div><div class="s">堂課</div></div>';
+    html += '<div class="good"><div class="k">BOOKINGS</div><div class="v">'+P.bk.length+'</div><div class="s">筆預約</div></div>';
+    const skipped = issues.reduce((a,i)=>a+(i[2]||0),0);
+    html += '<div class="'+(skipped?'bad':'good')+'"><div class="k">被跳過</div><div class="v">'+skipped+'</div><div class="s">'+(skipped?'看下面':'沒有')+'</div></div>';
+    html += '</div>';
+
+    if (issues.length){
+      html += '<div class="find bad"><div class="hd">要處理的<span class="n">'+issues.length+' 項</span></div><div class="bd">';
+      issues.forEach(i => html += '<b>'+esc(i[0])+'</b> —— '+esc(i[1])+'<br>');
+      html += '</div></div>';
+    }
+    if (notes.length){
+      html += '<div class="find warn"><div class="hd">知道就好<span class="n">'+notes.length+' 項</span></div><div class="bd">';
+      notes.forEach(i => html += '<b>'+esc(i[0])+'</b> —— '+esc(i[1])+'<br>');
+      html += '</div></div>';
+    }
+    if (!issues.length){
+      html += '<div class="find ok"><div class="hd">沒有被跳過的資料<span class="n">可以產生</span></div>'
+            + '<div class="bd">每一列都轉換成功。</div></div>';
+    }
+    $('chkOut').innerHTML = html;
+    $('cardGen').classList.remove('off');
+    $('gen').disabled = P.cust.length === 0;
+    $('genNote').textContent = P.cust.length ? '' : '沒有客人，不能產生。';
+    $('cardGen').scrollIntoView({behavior:'smooth', block:'start'});
+  };
+
+  /* ── ③ 產生 SQL ───────────────────────────────────────── */
+  const HEADER = (title, tbl, n) =>
+`-- ═══════════════════════════════════════════════════════════
+-- ${title}
+-- 由 tools/gt-migrate.html 產生 · 共 ${n} 列
+--
+-- ☢️ 這支含個資。放 migration-local/，絕不放 db/，絕不進 Git。
+-- ⚠️ 四支必須來自同一次產生，客人 id 是那一次隨機給的。
+-- ⚠️ 執行順序：g1 → g2 → g3 → g4（後面的會參照前面的 id）
+-- ═══════════════════════════════════════════════════════════
+
+-- ── 保險絲：已經有資料就中止，一列都不會進去 ──────────────
+do $$
+begin
+  if exists (select 1 from public.${tbl}) then
+    raise exception '⛔ ${tbl} 已有 % 筆資料，這支已經跑過了。要重來請先清空。',
+      (select count(*) from public.${tbl});
+  end if;
+end $$;
+
+`;
+
+  function batch(rows, cols, tbl, mk, size){
+    let out = '';
+    for (let i=0; i<rows.length; i+=size){
+      const chunk = rows.slice(i, i+size);
+      out += 'insert into public.'+tbl+' ('+cols+') values\n'
+           + chunk.map(mk).join(',\n') + ';\n\n';
+    }
+    return out;
+  }
+
+  function build(){
+    const P = BUILT, out = {};
+
+    out['g1-customers.sql'] = HEADER('customers — 舊系統 members', 'customers', P.cust.length)
+      + batch(P.cust, 'id, name, phone, birthday', 'customers',
+          c => '  ('+q(c.id)+', '+q(c.name)+', '+q(c.phone)+', '+(c.bday?q(c.bday):'null')+')', 300)
+      + '-- 驗收\nselect count(*) as 客人數 from public.customers;\n';
+
+    out['g2-credit-ledger.sql'] = HEADER('credit_ledger — 舊系統 PassLedger（GT）', 'credit_ledger', P.led.length)
+      + batch(P.led, 'id, customer_id, delta, reason, product, note, created_at', 'credit_ledger',
+          r => '  ('+q(r.id)+', '+q(r.cid)+', '+r.delta+', '+q(r.reason)+", 'GT', "+qn(r.note)+', '
+               + (r.at ? q(r.at)+'::timestamptz' : 'now()') + ')', 400)
+      + '-- 驗收：每人每種商品的餘額\nselect product as 商品, count(*) as 人數, sum(balance) as 總堂數\n'
+      + '  from public.customer_credits group by product;\n';
+
+    out['g3-class-sessions.sql'] = HEADER('class_sessions — 舊系統 LessonInstances（GT 歷史課堂）', 'class_sessions', P.ses.length)
+      + '-- template_id 一律留空：四年來課表改過，不能套現行的 14 堂範本\n\n'
+      + batch(P.ses, 'id, session_date, start_time, title, level, capacity, status, product', 'class_sessions',
+          s => '  ('+q(s.id)+', '+q(s.date)+'::date, '+q(s.time)+'::time, '+q(s.title)+', '
+               + q(s.level)+', '+s.cap+', '+q(s.stat)+", 'GT')", 400)
+      + '-- 驗收\nselect product as 商品, count(*) as 堂數, min(session_date) as 最早, max(session_date) as 最晚\n'
+      + '  from public.class_sessions group by product;\n';
+
+    const ts = v => v ? q(v)+'::timestamptz' : 'now()';
+    out['g4-bookings.sql'] = HEADER('bookings — 舊系統 Bookings', 'bookings', P.bk.length)
+      + '-- booked_at：舊系統沒有報名時間的話，退回用「那堂課的日期」。\n'
+      + '--            不補的話會走預設值 now()，幾千筆舊預約全變成今天報名的。\n'
+      + '-- cancelled_at：舊系統沒記「什麼時候取消的」，這裡跟 booked_at 同值，\n'
+      + '--            只是用來讓 public_schedule 的人數不計入它（那支是看 cancelled_at is null）。\n\n'
+      + batch(P.bk, 'id, session_id, customer_id, paid_by_customer_id, status, booked_at, cancelled_at', 'bookings',
+          b => '  ('+q(b.id)+', '+q(b.sid)+', '+q(b.cid)+', '+q(b.cid)+', '+q(b.stat)+', '
+               + ts(b.at) + ', ' + (b.cancelled ? ts(b.at) : 'null') + ')', 400)
+      + '-- 驗收\nselect status as 狀態, count(*) as 筆數 from public.bookings group by status;\n';
+
+    return out;
+  }
+
+  $('gen').onclick = function(){
+    const files = build();
+    let html = '<div class="find ok"><div class="hd">四支產生完成<span class="n">一支一支下載</span></div><div class="bd">'
+      + '<b>執行順序：g1 → g2 → g3 → g4。</b>後面的會參照前面的 id，順序錯了會失敗（那是好事，代表 FK 有在守）。<br>'
+      + '每一支都有保險絲，重複執行會中止。</div></div>';
+    html += '<div class="row" style="margin-top:11px">';
+    Object.keys(files).forEach(fn => {
+      const kb = (new Blob([files[fn]]).size/1024).toFixed(0);
+      html += '<button class="dl" data-fn="'+esc(fn)+'">⬇ '+esc(fn)+'　'+kb+' KB</button>';
+    });
+    html += '</div>';
+    $('dlOut').innerHTML = html;
+    $('dlOut').querySelectorAll('button[data-fn]').forEach(b => {
+      b.onclick = () => {
+        const fn = b.dataset.fn;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([files[fn]], {type:'text/plain;charset=utf-8'}));
+        a.download = fn; a.style.display='none';
+        document.body.appendChild(a); a.click();
+        setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+      };
+    });
+  };
+
+  $('clr').onclick = () => {
+    ['rawM','rawL','rawS','rawB'].forEach(i => $(i).value = '');
+    $('mapOut').innerHTML=''; $('chkOut').innerHTML=''; $('dlOut').innerHTML='';
+    $('cardMap').classList.add('off'); $('cardGen').classList.add('off'); BUILT=null;
+  };
+})();
+</script>
+</body>
+</html>
