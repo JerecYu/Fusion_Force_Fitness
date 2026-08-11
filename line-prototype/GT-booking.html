@@ -879,12 +879,18 @@
   const render = () => { renderDays(); renderList(); renderStats(); renderMine(); };
 
   /* ── 上下分頁切換（維持原本行為） ─────────────────────────── */
-  document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
-    document.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
-    b.classList.add('on');
-    document.getElementById('vS').style.display = b.dataset.tab === 's' ? 'block' : 'none';
-    document.getElementById('vM').style.display = b.dataset.tab === 'm' ? 'block' : 'none';
-  });
+  function showTab(which){
+    document.querySelectorAll('.tab').forEach(x =>
+      x.classList.toggle('on', x.dataset.tab === which));
+    document.getElementById('vS').style.display = which === 's' ? 'block' : 'none';
+    document.getElementById('vM').style.display = which === 'm' ? 'block' : 'none';
+  }
+  document.querySelectorAll('.tab').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+  // 圖文選單的「我的預約」直接開這一頁的第二個分頁（第 35 步）：
+  //   https://liff.line.me/2011063116-QOxXN30h/GT-booking.html?tab=m
+  // ☢️ LIFF 會把問號後面的東西原封不動帶過來，所以這樣行得通。
+  if (/[?&]tab=m\b/.test(location.search)) showTab('m');
 
   load();
 })();
