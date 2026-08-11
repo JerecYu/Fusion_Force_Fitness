@@ -253,14 +253,15 @@ window.FFF_ROADMAP = {
           ck:'你用手機訂一堂課，Supabase 裡真的多一筆；取消之後人數退回去；取消過的同一堂再訂一次，還是同一筆（不是新增第二筆）。',
           note:'<b>2026-08-11 完成。</b><br>檔案：<code>db/13-booking.sql</code>、<code>line-prototype/GT-booking.html</code>。<br><br><b>☢️ 兩個開關收成一個了。</b>原本要記得同時改前端的 <code>BOOKING_OPEN</code> 和排程裡的 <code>v_auto_cancel</code> —— 兩個地方、靠人記得、忘了不會報錯。而且<b>前端那個旗標本來就擋不住任何人</b>，真正的門是 RLS，前端只是不畫按鈕。<br>現在資料庫裡有一列 <code>app_settings.live</code>，RLS、排程、前端三邊都讀它。<b>上線那天只要改那一列</b>（第 37 步）：<br><code>update app_settings set live = true where id = 1;</code><br><br><b>修掉的三個洞</b>（都是實際存在的）：<ul><li>UPDATE 政策只寫 using 沒寫 with check → 客人可以<b>把自己標成 attended</b>，第 39 步扣他的課、第 40 步算教練鐘點費，兩份帳一起被灌水</li><li>INSERT 沒檢查 <code>paid_by_customer_id</code> → <b>我報名、扣你的課卡</b></li><li>INSERT 完全沒看 session → 可以報名已取消的課、過去的課、甚至 PT 課次</li></ul><b>☢️ 還修掉一個差 8 小時的 bug。</b>原本「課前一小時」寫成 <code>(session_date + start_time)::timestamptz</code>，而資料庫時區是 UTC —— 那個寫法把「台灣 19:00」當成「UTC 19:00」。客人可以在課<b>上完 7 小時之後</b>才取消，而且系統覺得完全合法。正解是 <code>at time zone \'Asia/Taipei\'</code>。<br><br><b>驗證</b>：資料庫攻擊測試 21 項全過、前端 Playwright 11 種情境全過、實機把開關打開 40 分鐘走完訂課→取消→再訂的完整流程，測完關回 false。<br><br><b>做錯又改回來的一件事</b>：我一開始把「只能訂 pending 的課」寫進規則，結果當天已成立的課全部訂不了。第四節早就定案了：<b>「報名截止 = 當天 00:00 結算（不是關閉報名）」「當天仍可加入」</b>。現在擋的是<b>「已經開始」和「已取消」</b>，不是「已結算」。' },
 
-        { n:34, t:'PT／PGT 頁改成「送出需求」', where:'前端', done:false,
+        { n:34, t:'PT／PGT 頁改成「送出需求」', where:'前端', done:true,
           summary:'說明 ＋ 完成判準',
           body:'按鈕文字從「確認預約」改成「送出需求」，寫進 <code>pt_requests</code>。<br><b>私人課不是預約</b> —— 客人送需求，教練聯繫後才敲定。',
-          ck:'送出一筆需求，<code>pt_requests</code> 裡看得到，而且沒有動到任何課堂名額。' },
+          ck:'送出一筆需求，<code>pt_requests</code> 裡看得到，而且沒有動到任何課堂名額。',
+          note:'<b>2026-08-11 完成。</b><br>檔案：<code>line-prototype/pt-request.js</code>（兩頁共用）、<code>PT-booking.html</code>、<code>PGT-booking.html</code>、<code>index.html</code>（新）、<code>db/15-pt-requests.sql</code>。<br><br><b>決定：私人課頁不強迫綁定。</b>那是一張招生的頁，不是會員專區。<br><ul><li><b>已綁定的會員</b> → 直接寫進 <code>pt_requests</code></li><li><b>還沒綁定的人</b> → 開啟官方帳號聊天室，訊息已經幫他打好（規格、教練、時段、姓名、電話、備註全帶著）</li><li><b>用電腦的人</b> → 多一顆「複製內容」按鈕。桌機按 LINE 連結會被丟到 LINE 官網，填的東西就這樣蒸發 —— 這是實測踩到的</li></ul><b>教練的 uuid 不寫死在前端。</b>加了 <code>public_coaches</code> 檢視表（只給 id、對外顯示名、職稱 —— 本名和電話一個字都沒有）。寫死的話換教練或重建資料庫就對不上，而且<b>不會報錯，只會默默存成「未指定」</b>。<br><br><b>驗證</b>：Playwright 七種情境（含「不能碰到任何 <code>bookings</code>」）＋ 桌機複製退路 ＋ 實機從 LINE 送出一筆，資料庫欄位逐項對過（商品、規格、人數、教練 uuid、時段、備註、送出人），而且預約 62 筆、課次 109 筆、未來報名 8 人一動也沒動。<br><br>☢️ <b>途中挖到 LIFF 的一個大坑，見附錄六之八</b> —— 第 35 步做圖文選單前一定要先看。' },
 
         { n:35, t:'設定 LINE 圖文選單', where:'LINE後台', done:false,
           summary:'說明 ＋ 完成判準',
-          body:'大門上的指示牌：訂課／我的課／剩幾堂／聯絡我們。',
+          body:'大門上的指示牌：訂課／我的課／剩幾堂／聯絡我們。<br><br><b>☢️ 每一個按鈕都必須用 LIFF 網址，不能用 GitHub Pages 的網址。</b><br><code>https://liff.line.me/2011063116-QOxXN30h/GT-booking.html</code><br><code>https://liff.line.me/2011063116-QOxXN30h/PT-booking.html</code><br><code>https://liff.line.me/2011063116-QOxXN30h/PGT-booking.html</code><br><br>直接用 <code>jerecyu.github.io/…</code> 的話，在 LINE 裡只是普通瀏覽器 —— <code>liff.isLoggedIn()</code> 會是 false，客人會被當成沒綁定的人。<b>不會報錯，只是功能默默降級。</b>2026-08-11 實測踩到，細節見附錄六之八。',
           ck:'加好友之後，不用任何說明就知道該點哪裡。' },
 
         { n:36, t:'PT／PGT 平行週：建人，最後一天才填餘額', where:'決定', done:false, kind:'decide',
