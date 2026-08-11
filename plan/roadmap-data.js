@@ -234,11 +234,12 @@ window.FFF_ROADMAP = {
           body:'LIFF 會在 LINE 內部開一層網頁蓋在對話上 —— 客人全程不離開 LINE，但本質仍是網頁。<b>預約介面不可能真的長在對話泡泡裡。</b><br>簡單查詢（例如「剩幾堂」）可以用機器人純文字回覆，不用開網頁。',
           ck:'<b>2026-08-11 完成。</b><ul><li>LIFF app <b>「GT 團體課預約」</b>，LIFF ID <b><code>2011063116-QOxXN30h</code></b></li><li>Size <code>Full</code>、Scopes <code>openid</code> ＋ <code>profile</code>、Add friend option <code>Off</code></li><li>網址：<code>https://liff.line.me/2011063116-QOxXN30h</code></li></ul>手機在 LINE 裡點開，課表直接在 LINE 內部顯示，資料是即時從資料庫讀的。<br><br><b>沒有勾 <code>chat_message.write</code></b> —— 它會讓客人<b>不能把 LIFF 視窗縮到底下</b>，而我們根本不需要「代替使用者發訊息」這個功能。' },
 
-        { n:31, t:'寫 Edge Function：驗 LINE 身分，發 Supabase 憑證', where:'SQL', done:false,
+        { n:31, t:'寫 Edge Function：驗 LINE 身分，發 Supabase 憑證', where:'SQL', done:true,
           summary:'整個專案技術上最關鍵的一步 ＋ 完成判準',
           body:'❌ <b>錯</b>：LIFF 取得 <code>line_user_id</code>，前端直接拿它查資料庫<br>→ 任何人改一個字串就能查別人的資料<br><br>✅ <b>對</b>：<br>LIFF 取得 ID Token（LINE 簽章過的憑證）<br>↓ 送到 Supabase Edge Function<br>↓ 向 LINE 官方驗證<br>↓ 發一張 Supabase 登入憑證<br>之後所有查詢用 <code>auth.uid()</code> 判斷身分',
           warn:'<b>這一步沒做對，後面所有 RLS 都是裝飾。</b>',
-          ck:'你試著把請求裡的 ID 換成別人的，系統拒絕你。' },
+          ck:'你試著把請求裡的 ID 換成別人的，系統拒絕你。',
+          note:'<b>2026-08-11 完成。</b><br>檔案：<code>supabase/functions/line-auth/index.ts</code>（伺服器端）、<code>line-prototype/liff-auth.js</code>（前端）。<br><br><b>攻擊測試五種全部被擋，沒有任何一種發出憑證：</b>什麼都不送 400／空物件 400／亂碼 401／偽造 JWT（格式對簽章假）401／別人 channel 的憑證 401。<br><br><b>實機驗證</b>：手機從 LINE 開 → 顯示「已辨識」，同一分鐘 <code>auth.users</code> 多一個 <code>line.…@fff.local</code> 帳號並完成登入；電腦一般瀏覽器開 → 只顯示「瀏覽模式」，課表照常看得到。<br><br><b>踩過的坑</b>：Supabase 文件說 <code>token_hash</code> 要配 <code>type:\'email\'</code>，但 <code>generateLink({type:\'magiclink\'})</code> 產出的 hash 用 <code>magiclink</code>、<code>email</code>、<code>recovery</code> 三種都通得過，只有 <code>signup</code> 會被拒。這是用探針對正式專案實測出來的，不是查文件推論的。' },
 
         { n:32, t:'手機綁定流程', where:'前端', done:false,
           summary:'說明 ＋ 完成判準',

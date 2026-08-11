@@ -99,6 +99,11 @@
   .ck{margin-top:8px;font-size:12px;border-left:3px solid var(--auto-line);
     padding-left:9px;color:var(--green);line-height:1.6}
   .ck b{color:var(--green)}
+  /* 做完之後留下的紀錄：做了什麼、驗到什麼、踩過什麼坑 */
+  .did{margin-top:8px;font-size:12px;border-left:3px solid var(--fog);
+    background:var(--fog-bg);padding:8px 10px;color:var(--muted);line-height:1.7;border-radius:2px}
+  .did b{color:var(--ink)}
+  .did code{font-size:11.5px}
   .warn{margin-top:8px;font-size:12px;border-left:3px solid var(--orange);
     padding-left:9px;color:var(--orange-deep);line-height:1.6}
   .warn b{color:var(--orange-deep)}
@@ -424,12 +429,13 @@
         '<span class="n">' + String(s.n).padStart(2, '0') + '</span>' +
         '<span class="t">' + s.t + '</span>' +
         '<span class="where">' + s.where + '</span></div>';
-      if (s.body || s.ck || s.warn) {
+      if (s.body || s.ck || s.warn || s.note) {
         html += '<details class="more"' + (isNow ? ' open' : '') + '>' +
           '<summary>' + (s.summary || '說明') + '</summary><div class="body">' +
           (s.body || '') +
           (s.warn ? '<div class="warn">' + s.warn + '</div>' : '') +
           (s.ck ? '<div class="ck"><b>完成判準：</b>' + s.ck + '</div>' : '') +
+          (s.note ? '<div class="did">' + s.note + '</div>' : '') +
           '</div></details>';
       }
       html += '</li>';
