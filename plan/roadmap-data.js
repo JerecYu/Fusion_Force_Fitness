@@ -34,7 +34,7 @@
 window.FFF_ROADMAP = {
 
   meta: {
-    updated: '2026-08-11 · 第三幕完成',
+    updated: '2026-08-11 · 第 30 步完成，LIFF 已上線',
     phaseName: '第一階段：官網 ＋ LINE 預約系統',
     repo: 'https://github.com/JerecYu/Fusion_Force_Fitness'
   },
@@ -224,15 +224,15 @@ window.FFF_ROADMAP = {
         text: '客人可以在 LINE 裡自己訂課、自己取消、自己查堂數。GT 的四年歷史整套搬進來了，PT／PGT 帶著餘額重新開始，舊系統變成唯讀的存證。你原本要花在接電話和回訊息的時間，從這裡開始省下來。'
       },
       steps: [
-        { n:29, t:'開 LINE 官方帳號 ＋ LINE Developers 的 Provider／Channel', where:'LINE後台', done:false,
+        { n:29, t:'開 LINE 官方帳號 ＋ LINE Developers 的 Provider／Channel', where:'LINE後台', done:true,
           summary:'說明 ＋ 完成判準',
           body:'兩個不同的後台，容易搞混：官方帳號管「客人看到的門面」，Developers 管「程式怎麼進去」。',
-          ck:'你能用自己的 LINE 加到這個官方帳號的好友。' },
+          ck:'<b>2026-08-11 完成。</b><ul><li>官方帳號 <code>@fff123</code> 早就有了（203 位好友），Messaging API 也早就是「使用中」</li><li>Provider <b><code>FUSIONFORCE</code></b>（ID <code>2005312469</code>），Jerec 已是 Admin</li><li>新建 LINE Login channel <b>「FFF 預約系統」</b>，Channel ID <b><code>2011063116</code></b>，App type = Web app</li></ul><b>踩到的坑：</b>舊系統管理者說「建 channel 會進死循環，是官方 bug」。查過官方文件和中英文社群，<b>沒有任何人回報過</b>。改用<b>無痕視窗</b>（擴充功能全停）再試一次就成功了 —— 是瀏覽器擴充攔截表單送出，不是 LINE 的問題。<br><b>教訓：後台操作卡住時，先開無痕視窗試一次，那比查文件快。</b>' },
 
-        { n:30, t:'建 LIFF App，指向 GitHub Pages 上的預約頁', where:'LINE後台', done:false,
+        { n:30, t:'建 LIFF App，指向 GitHub Pages 上的預約頁', where:'LINE後台', done:true,
           summary:'說明 ＋ 完成判準',
           body:'LIFF 會在 LINE 內部開一層網頁蓋在對話上 —— 客人全程不離開 LINE，但本質仍是網頁。<b>預約介面不可能真的長在對話泡泡裡。</b><br>簡單查詢（例如「剩幾堂」）可以用機器人純文字回覆，不用開網頁。',
-          ck:'在 LINE 裡點一個連結，課表在 LINE 內部打開。' },
+          ck:'<b>2026-08-11 完成。</b><ul><li>LIFF app <b>「GT 團體課預約」</b>，LIFF ID <b><code>2011063116-QOxXN30h</code></b></li><li>Size <code>Full</code>、Scopes <code>openid</code> ＋ <code>profile</code>、Add friend option <code>Off</code></li><li>網址：<code>https://liff.line.me/2011063116-QOxXN30h</code></li></ul>手機在 LINE 裡點開，課表直接在 LINE 內部顯示，資料是即時從資料庫讀的。<br><br><b>沒有勾 <code>chat_message.write</code></b> —— 它會讓客人<b>不能把 LIFF 視窗縮到底下</b>，而我們根本不需要「代替使用者發訊息」這個功能。' },
 
         { n:31, t:'寫 Edge Function：驗 LINE 身分，發 Supabase 憑證', where:'SQL', done:false,
           summary:'整個專案技術上最關鍵的一步 ＋ 完成判準',
@@ -268,7 +268,7 @@ window.FFF_ROADMAP = {
 
         { n:37, t:'切換日：舊系統退場', where:'決定', done:false, kind:'decide',
           summary:'那一天的六件事，照順序做',
-          body:'<b>挑哪一天：</b>第 36 步平行週結束的隔天。課最少的那天最好 —— 你的課表裡<b>週三只有一堂</b>（12:20 間歇有氧）。<br><b>前一週：</b>公告「X 月 X 日起改用新系統預約」。<br><br><b>當天照順序做，不要跳：</b><ul><li><b>①</b> <b>舊系統停止購課與消課</b> —— 先把帳凍住，後面每一步才有意義</li><li><b>②</b> 舊系統最後一次完整匯出（GT 那份）</li><li><b>③</b> 用第 26 步的工具產生 SQL</li><li><b>④</b> 清掉彩排資料，正式匯入 GT</li><li><b>⑤</b> <b>餘額逐筆對帳</b>（跟第 27 步同一套查詢）＋ 抽查幾個 PT 客人的結轉餘額</li><li><b>⑥</b> <b>舊系統設為唯讀，不要刪</b> —— 至少留三個月。要查 2023 年三月那堂課，去那裡查</li></ul>然後把 <code>BOOKING_OPEN</code> 改成 <code>true</code>，公告上線，發綁定指引給還沒綁 LINE 的人。',
+          body:'<b>挑哪一天：</b>第 36 步平行週結束的隔天。課最少的那天最好 —— 你的課表裡<b>週三只有一堂</b>（12:20 間歇有氧）。<br><b>前一週：</b>公告「X 月 X 日起改用新系統預約」。<br><br><b>當天照順序做，不要跳：</b><ul><li><b>①</b> <b>舊系統停止購課與消課</b> —— 先把帳凍住，後面每一步才有意義</li><li><b>②</b> 舊系統最後一次完整匯出（GT 那份）</li><li><b>③</b> 用第 26 步的工具產生 SQL</li><li><b>④</b> 清掉彩排資料，正式匯入 GT</li><li><b>⑤</b> <b>餘額逐筆對帳</b>（跟第 27 步同一套查詢）＋ 抽查幾個 PT 客人的結轉餘額</li><li><b>⑥</b> <b>舊系統設為唯讀，不要刪</b> —— 至少留三個月。要查切換前的紀錄，去那裡查</li><li><b>⑦</b> <b>換掉 LINE Channel secret</b>（2026-08-11 曾外洩到聊天室）。舊系統會用它推播課程訊息，所以不能提早換 —— 但舊系統退場的這一天，它就沒有理由再有效了。路徑：LINE Developers Console → 那個 Messaging API channel → Basic settings → Channel secret 的 Issue／重新發行</li></ul>然後把 <code>BOOKING_OPEN</code> 改成 <code>true</code>，公告上線，發綁定指引給還沒綁 LINE 的人。',
           warn:'☢️ <b>先處理「已經報名未來課程」的那些人。</b><br>搬遷工具的日期上限固定在 <code>2026-08-06</code>（<code>pg_cron</code> 最早產生的課是 8/07）。所以<b>客人在舊系統報的、8/07 以後的課，一筆都不會自動進來</b> —— 那些課次在新系統是排程產生的，id 不一樣。<br>08-10 彩排時是 8 筆，到切換日會累積成幾十筆。<b>那天要按「日期 ＋ 時間」把它們對到我們自己的課次上</b>，人工或另外寫一小段 SQL 都行 —— 但不能漏掉，漏掉的人到現場會發現自己沒報到名。<br><br>⚠️ <b>這一天結束時，教練還不能在系統上點名核銷</b>（那是第 39 步）。中間這段期間扣課要你自己在 Table Editor 手動做，或先紙本記、之後補。<br><b>這是已知的取捨，不是疏漏</b> —— 早一點切換，就早一點停掉維護兩套系統的心力。<br><br>⚠️ <b>PT／PGT 的上課歷史從此只存在舊系統。</b>那是刻意的決定，不是漏掉的 —— 舊系統設唯讀就是為了這件事。',
           ck:'隔天早上，新系統的餘額跟前一天舊系統的最後畫面一致，而且舊系統再也沒有新資料進去。' }
       ]
@@ -303,7 +303,7 @@ window.FFF_ROADMAP = {
         { n:42, t:'課前提醒推播', where:'SQL', done:false,
           summary:'說明 ＋ 完成判準',
           body:'Edge Function ＋ LINE Messaging API。',
-          warn:'這一條同時是<b>架構失效警訊</b> —— 需要頻繁自動通知，就代表 GitHub Pages 這套開始不夠用了，該考慮搬去 Cloudflare 或更完整的系統鏈。',
+          warn:'☢️ <b>2026-08-11 發現的阻礙：官方帳號和 LINE Login channel 不在同一個 Provider。</b><br>官方帳號的 Messaging API channel（<code>2009245280</code>）不在 <code>FUSIONFORCE</code> 裡，而 <code>Linked LINE Official Account</code> 的下拉選單是空的 —— <b>跨 Provider 綁不起來</b>。<br><br><b>後果：</b>LIFF 拿到的 userId 跟 Messaging API 的 userId <b>不是同一組</b>，所以<b>推播找不到人</b>。<br>訂課、綁定、入帳、報表、圖文選單<b>全部不受影響</b> —— 只有這一步。<br><br><b>做這一步之前要先解決，三條路：</b><ul><li>① 找到官方帳號真正掛在哪個 Provider，請對方把你加進去（最乾淨，隨時可做）</li><li>② 只用 OA 後台的「群發訊息」——  無法針對個人，等於這個功能降級</li><li>③ 在 FUSIONFORCE 建新的 Messaging API channel —— <b>那會是另一個官方帳號</b>，203 位好友要重加，不建議</li></ul><br>這一條同時是<b>架構失效警訊</b> —— 需要頻繁自動通知，就代表 GitHub Pages 這套開始不夠用了，該考慮搬去 Cloudflare 或更完整的系統鏈。',
           ck:'課前一小時，報名的人收到 LINE 提醒。' }
       ]
     }
