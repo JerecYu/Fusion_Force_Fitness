@@ -6,38 +6,68 @@
 <title>諧動空間 Fusion Force</title>
 <!--
   ═══════════════════════════════════════════════════════════
-  這一頁只做一件事：把人送到入口頁。
+  這一頁是 LIFF 的端點（Endpoint URL 指向這個資料夾）。
+  它只做一件事：把人送到他真正要去的那一頁。
 
-  為什麼需要它 · 2026-08-11（第 34 步途中）
+  ☢️ 2026-08-11 踩過的坑（第 34 步）
   ─────────────────────────────────────────
-  LIFF 的 Endpoint URL 改成了這個資料夾（原本指向 GT-booking.html），
-  這樣才能用「LIFF 網址 ＋ 路徑」的方式開任何一頁，
-  而且每一頁都拿得到 LINE 登入狀態：
+  第一版的這一頁直接 location.replace('A-entry.html')，
+  結果不管客人開的是哪一個 LIFF 網址，全部被丟到入口頁。
 
-      https://liff.line.me/2011063116-QOxXN30h/GT-booking.html
-      https://liff.line.me/2011063116-QOxXN30h/PT-booking.html
-      https://liff.line.me/2011063116-QOxXN30h/PGT-booking.html
+  原因：LIFF 網址後面接的路徑，LINE 是用 ?liff.state= 這個
+  查詢參數送到端點來的，然後由 liff.init() 讀出來、再轉一次。
+  我在 SDK 載入之前就跳走，那個參數整個被吃掉。
 
-  ☢️ 直接開 jerecyu.github.io/... 那個網址，在 LINE 裡只是普通瀏覽器 ——
-     liff.isLoggedIn() 會是 false，客人會被當成沒綁定的人。
-     不會報錯，只是功能默默降級。
+  不會報錯，只是每個人都到錯的地方 —— 又是一次「安靜的錯」。
 
-  改了 Endpoint URL 之後，沒帶路徑的 LIFF 網址會落在這個資料夾的根，
-  也就是這一頁。所以這一頁要把人接住，送去入口頁。
+  所以：有 liff.state 就交給 SDK 處理；沒有才自己去入口頁。
   ═══════════════════════════════════════════════════════════
 -->
-<meta http-equiv="refresh" content="0; url=A-entry.html">
-<link rel="canonical" href="A-entry.html">
 <style>
   html,body{height:100%;margin:0}
   body{display:flex;align-items:center;justify-content:center;
     background:#F4F8FA;color:#587589;
     font-family:'Noto Sans TC',system-ui,-apple-system,sans-serif;
-    font-size:.86rem;letter-spacing:.04em}
+    font-size:.86rem;letter-spacing:.04em;text-align:center;padding:20px}
+  a{color:#2E86AB;text-decoration:none;font-weight:700}
 </style>
 </head>
 <body>
-  <a href="A-entry.html" style="color:#2E86AB;text-decoration:none">正在前往諧動空間 · 點這裡</a>
-  <script>location.replace('A-entry.html');</script>
+  <div id="msg">正在前往…　<a href="A-entry.html">點這裡</a></div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+(function () {
+  var LIFF_ID = '2011063116-QOxXN30h';
+  var ENTRY = 'A-entry.html';
+
+  // ☢️ 不能用 URLSearchParams.get('liff.state') 之後就丟掉 ——
+  //    要判斷「有沒有」，處理權交給 SDK。
+  var hasState = /[?&]liff\.state=/.test(location.search);
+
+  if (!hasState) { location.replace(ENTRY); return; }
+
+  // 有 liff.state：liff.init() 會自己讀出來，再把人轉到正確的子路徑。
+  function manual() {
+    // SDK 沒動作時的退路：自己把 liff.state 解出來轉過去。
+    try {
+      var m = /[?&]liff\.state=([^&]*)/.exec(location.search);
+      var p = m ? decodeURIComponent(m[1]) : '';
+      p = p.replace(/^\/+/, '');
+      location.replace(p || ENTRY);
+    } catch (e) { location.replace(ENTRY); }
+  }
+
+  if (!window.liff) { manual(); return; }
+
+  var done = false;
+  window.liff.init({ liffId: LIFF_ID })
+    .then(function () { done = true; })
+    .catch(function () { manual(); });
+
+  // SDK 正常時會在這之前就把頁面轉走。還在這裡就代表它沒轉，自己來。
+  setTimeout(function () { if (!done || document.getElementById('msg')) manual(); }, 2500);
+})();
+</script>
 </body>
 </html>
