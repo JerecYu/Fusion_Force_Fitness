@@ -47,6 +47,13 @@
     ready: null
   };
 
+  // ☢️ ready 必須在這裡就存在，不能等 DOMContentLoaded 才建立。
+  //    別的腳本（liff-bind.js、訂課那段）是在解析階段就跑的，
+  //    那時如果 ready 還是 null，它們的 if (A.ready) 會整段跳過 ——
+  //    不會報錯，只是永遠不知道身分辨識完成了。
+  var markReady;
+  AUTH.ready = new Promise(function (resolve) { markReady = resolve; });
+
   // ── 狀態列的文案 ─────────────────────────────────────────────
   var BAND = {
     checking: { cls: 'ab-wait', icon: '◌', text: '正在辨識身分…' },
@@ -205,7 +212,8 @@
       }, TIMEOUT_MS);
     });
 
-    AUTH.ready = Promise.race([run().then(function () { clearTimeout(timer); }), guard]);
+    Promise.race([run().then(function () { clearTimeout(timer); }), guard])
+      .then(markReady, markReady);
   }
 
   if (document.readyState === 'loading') {

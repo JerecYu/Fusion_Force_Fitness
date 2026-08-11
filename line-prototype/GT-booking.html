@@ -308,6 +308,35 @@
     font-size:.84rem;font-weight:700;color:#fff;background:#06C755;
     border-radius:var(--r-sm);padding:11px}
   .bd-oa:active{background:#05a647}
+  /* ── 第 33 步：我的預約 ────────────────────────────────── */
+  .bal{display:flex;align-items:baseline;gap:8px;background:var(--surface);
+    border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:var(--r);
+    box-shadow:var(--sh-1);padding:15px 17px;margin-bottom:14px}
+  .bal-l{font-size:.76rem;font-weight:600;color:var(--dim);letter-spacing:.02em}
+  .bal-n{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:1.5rem;
+    font-weight:700;color:var(--blue);line-height:1}
+  .bal-u{font-size:.74rem;color:var(--dim)}
+  .bal-note{margin:-8px 0 14px;font-size:.72rem;line-height:1.7;color:var(--dim);
+    background:var(--surface-2);border-radius:var(--r-sm);padding:9px 12px}
+  .mb-h{font-size:.72rem;font-weight:700;letter-spacing:.08em;color:var(--faint);
+    margin:18px 0 9px}
+  .mb{display:flex;align-items:center;gap:12px;background:var(--surface);
+    border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-1);
+    padding:13px 15px;margin-bottom:9px}
+  .mb.done{background:var(--done-bg,#F2F6F8);box-shadow:none;opacity:.72}
+  .mb-d{flex:0 0 52px;text-align:center;line-height:1.25}
+  .mb-d b{display:block;font-family:'JetBrains Mono',monospace;font-size:.95rem;color:var(--ink)}
+  .mb-d span{font-size:.65rem;color:var(--faint)}
+  .mb-i{flex:1;min-width:0}
+  .mb-t{font-size:.86rem;font-weight:700;color:var(--ink);letter-spacing:.01em}
+  .mb-t em{font-family:'JetBrains Mono',monospace;font-style:normal;color:var(--blue);
+    margin-right:6px}
+  .mb-m{margin-top:3px;font-size:.68rem;color:var(--dim)}
+  .mb-x{flex:0 0 auto;font:inherit;font-size:.72rem;font-weight:700;cursor:pointer;
+    background:#fff;color:var(--adv);border:1.5px solid var(--adv-s);
+    border-radius:var(--r-sm);padding:8px 12px}
+  .mb-x:disabled{color:var(--faint);border-color:var(--line);cursor:default}
+  .mb-s{flex:0 0 auto;font-size:.68rem;font-weight:700;color:var(--faint)}
 </style>
 </head>
 <body>
@@ -374,8 +403,8 @@
     <div class="rt">
       <span class="rt-ico">i</span>
       <span class="rt-txt"><b>這裡的課表是即時從資料庫讀出來的</b>，不是寫死在網頁裡。<br>
-        線上訂課<b>尚未開放</b> —— 認出你是誰、綁定手機這兩關都好了，
-        還差最後一步「打開訂課」。</span>
+        <span id="rtNote">線上訂課<b>尚未開放</b> —— 功能都做好了，
+        等舊系統交接完成的那一天才會打開。</span></span>
     </div>
 
     <div class="days" id="days"></div>
@@ -435,7 +464,16 @@
         但沒人報名的課永遠不會自動取消，教練會白跑空堂。
      ══════════════════════════════════════════════════════════════════ */
 
-  const BOOKING_OPEN = false;      // ← 第 33 步才改成 true（要跟 v_auto_cancel 一起）
+  // ☢️ 訂課開不開，由資料庫的 app_settings.live 決定，不是這裡。
+  //    這個變數只決定「要不要畫按鈕」——
+  //    前端的旗標擋不住任何人，真正的門是 bookings 的 RLS。
+  //    上線那天只要改資料庫那一列，這裡會自己跟上。
+  let LIVE = false;
+
+  let meId       = null;   // 我自己的 customers.id（綁定後才有）
+  let myBookings = [];     // 我的預約（來自 my_bookings 檢視表）
+  let myCredits  = null;   // 我的 GT 課卡餘額（來自 my_credits）
+  let fullOK     = null;   // 額滿的課按第二次才算數，記在這裡
   const MAX_TABS     = 14;         // 最多列出幾個有課的日子
 
   const LV = { beg:'入門', int:'中階', adv:'進階' };
@@ -470,12 +508,66 @@
     return { md: p[1] + '/' + p[2], wd: '週' + WD[d.getDay()], isToday: ds === todayStr() };
   };
 
+  /* ── 提示條 ───────────────────────────────────────────────── */
+  let tTimer = null;
+  function toast(msg, warn){
+    const t = document.getElementById('toast');
+    if (!t) return;
+    document.getElementById('tText').textContent = msg;
+    t.classList.toggle('warn', !!warn);
+    t.classList.add('show');
+    clearTimeout(tTimer);
+    tTimer = setTimeout(() => t.classList.remove('show'), 3400);
+  }
+
+  const isBound = () => !!(window.FFF_AUTH && window.FFF_AUTH.state === 'bound');
+  const bookedSet = () => new Set(
+    myBookings.filter(b => b.status === 'booked').map(b => b.session_id));
+
+  /* ── 上線開關 ─────────────────────────────────────────────── */
+  async function loadLive(){
+    try{
+      const { data, error } = await window.fffDB
+        .from('app_settings').select('live').eq('id', 1).maybeSingle();
+      if (error) throw error;                 // 規則 14：不要吞掉錯誤
+      LIVE = !!(data && data.live);
+    }catch(e){
+      // 讀不到就當作沒上線。寧可少給功能，不要在還沒開放時放人進來。
+      LIVE = false;
+      console.warn('[GT-booking] 讀不到上線開關，當作未上線：', (e && e.message) || e);
+    }
+  }
+
+  /* ── 我是誰、我的預約、我還有幾堂 ─────────────────────────── */
+  async function loadMine(){
+    meId = null; myBookings = []; myCredits = null;
+    if (!isBound()) return;
+
+    const me = await window.fffDB.from('customers').select('id').maybeSingle();
+    if (me.error){ console.error('[GT-booking] 讀不到自己：', me.error.message); return; }
+    meId = me.data ? me.data.id : null;
+    if (!meId) return;
+
+    const [b, c] = await Promise.all([
+      window.fffDB.from('my_bookings')
+        .select('id,session_id,status,session_date,start_time,duration_min,' +
+                'title,level,coach_name,can_cancel,starts_at')
+        .order('starts_at', { ascending: false }).limit(200),
+      window.fffDB.from('my_credits').select('product,balance')
+    ]);
+    if (b.error) console.error('[GT-booking] 讀我的預約失敗：', b.error.message);
+    else myBookings = b.data || [];
+    if (c.error) console.error('[GT-booking] 讀課卡餘額失敗：', c.error.message);
+    else myCredits = (c.data || []).find(x => x.product === 'GT') || { product:'GT', balance:0 };
+  }
+
   /* ── 拿資料 ───────────────────────────────────────────────── */
   async function load(){
     try{
       if (!window.fffDB) {
         throw new Error('supabase-config.js 沒有載入 —— 確認它跟這個檔案在同一個資料夾，而且 CDN 沒被擋住。');
       }
+      await loadLive();
       const { data, error } = await window.fffDB
         .from('public_schedule')
         .select('session_id,session_date,start_time,duration_min,title,level,' +
@@ -494,6 +586,92 @@
       console.error('[GT-booking] 讀取課表失敗：', e);
     }
     render();
+
+    // 身分辨識是另一條線（liff-auth.js），等它跑完再把「我的」那一份補上。
+    // 課表不等它 —— 沒綁定的人也要立刻看得到課。
+    try{
+      const A = window.FFF_AUTH;
+      if (A && A.ready){ await A.ready; await loadMine(); render(); }
+    }catch(e){ console.warn('[GT-booking] 補讀個人資料失敗：', (e && e.message) || e); }
+  }
+
+  /* ── 訂課 ─────────────────────────────────────────────────── */
+  async function doBook(sessionId, btn, isFull){
+    if (!LIVE)   { toast('線上訂課還沒開放', true); return; }
+    if (!isBound() || !meId){ toast('要先在 LINE 裡完成綁定才能訂課', true); return; }
+
+    // 額滿的課要按兩次。第一次只提醒，第二次才真的送出。
+    if (isFull && fullOK !== sessionId){
+      fullOK = sessionId;
+      btn.textContent = '已額滿，仍要預約？';
+      btn.className = 'btn btn-w';
+      toast('這堂已額滿。現場座位需與教練確認 —— 再按一次就送出。', true);
+      return;
+    }
+
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = '處理中…';
+    try{
+      let { error } = await window.fffDB.from('bookings').insert({
+        session_id: sessionId, customer_id: meId,
+        paid_by_customer_id: meId, status: 'booked'
+      });
+
+      // 之前取消過同一堂 —— 同一個人同一堂只會有一列（唯一索引），
+      // 所以不是再插一筆，是把原本那一列改回 booked。
+      if (error && /duplicate key|23505/i.test((error.code || '') + ' ' + (error.message || ''))){
+        const r2 = await window.fffDB.from('bookings')
+          .update({ status:'booked', cancelled_at: null })
+          .eq('session_id', sessionId).eq('customer_id', meId).select('id');
+        error = r2.error || ((r2.data && r2.data.length) ? null
+                             : { message: '這堂課現在不能報名（可能已經結算或取消）' });
+      }
+      if (error) throw error;
+
+      fullOK = null;
+      toast('已為你保留位置');
+      await Promise.all([load(), loadMine()]);
+      render();
+    }catch(e){
+      btn.disabled = false; btn.textContent = old;
+      const m = (e && e.message) || String(e);
+      // RLS 擋下來時訊息是資料庫的行話，翻成人話
+      toast(/row-level security|violates/i.test(m)
+              ? '這堂課現在不能報名（可能已經結算、取消，或還沒開放）'
+              : ('沒有成功：' + m), true);
+      console.error('[GT-booking] 訂課失敗：', e);
+    }
+  }
+
+  /* ── 取消 ─────────────────────────────────────────────────── */
+  async function doCancel(bookingId, btn){
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = '處理中…';
+    try{
+      const { data, error } = await window.fffDB.from('bookings')
+        .update({ status:'cancelled', cancelled_at: new Date().toISOString() })
+        .eq('id', bookingId).select('id');
+      if (error) throw error;
+
+      // ☢️ 這裡是最容易寫錯的地方。
+      //    超過取消時限時，RLS 不會報錯 —— 它讓你改 0 列。
+      //    沒有這個判斷的話，畫面會顯示「已取消」，資料庫其實一動也沒動。
+      if (!data || data.length === 0){
+        btn.disabled = false; btn.textContent = old;
+        toast('已經超過取消時間了（課前一小時內不能取消）', true);
+        return;
+      }
+
+      toast('已取消');
+      await Promise.all([load(), loadMine()]);
+      render();
+    }catch(e){
+      btn.disabled = false; btn.textContent = old;
+      toast('取消失敗：' + ((e && e.message) || e), true);
+      console.error('[GT-booking] 取消失敗：', e);
+    }
   }
 
   function regroup(){
@@ -555,6 +733,7 @@
     if (!it.length){ el.innerHTML = '<div class="empty"><div class="h">這天沒有團體課</div>請選其他日期</div>'; return; }
 
     el.innerHTML = '';
+    const booked = bookedSet();
     it.forEach(r => {
       const open = isOpen(r);
       const cap  = Number(r.capacity) || 0;
@@ -566,10 +745,16 @@
       let btn;
       if (!open){
         btn = '<button class="btn btn-3" disabled>本日未開課</button>';
-      } else if (!BOOKING_OPEN){
+      } else if (booked.has(r.session_id)){
+        btn = '<button class="btn btn-2" data-cancel-s="' + esc(r.session_id) +
+              '">已預約　·　取消</button>';
+      } else if (!LIVE){
         btn = '<button class="btn btn-1" disabled>線上訂課尚未開放</button>';
+      } else if (!isBound()){
+        btn = '<button class="btn btn-1" disabled>在 LINE 裡開啟才能訂課</button>';
       } else {
-        btn = '<button class="btn btn-1" data-s="' + esc(r.session_id) + '">立即預約</button>';
+        btn = '<button class="btn btn-1" data-s="' + esc(r.session_id) +
+              '" data-full="' + (full ? '1' : '') + '">立即預約</button>';
       }
 
       const d = document.createElement('div');
@@ -600,18 +785,74 @@
       el.appendChild(d);
     });
 
-    // 第 30 步打開 BOOKING_OPEN 之後，這裡才會綁到東西
-    el.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
-      console.log('[GT-booking] 之後這裡會開預約視窗，session_id =', b.dataset.s);
+    el.querySelectorAll('[data-s]').forEach(b =>
+      b.onclick = () => doBook(b.dataset.s, b, b.dataset.full === '1'));
+
+    // 課表上直接取消：先找出這堂課對應的那一筆預約
+    el.querySelectorAll('[data-cancel-s]').forEach(b => b.onclick = () => {
+      const bk = myBookings.find(x => x.session_id === b.dataset.cancelS && x.status === 'booked');
+      if (!bk){ toast('找不到這筆預約，請重新整理', true); return; }
+      if (!bk.can_cancel){ toast('已經超過取消時間了（課前一小時內不能取消）', true); return; }
+      doCancel(bk.id, b);
     });
   }
 
-  /* ── 我的預約（等 LINE 綁定才會有） ───────────────────────── */
+  /* ── 我的預約 ─────────────────────────────────────────────── */
+  function mbRow(b, past){
+    const bits = dateBits(b.session_date);
+    const right = past
+      ? '<span class="mb-s">' + esc(MB_STAT[b.status] || b.status) + '</span>'
+      : (b.can_cancel
+          ? '<button class="mb-x" data-cancel-id="' + esc(b.id) + '">取消</button>'
+          : '<button class="mb-x" disabled>不可取消</button>');
+    return '<div class="mb' + (past ? ' done' : '') + '">' +
+      '<div class="mb-d"><b>' + esc(bits.md) + '</b><span>' + esc(bits.wd) + '</span></div>' +
+      '<div class="mb-i"><div class="mb-t"><em>' + esc(hhmm(b.start_time)) + '</em>' +
+        esc(b.title) + '</div>' +
+        '<div class="mb-m">' + esc(b.coach_name || '教練待定') +
+        (LV[b.level] ? '　·　' + LV[b.level] : '') +
+        '　·　' + esc(b.duration_min || 60) + ' 分鐘</div></div>' +
+      right + '</div>';
+  }
+
+  const MB_STAT = { attended:'已上課', absent:'缺席', cancelled:'已取消', booked:'已過期' };
+
   function renderMine(){
-    document.getElementById('myList').innerHTML =
-      '<div class="empty"><div class="h">還沒開放</div>' +
-      '「我的預約」要先在 LINE 裡完成身分綁定才看得到。<br>' +
-      '在那之前，系統無法確認你是誰，也就不能顯示屬於你的資料。</div>';
+    const el = document.getElementById('myList');
+
+    if (!isBound()){
+      el.innerHTML = '<div class="empty"><div class="h">還沒綁定</div>' +
+        '「我的預約」要先在 LINE 裡完成身分綁定才看得到。<br>' +
+        '在那之前，系統無法確認你是誰，也就不能顯示屬於你的資料。</div>';
+      return;
+    }
+
+    const bal = myCredits ? myCredits.balance : null;
+    let html =
+      '<div class="bal"><span class="bal-l">GT 團體課　剩餘堂數</span>' +
+        '<span class="bal-n">' + (bal === null ? '—' : bal) + '</span>' +
+        '<span class="bal-u">堂</span></div>' +
+      (bal !== null && bal <= 0
+        ? '<div class="bal-note">目前沒有剩餘堂數。還是可以預約 —— 到現場再課購就好。</div>' : '');
+
+    const now  = Date.now();
+    const up   = myBookings.filter(b => b.status === 'booked' && +new Date(b.starts_at) >= now)
+                           .sort((x, y) => +new Date(x.starts_at) - +new Date(y.starts_at));
+    const past = myBookings.filter(b => !(b.status === 'booked' && +new Date(b.starts_at) >= now))
+                           .slice(0, 15);
+
+    html += '<div class="mb-h">即將上課（' + up.length + '）</div>';
+    html += up.length
+      ? up.map(b => mbRow(b, false)).join('')
+      : '<div class="bal-note">還沒有預約。到「課表」選一堂吧。</div>';
+
+    if (past.length){
+      html += '<div class="mb-h">最近的紀錄</div>' + past.map(b => mbRow(b, true)).join('');
+    }
+
+    el.innerHTML = html;
+    el.querySelectorAll('[data-cancel-id]').forEach(b =>
+      b.onclick = () => doCancel(b.dataset.cancelId, b));
   }
 
   /* ── 上方統計 ─────────────────────────────────────────────── */
