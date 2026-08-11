@@ -21,6 +21,14 @@
 ☢️ 第六節有兩個「絕對不要做」，第十四節有兩個「不會報錯的坑」
 ```
 
+```
+🎯 2026-08-11 · 第三幕全部完成 ＋ 第 31、32 步（LINE 身分辨識與綁定）
+✅ 客人從 LINE 打開預約頁 → 系統認得他是誰 → 綁定手機 → 下次直接認得
+☢️ 途中發現整個 public schema 沒有任何角色有存取權 —— 見附錄六，這是最重要的一節
+☢️ 官方帳號的 Messaging API channel 永遠拿不回來（附錄六之三），但有繞過的辦法
+🔑 新規則 14：service_role 的查詢一定要檢查 error
+```
+
 ---
 
 ## 一、我是誰
@@ -432,11 +440,12 @@ end $$;
 
 ---
 
-## 九、db/ 備份（十二支，可完整重建）
+## 九、db/ 備份（十三支，可完整重建）
 
 ```
 db/
 ├── 00-check-rls.sql
+│   （新增 12-grants.sql，在 11 之後跑 —— 見附錄六）
 ├── 01-employees.sql
 ├── 02-customers.sql
 ├── 03-classes-bookings.sql
@@ -865,6 +874,8 @@ B 不是安全議題，是**功能本身**：沒有身分驗證，系統不知�
 11. **☢️ `09-fix-dup` 只能反白保險絲那段測試，絕不整張跑**
 12. **看到 `permission denied` 先問「這個身分本來就該進得去嗎」** —— 答案是「不該」的話，那不是錯誤，是正確答案。**絕不照錯誤訊息的 HINT 去 GRANT**，也不要按 `Debug with Assistant`。
 13. **含個資的 SQL 絕不放進 `db/`** —— 那個資料夾是版控的，而且 repo 是公開的。搬遷產出的 SQL 一律輸出到 `migration-local/`，而且**先改 `.gitignore`，再產生檔案**。
+14. **☢️ Edge Function 裡每一個 `.from(...)` 都要接住 `error`** —— `const { data } = await ...` 這種寫法會把失敗吞掉，而失敗和「查無資料」在程式裡長得一模一樣（`data` 都是 `null`），意思卻完全相反。2026-08-11 就是這樣讓 `line-auth` 安靜地對每個人說「你沒綁定過」。**寧可大聲壞掉，也不要小聲說謊。**
+15. **截圖前掃一眼**：畫面上有「姓名、手機、金鑰、token」任何一種 → 就不要截。（2026-08-11 破例過一次，代價寫在附錄六之三。）
 
 ---
 
@@ -1174,7 +1185,7 @@ payout(n) = 200 + 100 × n      （n ≥ 2）
 改成把新增的 `id` 存進暫存表、`delete` 只認 `id` 之後，同名的真課安然無恙。
 而且刪之前先報一次「這個 `where` 會打到幾列（必須是 1）」，在按下去之前就看得到。
 
-### 留給第 33 步的一個地雷
+### 留給第 33 步的一個地雷（✅ 2026-08-11 已拆，見附錄六）
 
 `credit_ledger` 的政策裡有
 `select 1 from employees where auth_user_id = auth.uid()`。
@@ -1184,3 +1195,174 @@ payout(n) = 200 + 100 × n      （n ≥ 2）
 正解不是把 `employees` 開給客人（那等於拆掉第二幕蓋的牆），
 而是把這類判斷包成 `security definer` 的小函式，只回傳 `true`/`false`。
 本機 PostgreSQL 16 實測確認會這樣。
+
+**2026-08-11 更新：這個預測完全命中，而且提早在第 32 步就爆了。**
+已用 `db/12-grants.sql` 拆除 —— 建了 `is_staff()`、`my_employee_id()`、
+`my_customer_id()` 三個 `security definer` 小函式，把十條政策裡的
+`EXISTS (SELECT ... FROM employees ...)` 全部換掉。細節在附錄六。
+
+---
+
+## 附錄六：2026-08-11（第 31～32 步 · LINE 身分辨識與綁定）
+
+這一天做完了兩步，但真正重要的是**做到一半挖到的東西**。
+
+---
+
+### 六之一　☢️ 整個資料庫其實沒有人進得去
+
+`line-bind` 第一次執行就撞牆：
+
+```
+permission denied for table customers
+```
+
+照**規則 12**先問「這個身分本來就該進得去嗎」，查下去發現：
+
+> **整個 `public` schema，除了 `public_schedule` 這一張檢視表以外，
+> `anon`／`authenticated`／`service_role` 三個角色對每一張表
+> 連 `SELECT` 都沒有。**
+
+`db/` 裡沒有任何一句 `revoke` 造成這件事 —— 是這個專案從來就沒有拿到
+Supabase 通常會給的預設權限。它一直沒被發現，因為在此之前：
+
+* 每一次寫入都是在 SQL Editor 裡用 `postgres` 身分跑的
+* `daily_class_job()` 是 `security definer`，等於也用 `postgres` 跑
+* `public_schedule` 在 `10-public-views.sql` 裡有明確 `grant select`
+
+**第一個用 `service_role` 去碰表的東西，就是第 32 步的 `line-bind`。**
+
+#### 兩件事一定要分開想
+
+| | 決定什麼 | 沒有它會怎樣 |
+|---|---|---|
+| **GRANT** | 這個角色**碰不碰得到**這張表 | 連門都進不去，RLS 根本沒機會執行 |
+| **RLS** | 碰得到之後**看得到哪幾列** | 進得去的人看得到全部 |
+
+**沒有 GRANT，RLS 寫得再漂亮都是裝飾。**
+這也是為什麼之前看起來「很安全」—— 它安全在沒有人進得來，**包括該進來的人**。
+
+#### `db/12-grants.sql` 做了什麼
+
+1. 建三個 `security definer` 小工具：`is_staff()`、`my_employee_id()`、`my_customer_id()`
+   （都有 `set search_path = public` —— 沒有這一行，別人改 `search_path`
+   就能讓它去讀假的 `employees`）
+2. 把十條引用 `employees` 的政策改成呼叫小工具。意思完全沒變，
+   只是不再要求呼叫者對 `employees` 有權限
+   ☢️ 其中 `class_sessions` 的「教練可改自己的課」**不是**改成 `is_staff()` ——
+   它問的是「這堂課的教練是不是你本人」，改成 `is_staff()` 會讓任何員工
+   都能改任何人的課。那一條用的是 `coach_id = my_employee_id()`
+3. `service_role` 給滿，並設 `alter default privileges`，以後新表不用再修一次
+4. `authenticated` **只開** `customers`（select、update）和 `signup_requests`（select）
+5. `anon` 一個字都沒動
+
+☢️ **`bookings`、`credit_ledger`、`class_sessions`、`customer_credits` 是故意沒開的。**
+那是第 33 步的事，要跟訂課邏輯一起測。**第 33 步一定會再撞一次
+`permission denied` —— 那是預期的，不是壞掉。** 照 `12-grants.sql` 的寫法補。
+
+---
+
+### 六之二　☢️ 更陰險的那一個：安靜說謊的查詢
+
+`line-auth` 裡有這麼一句：
+
+```ts
+const { data: cust } = await admin.from('customers')...   // ← 沒有接 error
+```
+
+`service_role` 沒有權限，這句查詢**每次都失敗**，但 `cust` 是 `null` ——
+跟「這個 LINE 使用者還沒綁定」長得一模一樣。
+
+於是這支函式**對每一個人都回答「你沒綁定過」**。不報錯，不留日誌，
+畫面一切正常。第 32 步的完成判準是「第二次打開直接認得你」——
+這個 bug 就是專門殺那一關的，而且無從查起。
+
+**這就是規則 14 的由來：`service_role` 的每一個查詢都要檢查 `error`。**
+
+---
+
+### 六之三　☢️ 官方帳號的 Messaging API channel 永遠拿不回來
+
+第 42 步的阻礙這天查到底了。官方文件寫死：
+
+> **Channels can't be moved to a different provider later.**
+
+channel 建在哪個 provider 就永遠在那裡，**官方帳號轉手時 channel 不會跟著走**。
+`2009245280` 掛在某位前手的 provider 底下（這個官方帳號經過好幾手）。
+林智謙跟 Jerec 並列 `FUSIONFORCE` 的 Admin，他也拿不到。
+
+**但不需要那個 provider 也做得到 —— OA 後台就夠了。**
+
+「設定 → Messaging API」那一頁看得到 **Channel ID ＋ Channel secret**，
+而且 **Webhook 網址可以編輯**（目前是空的）。有這些就能：
+
+* `POST /oauth2/v3/token`（`grant_type=client_credentials`）換存取權杖 → **推播 API 可用**
+* 設 Webhook → 收得到訊息事件，事件裡帶的就是**官方帳號那一組 userId**
+
+兩組 userId 之間的橋：綁定完成後給客人一顆 `line.me/R/oaMessage` 按鈕，
+預填訊息帶一個一次性短碼；他按送出 → webhook 收到（OA userId ＋ 短碼）→
+寫進 `customers.push_user_id`。**全程不需要 Developers Console。**
+
+☢️ **那把 Channel secret 換不掉**（換發只能在 Console），而且它在這天的
+對話截圖裡外洩過一次（沒有貼上公開網路）。風險是有人能用官方帳號的名義
+推訊息給 203 位好友。真的出事的話，唯一解法是換一個官方帳號。
+→ **規則 15 就是為這件事寫的。**
+
+---
+
+### 六之四　第 32 步的三個設計決定
+
+**① 查無此人一律擋下來，不自動建客人**
+
+考慮過三種：擋下來／自動建人／建待審清單。選了擋下來，理由是
+**新客幾乎都是老客人口碑帶來的** —— 他們會走進門，櫃檯一定遇得到。
+「從網路自己摸進來的陌生人」這條通路在這門生意裡幾乎不存在。
+
+自動建人的代價是最難查的那一種：客人打錯一碼，就佔走了另一位真實
+會員的手機號碼；那位會員之後來綁，只會看到「已被別的 LINE 綁走」，
+而且查不出原因。
+
+**② 手機 ＋ 姓名都要對，但錯了只給同一句話**
+
+84 筆資料的手機和姓名都不重複，所以雙欄比對不會誤判。
+手機查無和姓名對不上**回同一個 `not_found`** —— 分開講的話，
+這支就變成「輸入手機就能查出這個人叫什麼名字」的工具。
+
+**③ 被擋的人不會消失**
+
+資料留進 `signup_requests`。☢️ 它是**留言簿，不是待審佇列** ——
+永遠不會自動變成客人，建客人的路徑從頭到尾只有櫃檯一條。
+畫面直呼其名，並給一顆 `line.me/R/oaMessage` 按鈕：一按就開啟官方帳號
+聊天室、訊息已經打好，送出後 OA 的自動回應三秒內回他。
+
+這一段用的都是現成的東西 —— LINE 的網址規則、你本來就有的 203 人收件匣、
+OA 後台自己就能設的自動回應。**沒有蓋第二個後台。**
+
+---
+
+### 六之五　驗證方式
+
+* **Edge Function**：另外部署一支 `zz-t32` 攻擊測試，造假的 LINE 使用者、
+  發真的 session、對 `line-bind` 打 20 種情境，跑完自己清乾淨。全過。
+  （測試比 HTTP 逾時還久，所以改成 `EdgeRuntime.waitUntil()` 背景跑、
+  結果寫進暫存表再用 SQL 讀。）
+* **前端**：Playwright 十種情境（含「連不上伺服器」和「送出的
+  Authorization header 是不是真的那張 session」）。
+* **實機**：手機從 LINE 綁定 → 關掉重開 → 直接認得 → 解綁後
+  扮演新客走一次被擋的完整路徑，一路到自動回應跳出來。
+
+☢️ 測試用的假客人一律用 `0900000001~3` 這種保留號碼，而且**開頭一定要有保險絲**：
+「這三支號碼如果已經有人用了就中止」。有一次 HTTP 逾時把測試中斷、清場沒跑到，
+下一次執行就是靠這個保險絲擋下來的。
+
+---
+
+### 六之六　這天犯的錯
+
+1. **`select name as ...` 忘了寫 `from`** —— 整批 SQL 回滾，
+   而錯誤訊息長得像「這個欄位不存在」。**跟第 24 步那次一模一樣的錯。**
+   規則 9 是對的，而且要連 `from` 一起檢查。
+2. **HTTP header 塞中文** —— 測試工具自己爆掉（`not a valid ByteString`）。
+3. **拿到舊的檔案副本就開始改** —— `fff-roadmap-steps.html` staged 的是
+   28KB 的舊版，電腦上是 29.4KB。差點把他的改動蓋掉。
+   **要改別人的檔案之前，先確認手上這份跟他電腦上的一樣新。**
