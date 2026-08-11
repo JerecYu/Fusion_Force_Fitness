@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>諧動空間 Fusion Force</title>
+<!--
+  ═══════════════════════════════════════════════════════════
+  這一頁只做一件事：把人送到入口頁。
+
+  為什麼需要它 · 2026-08-11（第 34 步途中）
+  ─────────────────────────────────────────
+  LIFF 的 Endpoint URL 改成了這個資料夾（原本指向 GT-booking.html），
+  這樣才能用「LIFF 網址 ＋ 路徑」的方式開任何一頁，
+  而且每一頁都拿得到 LINE 登入狀態：
+
+      https://liff.line.me/2011063116-QOxXN30h/GT-booking.html
+      https://liff.line.me/2011063116-QOxXN30h/PT-booking.html
+      https://liff.line.me/2011063116-QOxXN30h/PGT-booking.html
+
+  ☢️ 直接開 jerecyu.github.io/... 那個網址，在 LINE 裡只是普通瀏覽器 ——
+     liff.isLoggedIn() 會是 false，客人會被當成沒綁定的人。
+     不會報錯，只是功能默默降級。
+
+  改了 Endpoint URL 之後，沒帶路徑的 LIFF 網址會落在這個資料夾的根，
+  也就是這一頁。所以這一頁要把人接住，送去入口頁。
+  ═══════════════════════════════════════════════════════════
+-->
+<meta http-equiv="refresh" content="0; url=A-entry.html">
+<link rel="canonical" href="A-entry.html">
+<style>
+  html,body{height:100%;margin:0}
+  body{display:flex;align-items:center;justify-content:center;
+    background:#F4F8FA;color:#587589;
+    font-family:'Noto Sans TC',system-ui,-apple-system,sans-serif;
+    font-size:.86rem;letter-spacing:.04em}
+</style>
+</head>
+<body>
+  <a href="A-entry.html" style="color:#2E86AB;text-decoration:none">正在前往諧動空間 · 點這裡</a>
+  <script>location.replace('A-entry.html');</script>
+</body>
+</html>

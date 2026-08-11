@@ -87,6 +87,42 @@
       a.className = 'btn ' + (opt.actClass || 'btn-1');
     }
     document.getElementById('ovCard').innerHTML = opt.card;
+
+    // ☢️ 用電腦開的人按「用 LINE 送出」會被丟到 LINE 官網 ——
+    //    桌機沒有 LINE App 可以接手那個網址。他填的東西就這樣蒸發。
+    //    所以永遠再給一條不依賴 LINE 的退路：複製內容。
+    var copy = document.getElementById('ovCopy');
+    if (!copy && opt.copyText) {
+      copy = document.createElement('button');
+      copy.id = 'ovCopy';
+      copy.type = 'button';
+      copy.className = 'btn btn-3';
+      copy.style.marginTop = '10px';
+      document.getElementById('ovCard').insertAdjacentElement('afterend', copy);
+    }
+    if (copy) {
+      copy.hidden = !opt.copyText;
+      if (opt.copyText) {
+        copy.textContent = '複製內容（用電腦的話按這個）';
+        copy.onclick = function () {
+          var done = function () {
+            copy.textContent = '已複製，貼到 LINE 或 Email 給我們';
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(opt.copyText).then(done, function () { legacy(); });
+          } else { legacy(); }
+          function legacy() {
+            var ta = document.createElement('textarea');
+            ta.value = opt.copyText;
+            ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); done(); } catch (e) { /**/ }
+            document.body.removeChild(ta);
+          }
+        };
+      }
+    }
+
     ov.classList.add('show');
   }
 
@@ -120,9 +156,12 @@
           title: '最後一步：用 LINE 送出',
           sub: '你的需求已經整理好了，按下面的按鈕就會開啟聊天室，<br>' +
                '訊息已經幫你打好，按送出即可。<br>' +
-               '<span style="opacity:.7">營業時間 ' + HOURS + '</span>',
+               '<span style="opacity:.7">用電腦的話按不開聊天室 —— ' +
+               '改按「複製內容」，或來電 <a href="' + TEL_HREF + '">' + TEL + '</a><br>' +
+               '營業時間 ' + HOURS + '</span>',
           card: cardHtml(req),
           icon: '›',
+          copyText: asText(req),
           actText: '用 LINE 送出需求',
           actHref: lineLink(asText(req)),
           actClass: 'btn-1'
