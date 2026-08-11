@@ -117,11 +117,21 @@ Deno.serve(async (req) => {
 
     // ── ⑤ 順便告訴前端：這個 LINE 使用者綁過手機了嗎？ ──────
     //    綁過 → 直接進課表；沒綁過 → 第 32 步的手機綁定畫面。
-    const { data: cust } = await admin
+    const { data: cust, error: custErr } = await admin
       .from('customers')
       .select('id, name')
       .eq('line_user_id', lineUserId)
       .maybeSingle()
+
+    // ☢️ 2026-08-11 修：這裡以前沒有檢查 custErr。
+    //    「查詢失敗」和「查無此人」在程式裡長得一模一樣（cust 都是 null），
+    //    但意思完全相反。當時 service_role 對 customers 沒有權限，
+    //    於是這支永遠安靜地回「沒綁定過」—— 綁定成功的人第二次打開
+    //    還是會被要求重綁，而且沒有任何錯誤訊息可以查。
+    //    寧可大聲壞掉，也不要小聲說謊。
+    if (custErr) {
+      return json({ error: 'lookup_failed', detail: custErr.message }, 500)
+    }
 
     return json({
       ok: true,
