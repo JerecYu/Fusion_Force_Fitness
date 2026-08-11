@@ -34,7 +34,7 @@
 window.FFF_ROADMAP = {
 
   meta: {
-    updated: '2026-08-11 · 第 30 步完成，LIFF 已上線',
+    updated: '2026-08-11 · 第 35 步完成，圖文選單草稿待啟用',
     phaseName: '第一階段：官網 ＋ LINE 預約系統',
     repo: 'https://github.com/JerecYu/Fusion_Force_Fitness'
   },
@@ -259,10 +259,11 @@ window.FFF_ROADMAP = {
           ck:'送出一筆需求，<code>pt_requests</code> 裡看得到，而且沒有動到任何課堂名額。',
           note:'<b>2026-08-11 完成。</b><br>檔案：<code>line-prototype/pt-request.js</code>（兩頁共用）、<code>PT-booking.html</code>、<code>PGT-booking.html</code>、<code>index.html</code>（新）、<code>db/15-pt-requests.sql</code>。<br><br><b>決定：私人課頁不強迫綁定。</b>那是一張招生的頁，不是會員專區。<br><ul><li><b>已綁定的會員</b> → 直接寫進 <code>pt_requests</code></li><li><b>還沒綁定的人</b> → 開啟官方帳號聊天室，訊息已經幫他打好（規格、教練、時段、姓名、電話、備註全帶著）</li><li><b>用電腦的人</b> → 多一顆「複製內容」按鈕。桌機按 LINE 連結會被丟到 LINE 官網，填的東西就這樣蒸發 —— 這是實測踩到的</li></ul><b>教練的 uuid 不寫死在前端。</b>加了 <code>public_coaches</code> 檢視表（只給 id、對外顯示名、職稱 —— 本名和電話一個字都沒有）。寫死的話換教練或重建資料庫就對不上，而且<b>不會報錯，只會默默存成「未指定」</b>。<br><br><b>驗證</b>：Playwright 七種情境（含「不能碰到任何 <code>bookings</code>」）＋ 桌機複製退路 ＋ 實機從 LINE 送出一筆，資料庫欄位逐項對過（商品、規格、人數、教練 uuid、時段、備註、送出人），而且預約 62 筆、課次 109 筆、未來報名 8 人一動也沒動。<br><br>☢️ <b>途中挖到 LIFF 的一個大坑，見附錄六之八</b> —— 第 35 步做圖文選單前一定要先看。' },
 
-        { n:35, t:'設定 LINE 圖文選單', where:'LINE後台', done:false,
+        { n:35, t:'設定 LINE 圖文選單', where:'LINE後台', done:true,
           summary:'說明 ＋ 完成判準',
           body:'大門上的指示牌：訂課／我的課／剩幾堂／聯絡我們。<br><br><b>☢️ 每一個按鈕都必須用 LIFF 網址，不能用 GitHub Pages 的網址。</b><br><code>https://liff.line.me/2011063116-QOxXN30h/GT-booking.html</code><br><code>https://liff.line.me/2011063116-QOxXN30h/PT-booking.html</code><br><code>https://liff.line.me/2011063116-QOxXN30h/PGT-booking.html</code><br><br>直接用 <code>jerecyu.github.io/…</code> 的話，在 LINE 裡只是普通瀏覽器 —— <code>liff.isLoggedIn()</code> 會是 false，客人會被當成沒綁定的人。<b>不會報錯，只是功能默默降級。</b>2026-08-11 實測踩到，細節見附錄六之八。',
-          ck:'加好友之後，不用任何說明就知道該點哪裡。' },
+          ck:'「FFF 主選單」在後台存成草稿，六個動作都對：五個 liff.line.me 網址 ＋ 一個文字「我想詢問」。啟用是第 37 步的事。',
+          note:'<b>2026-08-11 完成 —— 但只存成草稿，沒有啟用。</b><br>檔案：<code>assets/brand/fff-richmenu.png</code>（2500×1686，六宮格）、<code>line-prototype/GT-booking.html</code>（新增 <code>?tab=m</code>）。<br><br><b>六格分別是：</b><ul><li>團體課預約 → <code>GT-booking.html</code></li><li>我的預約 → <code>GT-booking.html?tab=m</code>（同一頁，直接落在「我的預約」分頁）</li><li>私人教練課 → <code>PT-booking.html</code></li><li>私人團體班 → <code>PGT-booking.html</code></li><li>價目表 → <code>pricing.html</code></li><li>聯絡我們 → <b>文字</b>「我想詢問」（接上第 32 步設好的自動回應）</li></ul>前五格全部是 <code>https://liff.line.me/2011063116-QOxXN30h/…</code> —— 規則 17。<br><br><b>☢️ 為什麼不啟用。</b>圖文選單一啟用，<b>203 位客人的入口當場全部改變</b>。而現在 <code>app_settings.live</code> 還是 false，他們會看到「線上訂課尚未開放」，同時舊系統的入口已經不見了 —— <b>等於當場斷掉所有人的訂課管道</b>。啟用排進第 37 步。<br><br><b>☢️ LINE 的一則錯誤訊息救了一次：</b>「此使用期間已設有其他圖文選單」。查出來舊選單「預約系統1.0」的使用期間排到 <b>2028/08/08</b>，動作是連到舊系統 <code>https://fusionforcefit.netlify.app/</code>。<b>切換日一定要先把它的結束日改成當天，新選單才擠得進去。</b>已寫進第 37 步。' },
 
         { n:36, t:'PT／PGT 平行週：建人，最後一天才填餘額', where:'決定', done:false, kind:'decide',
           summary:'七天，舊系統照常跑，新系統還不開放',
@@ -271,8 +272,8 @@ window.FFF_ROADMAP = {
           ck:'每一個還有堂數的 PT／PGT 客人，在 <code>customer_credits</code> 查得到正確的 <code>product</code> 和 <code>balance</code>，而且跟舊系統最後一天的畫面一致。' },
 
         { n:37, t:'切換日：舊系統退場', where:'決定', done:false, kind:'decide',
-          summary:'那一天的六件事，照順序做',
-          body:'<b>挑哪一天：</b>第 36 步平行週結束的隔天。課最少的那天最好 —— 你的課表裡<b>週三只有一堂</b>（12:20 間歇有氧）。<br><b>前一週：</b>公告「X 月 X 日起改用新系統預約」。<br><br><b>當天照順序做，不要跳：</b><ul><li><b>①</b> <b>舊系統停止購課與消課</b> —— 先把帳凍住，後面每一步才有意義</li><li><b>②</b> 舊系統最後一次完整匯出（GT 那份）</li><li><b>③</b> 用第 26 步的工具產生 SQL</li><li><b>④</b> 清掉彩排資料，正式匯入 GT</li><li><b>⑤</b> <b>餘額逐筆對帳</b>（跟第 27 步同一套查詢）＋ 抽查幾個 PT 客人的結轉餘額</li><li><b>⑥</b> <b>舊系統設為唯讀，不要刪</b> —— 至少留三個月。要查切換前的紀錄，去那裡查</li><li><b>⑦</b> <b>換掉 LINE Channel secret</b>（2026-08-11 曾外洩到聊天室）。舊系統會用它推播課程訊息，所以不能提早換 —— 但舊系統退場的這一天，它就沒有理由再有效了。路徑：LINE Developers Console → 那個 Messaging API channel → Basic settings → Channel secret 的 Issue／重新發行</li></ul>然後<b>打開系統</b>（第 33 步已經把兩個開關收成一個）：<br><code>update app_settings set live = true where id = 1;</code><br>這一列同時打開「客人可以訂課」和「午夜自動取消沒人報名的課」。改完重新整理預約頁，按鈕就會從灰色變成「立即預約」——<b>前端不用改、不用重新 push</b>。<br>然後公告上線，發綁定指引給還沒綁 LINE 的人。',
+          summary:'那一天的九件事，照順序做',
+          body:'<b>挑哪一天：</b>第 36 步平行週結束的隔天。課最少的那天最好 —— 你的課表裡<b>週三只有一堂</b>（12:20 間歇有氧）。<br><b>前一週：</b>公告「X 月 X 日起改用新系統預約」。<br><br><b>當天照順序做，不要跳：</b><ul><li><b>①</b> <b>舊系統停止購課與消課</b> —— 先把帳凍住，後面每一步才有意義</li><li><b>②</b> 舊系統最後一次完整匯出（GT 那份）</li><li><b>③</b> 用第 26 步的工具產生 SQL</li><li><b>④</b> 清掉彩排資料，正式匯入 GT</li><li><b>⑤</b> <b>餘額逐筆對帳</b>（跟第 27 步同一套查詢）＋ 抽查幾個 PT 客人的結轉餘額</li><li><b>⑥</b> <b>打開新系統</b>：<code>update app_settings set live = true where id = 1;</code></li><li><b>⑦</b> <b>換圖文選單</b>（兩個動作，順序不能反）：<br>　<b>先</b>把舊選單「預約系統1.0」的使用期間結束日從 <b>2028/08/08</b> 改成<b>當天</b><br>　<b>再</b>啟用第 35 步存好的「FFF 主選單」草稿，使用期間從當天開始<br>不先改舊的，LINE 會擋：「此使用期間已設有其他圖文選單」</li><li><b>⑧</b> <b>舊系統設為唯讀，不要刪</b> —— 至少留三個月。要查切換前的紀錄，去那裡查</li><li><b>⑨</b> <b>換掉 LINE Channel secret</b>（2026-08-11 曾外洩到聊天室）。舊系統會用它推播課程訊息，所以不能提早換 —— 但舊系統退場的這一天，它就沒有理由再有效了。路徑：LINE Developers Console → 那個 Messaging API channel → Basic settings → Channel secret 的 Issue／重新發行</li></ul><b>☢️ ⑥ 一定要排在 ⑦ 前面 —— 先開門，再把指示牌指過來。</b>反過來的話，客人被帶到一個還沒開的系統，而舊系統的入口已經不見了。<br><br><b>關於 ⑥ 那一行：</b>它同時打開「客人可以訂課」和「午夜自動取消沒人報名的課」（第 33 步已經把兩個開關收成一個）。改完重新整理預約頁，按鈕就會從灰色變成「立即預約」——<b>前端不用改、不用重新 push</b>。<br>然後公告上線，發綁定指引給還沒綁 LINE 的人。',
           warn:'☢️ <b>先處理「已經報名未來課程」的那些人。</b><br>搬遷工具的日期上限固定在 <code>2026-08-06</code>（<code>pg_cron</code> 最早產生的課是 8/07）。所以<b>客人在舊系統報的、8/07 以後的課，一筆都不會自動進來</b> —— 那些課次在新系統是排程產生的，id 不一樣。<br>08-10 彩排時是 8 筆，到切換日會累積成幾十筆。<b>那天要按「日期 ＋ 時間」把它們對到我們自己的課次上</b>，人工或另外寫一小段 SQL 都行 —— 但不能漏掉，漏掉的人到現場會發現自己沒報到名。<br><br>⚠️ <b>這一天結束時，教練還不能在系統上點名核銷</b>（那是第 39 步）。中間這段期間扣課要你自己在 Table Editor 手動做，或先紙本記、之後補。<br><b>這是已知的取捨，不是疏漏</b> —— 早一點切換，就早一點停掉維護兩套系統的心力。<br><br>⚠️ <b>PT／PGT 的上課歷史從此只存在舊系統。</b>那是刻意的決定，不是漏掉的 —— 舊系統設唯讀就是為了這件事。',
           ck:'隔天早上，新系統的餘額跟前一天舊系統的最後畫面一致，而且舊系統再也沒有新資料進去。' }
       ]

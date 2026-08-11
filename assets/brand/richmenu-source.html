@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  LINE 圖文選單底圖的「原始檔」  →  assets/brand/fff-richmenu.png
+  ══════════════════════════════════════════════════════════════════
+
+  要改字、改配色、換分格：改這支 HTML，然後重新截一張 2500×1686 的圖。
+
+  重截方式（Playwright，viewport 設 2500×1686，deviceScaleFactor 1）：
+      page.set_viewport_size({"width": 2500, "height": 1686})
+      page.goto("file:///.../richmenu-source.html")
+      page.screenshot(path="fff-richmenu.png")
+
+  ☢️ 尺寸不能亂改 —— LINE 圖文選單大版位就是 2500×1686，
+     六宮格每格 833×843，後台的可點區域是照那個網格切的。
+     圖改了尺寸，六個按鈕的位置就會全部對不上。
+
+  ☢️ 六格的順序（左上→右下）必須和後台設定的 A~F 一致：
+     A 團體課預約 / B 我的預約 / C 私人教練課
+     D 私人團體班 / E 價目表   / F 聯絡我們
+-->
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<style>
+  /* 圖文選單底圖：2500 × 1686，六宮格（每格 833 × 843） */
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --ink:#0E2A3B; --ink2:#1C4257;
+    --blue:#2E86AB; --blue-d:#256F8F; --teal:#6FBAC9; --aqua:#CFE7EE;
+    --bg:#F4F8FA; --surface:#FFFFFF; --surface2:#EDF4F7;
+    --line:#DCE8EE; --dim:#587589; --faint:#93AEBD;
+    --beg:#2F6B54; --int:#2C4E7D; --adv:#DE7A38;
+  }
+  body{width:2500px;height:1686px;background:var(--bg);
+    font-family:'Noto Sans CJK TC','Noto Sans CJK HK','Noto Sans CJK SC',sans-serif;
+    display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);
+    overflow:hidden}
+
+  .c{position:relative;background:var(--surface);
+    border-right:3px solid var(--line);border-bottom:3px solid var(--line);
+    padding:96px 78px;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+  .c:nth-child(3n){border-right:none}
+  .c:nth-child(n+4){border-bottom:none}
+
+  /* 左側色條 */
+  .c::before{content:'';position:absolute;left:0;top:16%;bottom:16%;width:12px;
+    background:var(--blue);border-radius:0 8px 8px 0}
+  .c.g2::before{background:var(--teal)}
+  .c.g3::before{background:var(--int)}
+  .c.g4::before{background:var(--int)}
+  .c.g5::before{background:var(--adv)}
+  .c.g6::before{background:var(--beg)}
+
+  /* 右上角淡淡的斜線裝飾 */
+  .c::after{content:'';position:absolute;right:-90px;top:-90px;width:300px;height:300px;
+    background:linear-gradient(115deg,transparent 46%,var(--surface2) 46%,var(--surface2) 60%,
+      transparent 60%,transparent 70%,var(--surface2) 70%,var(--surface2) 82%,transparent 82%);
+    transform:rotate(0deg)}
+
+  .tag{font-family:'Saira Condensed','Noto Sans CJK TC',sans-serif;
+    font-size:40px;font-weight:700;letter-spacing:.22em;color:var(--faint);
+    margin-bottom:26px}
+  .t{font-size:94px;font-weight:900;color:var(--ink);letter-spacing:.03em;line-height:1.12}
+  .s{margin-top:26px;font-size:44px;font-weight:500;color:var(--dim);letter-spacing:.05em;
+    line-height:1.5}
+
+  .c.primary{background:linear-gradient(128deg,#0E2A3B 0%,#1C4257 55%,#256F8F 100%)}
+  .c.primary::before{background:var(--teal)}
+  .c.primary::after{background:linear-gradient(115deg,transparent 46%,rgba(255,255,255,.055) 46%,
+      rgba(255,255,255,.055) 60%,transparent 60%,transparent 70%,rgba(255,255,255,.055) 70%,
+      rgba(255,255,255,.055) 82%,transparent 82%)}
+  .c.primary .tag{color:var(--teal)}
+  .c.primary .t{color:#fff}
+  .c.primary .s{color:var(--aqua)}
+</style>
+</head>
+<body>
+  <div class="c primary g1">
+    <div class="tag">GROUP · GT</div>
+    <div class="t">團體課預約</div>
+    <div class="s">看課表　·　立即訂課</div>
+  </div>
+
+  <div class="c g2">
+    <div class="tag">MY BOOKING</div>
+    <div class="t">我的預約</div>
+    <div class="s">剩幾堂　·　取消課程</div>
+  </div>
+
+  <div class="c g3">
+    <div class="tag">PERSONAL · PT</div>
+    <div class="t">私人教練課</div>
+    <div class="s">一對一　·　一對二</div>
+  </div>
+
+  <div class="c g4">
+    <div class="tag">GROUP · PGT</div>
+    <div class="t">私人團體班</div>
+    <div class="s">三人以上成班</div>
+  </div>
+
+  <div class="c g5">
+    <div class="tag">PRICING</div>
+    <div class="t">價目表</div>
+    <div class="s">四大品項與付款方式</div>
+  </div>
+
+  <div class="c g6">
+    <div class="tag">CONTACT</div>
+    <div class="t">聯絡我們</div>
+    <div class="s">傳訊息給櫃檯</div>
+  </div>
+</body>
+</html>
