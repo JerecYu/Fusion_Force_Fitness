@@ -34,7 +34,7 @@
 window.FFF_ROADMAP = {
 
   meta: {
-    updated: '2026-08-10 · 第 26、27 步完成，彩排零誤差',
+    updated: '2026-08-11 · 第三幕完成',
     phaseName: '第一階段：官網 ＋ LINE 預約系統',
     repo: 'https://github.com/JerecYu/Fusion_Force_Fitness'
   },
@@ -208,10 +208,10 @@ window.FFF_ROADMAP = {
           warn:'⚠️ 這是「塞資料」的 SQL —— <b>一定要加保險絲，備份檔和 Supabase 分頁兩邊都要</b>。這是你自己訂的第 7 條規則。<br><br>還有一條：<b>有一筆對不上，就是工具有問題。</b>不要手動改資料庫把它「喬」過去 —— 喬過去的那一筆會在半年後變成一個查不出來的鬼。',
           ck:'<b>2026-08-10 彩排結果，全部通過：</b><ul><li><code>g1</code> 客人 <b>84</b> 人</li><li><code>g2</code> 流水 <b>117</b> 筆 → <b>71</b> 人有餘額，合計 <b>579 堂</b>（這是全店欠客人的堂數）</li><li><code>g3</code> 歷史課次 <b>73</b> 堂（＋排程 33 ＝ 106），<b>重疊檢查 0 列</b></li><li><code>g4</code> 預約 <b>35</b> 筆（attended 34 ＋ booked 1）</li><li><code>g5</code> 未來預約 <b>27/27 全部自動對回</b>，0 筆要人工</li></ul><b>端到端驗證：</b>Excel 的 <code>delta</code> 整欄加總 = <b>579</b>，跟資料庫算出來的完全吻合。一筆漏掉、一筆重複、一個正負號寫反都會讓這個數字對不上。' },
 
-        { n:28, t:'風險 2：漏跑的日子要不要補結算', where:'決定', done:false, kind:'decide',
+        { n:28, t:'風險 2：漏跑的日子要不要補結算', where:'決定', done:true, kind:'decide',
           summary:'技術上五秒，商業上要想 ＋ 完成判準',
           body:'<code>daily_class_job()</code> 的 ②③ 都寫 <code>session_date = v_today</code>，只結算「今天」。如果排程有幾天沒跑，中間那幾天的課堂會永遠停在 <code>pending</code>，既沒成立也沒取消。<br>改法是把 <code>=</code> 改成 <code>&lt;=</code>，五秒鐘。<br><br><b>但那是商業決定：</b>三天前的課現在才補判定「取消」，對已經報名的客人合不合理？<br><b>現在還沒客人，是做這個決定最沒有代價的時機。</b>',
-          ck:'你做了決定，而且理由寫進 HANDOVER.md。' }
+          ck:'<b>2026-08-11 決定：選 C ＋ 一個開關。</b><ul><li><b>② 改成 <code>&lt;=</code></b> —— 漏跑的日子，只要有人報名就補標「成立」。「有人報名」是<b>紀錄</b>不是推測，追溯確認不可能錯</li><li><b>③ 維持 <code>=</code>，外面再包 <code>v_auto_cancel</code> 開關（現在 false）</b> —— 「沒人報名」是<b>推測</b>，只說明系統沒收到報名，不說明現場發生了什麼</li></ul>本機 PostgreSQL 16 驗過四種情況：開關 false 時「三天前有人報名」補成 <code>confirmed</code>、「三天前沒人報名」和「今天沒人報名」都留 <code>pending</code>；開關 true 時只有今天的空堂被取消，三天前那堂依然不動。<br><br>☢️ <b><code>v_auto_cancel</code> 要在第 33 步跟前端的 <code>BOOKING_OPEN</code> 一起打開。</b>' }
       ]
     },
 
@@ -248,7 +248,7 @@ window.FFF_ROADMAP = {
         { n:33, t:'打開真正的訂課', where:'前端', done:false,
           summary:'說明 ＋ 完成判準',
           body:'寫入 <code>bookings</code>、取消時限靠 RLS 擋（<b>不是靠前端藏按鈕</b>）、額滿只跳提醒不硬擋。<br>順便：查課卡餘額、看自己的課、取消自己的課。',
-          ck:'你用手機訂一堂課，Supabase 裡真的多一筆。<br><b>同時：風險 3（每天課都被自動取消）自動解除 —— 終於有人報名了。</b>' },
+          ck:'<b>☢️ 兩個開關要一起打開，缺一個都不行：</b><ul><li>前端 <code>GT-booking.html</code> 的 <code>BOOKING_OPEN = true</code></li><li>資料庫 <code>daily_class_job()</code> 的 <code>v_auto_cancel = true</code>（第 28 步關掉的）</li></ul><b>忘了打開 <code>v_auto_cancel</code>：</b>沒人報名的課永遠不會自動取消，教練會白跑空堂 —— 而且<b>不會有任何錯誤訊息</b>，你會等到某天教練打電話來才知道。<br><br>驗收：你用手機訂一堂課，Supabase 裡真的多一筆。<br><b>同時：風險 3（每天課都被自動取消）自動解除 —— 終於有人報名了。</b>' },
 
         { n:34, t:'PT／PGT 頁改成「送出需求」', where:'前端', done:false,
           summary:'說明 ＋ 完成判準',
