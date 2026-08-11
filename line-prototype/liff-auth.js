@@ -89,6 +89,10 @@
     elBand.hidden = false;
   }
 
+  // 給第 32 步的綁定畫面用：綁定成功之後，把狀態列從橘色改成綠色。
+  // 只開放這一個動作，不把整個內部狀態掛出去。
+  window.FFF_AUTH_PAINT = function (state, note, code) { paint(state, note, code); };
+
   // 「用 LINE 登入」按鈕。只在 LIFF 起得來、但人還沒登入時出現。
   // 在 LINE App 裡永遠不會看到它 —— 那邊是自動登入的。
   function offerLogin() {

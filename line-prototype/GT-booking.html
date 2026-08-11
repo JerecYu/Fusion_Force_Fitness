@@ -279,6 +279,35 @@
   .ab-warn .ab-i{color:var(--adv)}
   .ab-err{border-left-color:var(--adv)}
   .ab-err .ab-i{color:var(--adv)}
+  /* ── 第 32 步：綁定卡 ──────────────────────────────────────
+     只在「已辨識但還沒綁手機」時出現。 */
+  .bd{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--adv);
+    border-radius:var(--r);box-shadow:var(--sh-1);padding:16px 16px 18px;margin-bottom:15px}
+  .bd[hidden]{display:none}
+  .bd-h{font-size:.95rem;font-weight:700;color:var(--ink);letter-spacing:.01em}
+  .bd-sub{margin-top:5px;font-size:.75rem;line-height:1.7;color:var(--dim)}
+  .bd-f{margin-top:12px}
+  .bd-f label{display:block;font-size:.72rem;font-weight:600;color:var(--dim);margin-bottom:5px}
+  .bd-f input{width:100%;box-sizing:border-box;font:inherit;font-size:.92rem;color:var(--ink);
+    background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);
+    padding:11px 12px;-webkit-appearance:none}
+  .bd-f input:focus{outline:none;border-color:var(--blue);background:#fff}
+  .bd-go{width:100%;margin-top:14px;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;
+    background:var(--blue);color:#fff;border:0;border-radius:var(--r-sm);padding:13px}
+  .bd-go:active{background:var(--blue-d)}
+  .bd-go:disabled{background:var(--faint);cursor:default}
+  .bd-m{margin-top:13px;font-size:.78rem;line-height:1.75;border-radius:var(--r-sm);padding:12px 13px}
+  .bd-m[hidden]{display:none}
+  .bd-warn{background:var(--adv-s);color:var(--ink);border-left:3px solid var(--adv)}
+  .bd-stop{background:var(--surface-2);color:var(--ink);border-left:3px solid var(--adv)}
+  .bd-m b{color:var(--ink)}
+  .bd-hint{display:block;margin-top:7px;font-size:.71rem;line-height:1.7;color:var(--dim)}
+  .bd-hint a{color:var(--blue);font-weight:700}
+  /* 一按就開啟官方帳號聊天室，訊息已經幫他打好 */
+  .bd-oa{display:block;margin-top:11px;text-align:center;text-decoration:none;
+    font-size:.84rem;font-weight:700;color:#fff;background:#06C755;
+    border-radius:var(--r-sm);padding:11px}
+  .bd-oa:active{background:#05a647}
 </style>
 </head>
 <body>
@@ -308,6 +337,24 @@
   <div class="ab ab-wait" id="authBand" hidden>
     <span class="ab-i">◌</span><span class="ab-t">正在辨識身分…</span><span class="ab-s" hidden></span>
   </div>
+
+  <!-- 第 32 步：綁定卡。預設 hidden，由 liff-bind.js 在
+       「已辨識但還沒綁手機」時才打開。 -->
+  <div class="bd" id="bindBox" hidden>
+    <div class="bd-h">第一次使用，先綁定你的資料</div>
+    <div class="bd-sub">填你在諧動空間登記的手機和姓名，兩個都對才能綁定。<br>
+      這是為了確認課卡是你的 —— 綁定之後才看得到自己的堂數和預約。</div>
+    <div class="bd-f">
+      <label for="bdPhone">手機號碼</label>
+      <input type="tel" id="bdPhone" inputmode="numeric" autocomplete="tel" placeholder="09xx-xxx-xxx">
+    </div>
+    <div class="bd-f">
+      <label for="bdName">姓名</label>
+      <input type="text" id="bdName" autocomplete="name" placeholder="與櫃檯登記的姓名相同">
+    </div>
+    <div class="bd-m" id="bdMsg" hidden></div>
+    <button type="button" class="bd-go" id="bdGo">綁定</button>
+  </div>
   <div id="vS">
     <div class="pb">
       <div class="l">
@@ -327,8 +374,8 @@
     <div class="rt">
       <span class="rt-ico">i</span>
       <span class="rt-txt"><b>這裡的課表是即時從資料庫讀出來的</b>，不是寫死在網頁裡。<br>
-        線上訂課<b>尚未開放</b> —— 認出你是誰這一關已經好了，
-        還差「綁定手機號碼」和「打開訂課」這兩步。</span>
+        線上訂課<b>尚未開放</b> —— 認出你是誰、綁定手機這兩關都好了，
+        還差最後一步「打開訂課」。</span>
     </div>
 
     <div class="days" id="days"></div>
@@ -368,6 +415,8 @@
      liff-auth.js 要用 window.fffDB 把 LINE 憑證換成 Supabase session。 -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="liff-auth.js"></script>
+<!-- 第 32 步：綁定畫面。要在 liff-auth.js 之後 —— 它等 FFF_AUTH.ready。 -->
+<script src="liff-bind.js"></script>
 
 <script>
 (function(){
