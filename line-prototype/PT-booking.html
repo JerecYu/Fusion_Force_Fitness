@@ -221,7 +221,7 @@
   <div class="sec">
     <div class="sh"><span class="mk"><i></i><i></i><i></i></span><h2>確認內容</h2><span class="en">Confirm</span></div>
     <div class="sum" id="sum"><div class="stripe"></div><div class="body"></div></div>
-    <button class="btn btn-1" id="bSend" disabled style="margin-top:15px">送出預約申請<span class="ar">›</span></button>
+    <button class="btn btn-1" id="bSend" disabled style="margin-top:15px">送出需求<span class="ar">›</span></button>
   </div>
 
   <div class="foot">
@@ -232,15 +232,23 @@
 
 <div class="ov" id="ov">
   <div class="sheet done">
-    <div class="ic">✓</div>
-    <h3>預約申請已送出</h3>
-    <p class="sub">我們會在營業時間內與您聯繫確認上課時間。<br>
-      週一至週五 09:00–21:00｜週六日 09:00–18:00</p>
+    <div class="ic" id="ovIc">✓</div>
+    <h3 id="ovTitle">需求已送出</h3>
+    <p class="sub" id="ovSub">我們會在營業時間內與您聯繫確認上課時間。<br>
+      週一至週五 09:00–22:00｜週六日 09:00–18:00</p>
     <div class="card2" id="ovCard"></div>
-    <a class="btn btn-1" href="https://lin.ee/9tthCBh" target="_blank" rel="noopener">加入官方 LINE 即時聯繫</a>
+    <a class="btn btn-1" id="ovAct" href="https://lin.ee/9tthCBh" target="_blank" rel="noopener">加入官方 LINE 即時聯繫</a>
     <button class="btn btn-3" id="bClose" style="margin-top:10px">關閉</button>
   </div>
 </div>
+
+<!-- 第 34 步：接上資料庫與 LINE 身分。
+     順序不能換 —— pt-request.js 要用 window.fffDB 和 window.FFF_AUTH。 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="liff-auth.js"></script>
+<script src="pt-request.js"></script>
 
 <script>
 (function(){
@@ -322,15 +330,29 @@
     document.getElementById(id).addEventListener('input',renderSum));
 
   const ov=document.getElementById('ov');
+
+  // ☢️ 這裡只負責「把這一頁的欄位收好」，送不送得出去、
+  //    要走資料庫還是走 LINE，全部交給 pt-request.js 判斷。
   document.getElementById('bSend').onclick=()=>{
     const s=SPECS.find(x=>x.id===spec),c=COACHES.find(x=>x.id===coach);
-    document.getElementById('ovCard').innerHTML=
-      '<div class="rw"><span class="k">課程</span><span class="v">PT '+s.k+'</span></div>'+
-      '<div class="rw"><span class="k">教練</span><span class="v">'+c.n+'</span></div>'+
-      '<div class="rw"><span class="k">希望時段</span><span class="v">'+document.getElementById('iDate').value+' '+slot+'</span></div>'+
-      '<div class="rw"><span class="k">姓名</span><span class="v">'+document.getElementById('iName').value.trim()+'</span></div>'+
-      '<div class="rw"><span class="k">體驗價</span><span class="v">'+money(s.trial)+'</span></div>';
-    ov.classList.add('show');
+    window.FFF_SEND_REQUEST({
+      product      : 'PT',
+      productLabel : '私人教練課 PT',
+      spec         : s.k,
+      people_count : s.id==='1v2' ? 2 : 1,
+      coachLabel   : c.id==='any' ? '' : c.n,
+      preferred_time: (document.getElementById('iDate').value+' '+slot).trim(),
+      note         : document.getElementById('iNote').value.trim(),
+      name         : document.getElementById('iName').value.trim(),
+      phone        : document.getElementById('iPhone').value.trim(),
+      rows: [
+        ['課程', '私人教練課 PT'],
+        ['規格', s.k],
+        ['教練', c.id==='any' ? '不指定' : c.n],
+        ['希望時段', (document.getElementById('iDate').value+' '+slot).trim() || '未選擇'],
+        ['體驗價', money(s.trial)]
+      ]
+    });
   };
   document.getElementById('bClose').onclick=()=>ov.classList.remove('show');
   ov.onclick=e=>{if(e.target===ov)ov.classList.remove('show')};
