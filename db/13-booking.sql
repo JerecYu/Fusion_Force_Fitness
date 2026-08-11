@@ -97,9 +97,14 @@ as $$
   select exists (
     select 1 from public.class_sessions s
     where s.id = p_session
-      and s.product = 'GT'                                          -- ☢️ 只有團體課能自己訂
-      and s.status  = 'pending'                                     -- 已成立／已取消的都不能再訂
-      and s.session_date >= (now() at time zone 'Asia/Taipei')::date -- 過去的課不能訂
+      and s.product = 'GT'                                     -- ☢️ 只有團體課能自己訂
+      -- ☢️ 2026-08-11 修正：我一開始只允許 pending，那是讀錯規則。
+      --    HANDOVER 第四節：「報名截止 = 上課當天 00:00 結算（不是關閉報名）」
+      --    「當天仍可加入（未滿 10 人）」。
+      --    所以已經成立（confirmed）的課，當天照樣可以線上加入。
+      --    真正擋人的是「已經開始了」和「已取消」。
+      and s.status in ('pending', 'confirmed')
+      and ((s.session_date + s.start_time) at time zone 'Asia/Taipei') > now()
   );
 $$;
 comment on function public.can_book_session(uuid) is

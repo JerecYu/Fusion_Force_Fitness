@@ -489,6 +489,12 @@
   const statusLabel = s => STATUS_TXT[s] || String(s || '—');
   const isOpen      = r => r.status !== 'cancelled';
 
+  // 這堂課開始了沒。寫死 +08:00，不靠使用者手機的時區設定 ——
+  // 客人在國外用 LINE 打開的時候，時區是他那邊的，課表是台灣的。
+  const startsAt = r =>
+    new Date(String(r.session_date) + 'T' + String(r.start_time || '').slice(0,8) + '+08:00').getTime();
+  const isPast = r => startsAt(r) <= Date.now();
+
   let all = [], byDate = {}, dates = [], curDate = null;
   let state = 'loading', errMsg = '';
 
@@ -743,8 +749,14 @@
       const end  = endOf(r.start_time, r.duration_min);
 
       let btn;
+      const past = isPast(r);
       if (!open){
         btn = '<button class="btn btn-3" disabled>本日未開課</button>';
+      } else if (past){
+        // 已經開始的課不能線上報名。要補報名走現場掃 QR code（第 39 步）。
+        btn = '<button class="btn btn-3" disabled>' +
+              (booked.has(r.session_id) ? '已預約　·　課程已開始' : '課程已開始') +
+              '</button>';
       } else if (booked.has(r.session_id)){
         btn = '<button class="btn btn-2" data-cancel-s="' + esc(r.session_id) +
               '">已預約　·　取消</button>';
