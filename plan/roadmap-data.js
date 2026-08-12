@@ -34,7 +34,7 @@
 window.FFF_ROADMAP = {
 
   meta: {
-    updated: '2026-08-11 · 第 35 步完成，圖文選單草稿待啟用',
+    updated: '2026-08-12 · 第 38～39 步完成，教練可以點名了',
     phaseName: '第一階段：官網 ＋ LINE 預約系統',
     repo: 'https://github.com/JerecYu/Fusion_Force_Fitness'
   },
@@ -266,13 +266,13 @@ window.FFF_ROADMAP = {
           note:'<b>2026-08-11 完成 —— 但只存成草稿，沒有啟用。</b><br>檔案：<code>assets/brand/fff-richmenu.png</code>（2500×1686，六宮格）、<code>line-prototype/GT-booking.html</code>（新增 <code>?tab=m</code>）。<br><br><b>六格分別是：</b><ul><li>團體課預約 → <code>GT-booking.html</code></li><li>我的預約 → <code>GT-booking.html?tab=m</code>（同一頁，直接落在「我的預約」分頁）</li><li>私人教練課 → <code>PT-booking.html</code></li><li>私人團體班 → <code>PGT-booking.html</code></li><li>價目表 → <code>pricing.html</code></li><li>聯絡我們 → <b>文字</b>「我想詢問」（接上第 32 步設好的自動回應）</li></ul>前五格全部是 <code>https://liff.line.me/2011063116-QOxXN30h/…</code> —— 規則 17。<br><br><b>☢️ 為什麼不啟用。</b>圖文選單一啟用，<b>203 位客人的入口當場全部改變</b>。而現在 <code>app_settings.live</code> 還是 false，他們會看到「線上訂課尚未開放」，同時舊系統的入口已經不見了 —— <b>等於當場斷掉所有人的訂課管道</b>。啟用排進第 37 步。<br><br><b>☢️ LINE 的一則錯誤訊息救了一次：</b>「此使用期間已設有其他圖文選單」。查出來舊選單「預約系統1.0」的使用期間排到 <b>2028/08/08</b>，動作是連到舊系統 <code>https://fusionforcefit.netlify.app/</code>。<b>切換日一定要先把它的結束日改成當天，新選單才擠得進去。</b>已寫進第 37 步。' },
 
         { n:36, t:'PT／PGT 平行週：建人，最後一天才填餘額', where:'決定', done:false, kind:'decide',
-          summary:'七天，舊系統照常跑，新系統還不開放',
-          body:'<b>這一步不寫程式，是人工作業。</b><br><br>舊系統繼續在檯面上跑七天，新系統維持 <code>app_settings.live = false</code>。這七天你用舊系統的查詢功能，把 PT／PGT 客人補進新系統。<br><br><b>只補「還有剩餘堂數」的人。</b>餘額歸零的、早就不來的，一個都不用建 —— 他們哪天回來，櫃檯當場建檔就好。<br><br><b>第 1～6 天：建「人」</b><br>姓名 ＋ 手機，寫進 <code>customers</code>。<br>⚠️ 很多 PT 客人也買過 GT —— 那些人第 27 步就已經建好了，<b>不要重複建</b>（<code>phone</code> 是 unique，重複會直接報錯，這是好事）。<br><br><b>第 7 天：填餘額</b><br>每人一筆 <code>credit_ledger</code>：<code>reason=\'adjust\'</code>、<code>product=\'PT\'</code> 或 <code>\'PGT\'</code>、<code>note=\'系統上線前結轉\'</code>。',
+          summary:'☢️ 順序改過：第 38、39 步已經先做完了',
+          body:'<b>☢️ 2026-08-12 的順序調整：第 38、39 步（教練登入 ＋ 點名核銷）已經先做完，所以這一步開始時，系統的客人端和教練端都已經是完整的。</b>編號沒有跟著改，因為整份文件到處引用「第 39 步」「第 40 步」。<br><br><b>這一步不寫程式，是人工作業。</b><br><br>舊系統繼續在檯面上跑七天，新系統維持 <code>app_settings.live = false</code>。這七天你用舊系統的查詢功能，把 PT／PGT 客人補進新系統。<br><br><b>只補「還有剩餘堂數」的人。</b>餘額歸零的、早就不來的，一個都不用建 —— 他們哪天回來，櫃檯當場建檔就好。<br><br><b>第 1～6 天：建「人」</b><br>姓名 ＋ 手機，寫進 <code>customers</code>。<br>⚠️ 很多 PT 客人也買過 GT —— 那些人第 27 步就已經建好了，<b>不要重複建</b>（<code>phone</code> 是 unique，重複會直接報錯，這是好事）。<br><br><b>第 7 天：填餘額</b><br>每人一筆 <code>credit_ledger</code>：<code>reason=\'adjust\'</code>、<code>product=\'PT\'</code> 或 <code>\'PGT\'</code>、<code>note=\'系統上線前結轉\'</code>。',
           warn:'⚠️ <b>餘額是移動標靶。</b>這七天舊系統還在跑，有人買課有人上課 —— 你週一填的「剩 7 堂」，週五可能變 5 堂。<br><b>所以人和餘額要分開做：前六天建人（人不會變），最後一天才填數字。</b><br><br>⚠️ 這一步做完就<b>沒有回頭路</b>了。填完的隔天舊系統就要設唯讀，否則兩邊會同時被改。',
           ck:'每一個還有堂數的 PT／PGT 客人，在 <code>customer_credits</code> 查得到正確的 <code>product</code> 和 <code>balance</code>，而且跟舊系統最後一天的畫面一致。' },
 
         { n:37, t:'切換日：舊系統退場', where:'決定', done:false, kind:'decide',
-          summary:'那一天的九件事，照順序做',
+          summary:'那一天的九件事，照順序做（第 38、39 步已先完成）',
           body:'<b>挑哪一天：</b>第 36 步平行週結束的隔天。課最少的那天最好 —— 你的課表裡<b>週三只有一堂</b>（12:20 間歇有氧）。<br><b>前一週：</b>公告「X 月 X 日起改用新系統預約」。<br><br><b>當天照順序做，不要跳：</b><ul><li><b>①</b> <b>舊系統停止購課與消課</b> —— 先把帳凍住，後面每一步才有意義</li><li><b>②</b> 舊系統最後一次完整匯出（GT 那份）</li><li><b>③</b> 用第 26 步的工具產生 SQL</li><li><b>④</b> 清掉彩排資料，正式匯入 GT</li><li><b>⑤</b> <b>餘額逐筆對帳</b>（跟第 27 步同一套查詢）＋ 抽查幾個 PT 客人的結轉餘額</li><li><b>⑥</b> <b>打開新系統</b>：<code>update app_settings set live = true where id = 1;</code></li><li><b>⑦</b> <b>換圖文選單</b>（兩個動作，順序不能反）：<br>　<b>先</b>把舊選單「預約系統1.0」的使用期間結束日從 <b>2028/08/08</b> 改成<b>當天</b><br>　<b>再</b>啟用第 35 步存好的「FFF 主選單」草稿，使用期間從當天開始<br>不先改舊的，LINE 會擋：「此使用期間已設有其他圖文選單」</li><li><b>⑧</b> <b>舊系統設為唯讀，不要刪</b> —— 至少留三個月。要查切換前的紀錄，去那裡查</li><li><b>⑨</b> <b>換掉 LINE Channel secret</b>（2026-08-11 曾外洩到聊天室）。舊系統會用它推播課程訊息，所以不能提早換 —— 但舊系統退場的這一天，它就沒有理由再有效了。路徑：LINE Developers Console → 那個 Messaging API channel → Basic settings → Channel secret 的 Issue／重新發行</li></ul><b>☢️ ⑥ 一定要排在 ⑦ 前面 —— 先開門，再把指示牌指過來。</b>反過來的話，客人被帶到一個還沒開的系統，而舊系統的入口已經不見了。<br><br><b>關於 ⑥ 那一行：</b>它同時打開「客人可以訂課」和「午夜自動取消沒人報名的課」（第 33 步已經把兩個開關收成一個）。改完重新整理預約頁，按鈕就會從灰色變成「立即預約」——<b>前端不用改、不用重新 push</b>。<br>然後公告上線，發綁定指引給還沒綁 LINE 的人。',
           warn:'☢️ <b>先處理「已經報名未來課程」的那些人。</b><br>搬遷工具的日期上限固定在 <code>2026-08-06</code>（<code>pg_cron</code> 最早產生的課是 8/07）。所以<b>客人在舊系統報的、8/07 以後的課，一筆都不會自動進來</b> —— 那些課次在新系統是排程產生的，id 不一樣。<br>08-10 彩排時是 8 筆，到切換日會累積成幾十筆。<b>那天要按「日期 ＋ 時間」把它們對到我們自己的課次上</b>，人工或另外寫一小段 SQL 都行 —— 但不能漏掉，漏掉的人到現場會發現自己沒報到名。<br><br>⚠️ <b>這一天結束時，教練還不能在系統上點名核銷</b>（那是第 39 步）。中間這段期間扣課要你自己在 Table Editor 手動做，或先紙本記、之後補。<br><b>這是已知的取捨，不是疏漏</b> —— 早一點切換，就早一點停掉維護兩套系統的心力。<br><br>⚠️ <b>PT／PGT 的上課歷史從此只存在舊系統。</b>那是刻意的決定，不是漏掉的 —— 舊系統設唯讀就是為了這件事。',
           ck:'隔天早上，新系統的餘額跟前一天舊系統的最後畫面一致，而且舊系統再也沒有新資料進去。' }
@@ -282,17 +282,19 @@ window.FFF_ROADMAP = {
     /* ══════════ 第五幕 ══════════ */
     {
       key: 'a5', place: '前台櫃檯', no: '第五幕', name: '讓教練上工', theatre: '＝ 前台櫃檯數位化',
-      note: '客人端跑順之後才做這一幕。前面四幕都在服務觀眾，這一幕開始服務工作人員 —— 也是<b>往 ERP 的第一步</b>。',
+      note: '前面四幕都在服務觀眾，這一幕開始服務工作人員 —— 也是<b>往 ERP 的第一步</b>。<br><br>☢️ <b>2026-08-12 執行順序改了：38 → 39 → 36 → 37。</b>原本這一幕排在切換日之後，代價是「切換完成到第 39 步做好」那段期間，每一堂課的扣課都要人工在 Table Editor 補。而<b>餘額是客人唯一會逐筆核對的數字</b>，把它交給手工正好押在最不該出錯的時間點。先做 38、39，切換那天系統就是完整的：訂課 → 上課 → 扣課全在線上。<br>步驟編號<b>沒有跟著改</b>（改了整份文件的交叉引用會全部對不上）—— 第 36、37 步的卡片上有提醒。',
       steps: [
-        { n:38, t:'六位教練註冊帳號，填回 employees.auth_user_id', where:'Supabase', done:false,
+        { n:38, t:'六位教練用 LINE 登入，填回 employees.auth_user_id', where:'Supabase', done:true,
           summary:'說明 ＋ 完成判準',
-          body:'目前六個人的 <code>auth_user_id</code> 都是空的，等的就是這一步。',
-          ck:'六位教練都能登入，而且各自只看得到自己該看的。' },
+          body:'教練從 LINE 開 <code>staff.html</code> → 拿到 Supabase 憑證 → 資料庫用 <code>auth.uid()</code> 對到 <code>employees.auth_user_id</code>，<code>is_staff()</code> 就是 true。<b>不需要密碼、不需要 email。</b><br><br>網址單獨發給六個人，<b>不要放進客人的圖文選單</b>：<br><code>https://liff.line.me/2011063116-QOxXN30h/staff.html</code>',
+          ck:'六個人在 <code>employees</code> 都有 <code>auth_user_id</code>，而且各自在 staff.html 上看到的是<b>自己的名字</b>。',
+          note:'<b>2026-08-12 完成。</b>檔案：<code>db/16-staff-access.sql</code>、<code>line-prototype/staff.html</code>、<code>migration-local/38-staff-activate.sql</code>。<br><br><b>決定：教練走 LINE 登入，跟客人同一道門。</b>六個人都沒有 email、也沒有電話，走密碼那條路要先跟每個人收 email、教他們記一組新密碼，而且忘記密碼的時刻剛好是他在現場要點名的時刻。LINE 這條路他們什麼都不用學。<br>教練開 <code>staff.html</code> → 畫面給一串登入代號 → 傳給你 → 你跑一行 SQL 開通。六個人、一次性，不值得為它寫一套綁定流程。<br><br><b>☢️ 途中挖到一個洞。</b><code>employees</code> 的讀取政策寫的是 <code>auth.uid() is not null</code> —— 「只要登入過就看得到整張表」，包括六個人的<b>本名、電話、email</b>。而登入過的人就是每一個從 LINE 進來的客人。<br>它當時沒有外洩，純粹是因為 <code>authenticated</code> 在那張表上<b>一個 GRANT 都沒有</b> —— 外面那道門本來就鎖著，裡面開多大都沒差。<b>而這一步就是要開外面那道門。</b>所以政策和 GRANT 一定要在同一支檔案裡改，分兩次做，中間那段時間全部客人都讀得到員工個資。<br><br>順手補了 <code>employees</code> 和 <code>customers</code> 兩條 UPDATE 政策的 <code>with check</code>（跟第 33 步 bookings 那個洞同一種）。<br><br><b>驗證</b>：切換身分實測 —— 沒開通的人查 <code>employees</code> 回 <b>0 列</b>、已開通的教練回 <b>6 列</b>且查得到自己是誰、<code>public_coaches</code> 對客人仍然正常 6 列。另外發現一道免費的保險絲：<code>auth_user_id</code> 有 foreign key 指向 <code>auth.users</code>，代號打錯一個字會直接報錯。' },
 
-        { n:39, t:'課後點名核銷頁', where:'前端', done:false,
+        { n:39, t:'課後點名核銷頁', where:'前端', done:true,
           summary:'說明 ＋ 完成判準',
-          body:'教練在現場點名，扣課寫進 <code>credit_ledger</code>。<code>bookings</code> 已經預留了 <code>checked_by</code> 和 <code>checked_at</code> 兩個欄位給這一步。<br><b>缺席不扣課</b> —— 這條規則要寫進程式，不能靠教練記得。',
-          ck:'核銷一堂課，客人手機上的剩餘堂數當場少一堂。' },
+          body:'教練在現場點名，扣課寫進 <code>credit_ledger</code>。<b>缺席不扣課</b> —— 這條規則寫在資料庫的 <code>check_in()</code> 裡，不是靠教練記得。<br><br>畫面以<b>手機直式</b>為主（下課前現場點完），櫃檯平板補登共用同一頁。課表上有一區<b>「還沒點完 · 過去 7 天」</b> —— 漏掉的當天就看得見。<br><code>https://liff.line.me/2011063116-QOxXN30h/checkin.html</code>',
+          ck:'核銷一堂課，客人手機上的剩餘堂數當場少一堂；而且同一筆連點兩次，只會少一堂。',
+          note:'<b>2026-08-12 完成。</b>檔案：<code>db/17-checkin.sql</code>、<code>line-prototype/checkin.html</code>。<br><br><b>☢️ 整步最重要的一件事：扣課只有一個入口。</b><br>教練對 <code>credit_ledger</code> <b>沒有任何權限</b>，也不能把預約直接改成 <code>attended</code>（兩條員工政策的 <code>with check</code> 裡都沒有這個值）。唯一的路是呼叫 <code>check_in()</code>。就算 <code>checkin.html</code> 哪天被改壞，也<b>寫不出一筆錯的帳，只會失敗</b>。<br><br><b>記帳寫成「對帳到目標」，不是「補一筆」。</b>出席 = 這筆預約淨扣 1 堂、缺席 = 淨扣 0 堂，實際差多少就補多少。所以連點兩次、出席改缺席再改回出席、網路重送 —— 最後淨額一定對。用「if 出席就扣一堂」那種寫法，每一種順序都要各想一次，想漏一種就是一筆爛帳。<br>更正走 <code>reason=\'adjust\'</code>，原始那筆永遠是 <code>\'class\'</code>，而且 <code>credit_ledger</code> 上有 partial unique index 保證<b>一筆預約只扣得了一次 class</b>。<br><br><b>三個當天定案的規則：</b><ul><li><b>剩 0 堂照扣，餘額可以是負的</b> —— 帳要誠實，他確實上了那堂課。畫面把那個人標紅，教練當場就知道要提醒課購。（擋下來的話，教練在現場被卡住，而下課時客人已經走了）</li><li><b>補登最多往回 7 天</b> —— 跨得過週末和連假。超過就找 Jerec 在後台處理，因為那時候「他到底有沒有來」已經是猜的了</li><li><b>可以現場加人</b> —— 老客人臨時出現這件事一定會發生。沒有這個功能，教練只能紙本記著等你補，而那張紙就是帳目開始對不起來的地方</li></ul><b>驗證</b>：資料庫五項攻擊測試（非員工點名／未來的課／已取消的課／超過 7 天／硬塞第二筆扣款）全部擋下，訊息都是人話；出席→再點一次→改缺席→改回出席，帳上 3 筆、淨扣 −1、餘額只少 1 堂。全部在 transaction 裡跑完 rollback，62 筆預約、117 筆帳<b>一列都沒動</b>。<br>前端 Playwright 37 項情境全過，含「這一頁不得出現 insert／update／delete，也不得碰 credit_ledger」。' },
 
         { n:40, t:'教練鐘點費月報表（GT 人頭費）', where:'SQL', done:false,
           summary:'為什麼它一定排在點名核銷後面',
