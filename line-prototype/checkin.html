@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>FFF 點名核銷</title>
+
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  checkin.html — 課後點名核銷（第 39 步）
+
+  網址：https://liff.line.me/2011063116-QOxXN30h/checkin.html
+
+  ☢️ 這一頁不寫任何一筆帳。
+     出席／缺席一律呼叫資料庫的 check_in()，現場加人呼叫 add_walkin()。
+     教練的身分對 credit_ledger【沒有任何權限】——
+     所以就算這一頁被改壞，也寫不出一筆錯的帳，只會失敗。
+
+  規則（HANDOVER 第四節 ＋ 2026-08-11 決定）：
+     出席扣 1 堂／缺席不扣／剩 0 堂照扣，餘額可以是負的／補登最多 7 天
+  ═══════════════════════════════════════════════════════════════════
+-->
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --ink:#0E2A3B; --ink2:#1C4257; --blue:#2E86AB; --teal:#6FBAC9;
+    --bg:#F4F8FA; --surface:#FFF; --surface2:#EDF4F7;
+    --line:#DCE8EE; --dim:#587589; --faint:#93AEBD;
+    --ok:#2F6B54; --ok-bg:#E4F0EA; --ok-line:#B9D8C8;
+    --warn:#B4661F; --warn-bg:#FBEFE2; --warn-line:#EBC4A0;
+    --err:#A4211A; --err-bg:#FBE9E7; --err-line:#F3C9C5;
+  }
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    line-height:1.6;-webkit-text-size-adjust:100%;
+    padding:0 0 84px}
+  .wrap{max-width:560px;margin:0 auto;padding:0 14px}
+
+  /* ── 頂欄 ── */
+  .top{position:sticky;top:0;z-index:20;background:var(--ink);color:#fff;
+    padding:12px 14px;display:flex;align-items:center;gap:11px}
+  .top .who{font-size:15px;font-weight:800;letter-spacing:.03em}
+  .top .sub{font-size:11px;color:var(--teal);letter-spacing:.1em}
+  .top .sp{margin-left:auto}
+  .iconbtn{background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:3px;
+    font-family:inherit;font-size:13px;font-weight:700;padding:8px 12px;cursor:pointer}
+  .iconbtn:active{background:rgba(255,255,255,.25)}
+
+  /* ── 區塊標題 ── */
+  .sec{margin:20px 0 9px;font-size:11px;font-weight:800;letter-spacing:.18em;color:var(--faint)}
+  .sec.hot{color:var(--warn)}
+
+  /* ── 課次卡 ── */
+  .ses{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line);
+    border-radius:3px;padding:13px 14px;margin-bottom:9px;display:flex;align-items:center;
+    gap:12px;cursor:pointer;width:100%;text-align:left;font-family:inherit;color:inherit}
+  .ses:active{background:var(--surface2)}
+  .ses.todo{border-left-color:var(--warn)}
+  .ses.done{border-left-color:var(--ok)}
+  .ses.soon{border-left-color:var(--teal)}
+  .ses.dead{border-left-color:var(--line);opacity:.55}
+  .ses .t{font-size:17px;font-weight:800;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+  .ses .n{font-size:14px;font-weight:700;margin-top:1px}
+  .ses .m{font-size:12px;color:var(--dim);margin-top:2px}
+  .ses .r{margin-left:auto;text-align:right;flex:0 0 auto}
+  .pill{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.03em;
+    padding:4px 10px;border-radius:2px;white-space:nowrap}
+  .pill.todo{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+  .pill.done{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line)}
+  .pill.dead{background:var(--surface2);color:var(--dim);border:1px solid var(--line)}
+
+  /* ── 名單 ── */
+  .head{background:var(--surface);border:1px solid var(--line);border-radius:3px;
+    padding:14px;margin:14px 0 12px}
+  .head .h1{font-size:19px;font-weight:800;letter-spacing:.02em}
+  .head .h2{font-size:13px;color:var(--dim);margin-top:3px}
+  .banner{margin-top:10px;padding:9px 11px;border-radius:2px;font-size:13px;font-weight:700}
+  .banner.dead{background:var(--err-bg);color:var(--err);border:1px solid var(--err-line)}
+  .banner.soon{background:var(--surface2);color:var(--ink2);border:1px solid var(--line)}
+
+  .p{background:var(--surface);border:1px solid var(--line);border-radius:3px;
+    padding:12px 13px;margin-bottom:8px}
+  .p.on{border-color:var(--ok-line);background:#F7FCF9}
+  .p.off{border-color:var(--warn-line);background:#FEFAF6}
+  .prow{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .nm{font-size:17px;font-weight:800;letter-spacing:.02em}
+  .tail{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+  .bal{font-size:12px;font-weight:800;padding:2px 8px;border-radius:2px;
+    background:var(--surface2);color:var(--ink2);border:1px solid var(--line)}
+  .bal.low{background:var(--err-bg);color:var(--err);border-color:var(--err-line)}
+  .payer{font-size:12px;color:var(--blue);font-weight:700}
+  .meta{font-size:11px;color:var(--faint);margin-top:3px}
+  .btns{display:flex;gap:8px;margin-top:10px}
+  .b{flex:1;padding:13px 0;font-size:15px;font-weight:800;letter-spacing:.06em;
+    font-family:inherit;border-radius:3px;cursor:pointer;
+    background:var(--surface2);color:var(--dim);border:1px solid var(--line)}
+  .b:active{transform:translateY(1px)}
+  .b.pick-on{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .b.pick-off{background:var(--warn);color:#fff;border-color:var(--warn)}
+  .b:disabled{opacity:.5;cursor:default}
+
+  /* ── 加人 ── */
+  .add{background:var(--surface);border:1px dashed var(--line);border-radius:3px;
+    padding:14px;margin-top:14px}
+  .add h3{font-size:13px;font-weight:800;letter-spacing:.1em;color:var(--faint);margin-bottom:9px}
+  .add input{width:100%;padding:12px;font-size:16px;font-family:inherit;
+    border:1px solid var(--line);border-radius:3px;background:var(--bg);color:var(--ink)}
+  .add input:focus{outline:none;border-color:var(--blue)}
+  .hit{display:flex;align-items:center;gap:9px;padding:11px 4px;border-bottom:1px solid var(--line);
+    cursor:pointer;font-family:inherit;background:none;border-left:none;border-right:none;
+    border-top:none;width:100%;text-align:left;color:inherit}
+  .hit:active{background:var(--surface2)}
+  .hit .hn{font-size:15px;font-weight:700}
+  .hit .hb{margin-left:auto;font-size:12px;color:var(--dim)}
+
+  /* ── 雜項 ── */
+  .empty{text-align:center;color:var(--faint);font-size:13px;padding:34px 10px}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-size:14px;font-weight:700;
+    padding:12px 18px;border-radius:3px;max-width:88%;text-align:center;
+    z-index:60;box-shadow:0 6px 22px rgba(14,42,59,.28)}
+  .toast.bad{background:var(--err)}
+  .gate{padding:40px 20px;text-align:center}
+  .gate .g1{font-size:19px;font-weight:800;margin-bottom:6px}
+  .gate .g2{font-size:14px;color:var(--dim)}
+  .gate.err .g1{color:var(--err)}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div>
+    <div class="who" id="who">點名核銷</div>
+    <div class="sub" id="whoSub">辨識中…</div>
+  </div>
+  <div class="sp"></div>
+  <button type="button" class="iconbtn" id="back" hidden>← 課表</button>
+  <button type="button" class="iconbtn" id="reload">重新整理</button>
+</div>
+
+<div class="wrap">
+  <div id="gate" class="gate"><div class="g1">辨識中…</div><div class="g2">跟資料庫確認你是誰</div></div>
+  <div id="listView" hidden></div>
+  <div id="rosterView" hidden></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="liff-auth.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  var DB;
+  var ME = null;                 // { display_name, role }
+  var SESSIONS = [];
+  var CUR = null;                // 目前打開的課次
+  var ROSTER = [];
+  var busy = {};                 // booking_id -> true，防連點
+
+  var elGate   = document.getElementById('gate');
+  var elList   = document.getElementById('listView');
+  var elRoster = document.getElementById('rosterView');
+  var elWho    = document.getElementById('who');
+  var elSub    = document.getElementById('whoSub');
+  var elBack   = document.getElementById('back');
+
+  var WD = ['日','一','二','三','四','五','六'];
+  var LV = { beg:'初階', int:'中階', adv:'進階' };
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+  function hhmm(t) { return String(t || '').slice(0,5); }
+  function dstr(d) {
+    var p = String(d).split('-');
+    var dt = new Date(+p[0], +p[1]-1, +p[2]);
+    return (+p[1]) + '/' + (+p[2]) + '（' + WD[dt.getDay()] + '）';
+  }
+  // 課還沒開始 → 點不了名。starts_at 是資料庫算好的 timestamptz，
+  // 前端不要自己拿 session_date + start_time 去湊（那正是規則 16 那個坑）。
+  function isFuture(s) {
+    return s && s.starts_at ? (new Date(s.starts_at).getTime() > Date.now()) : false;
+  }
+
+  // ☢️ 「今天」用台灣時間算，不要用瀏覽器的 toISOString（那是 UTC）。
+  function todayTW() {
+    var s = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });
+    return s;   // YYYY-MM-DD
+  }
+
+  var toastTimer;
+  function toast(msg, bad) {
+    var old = document.querySelector('.toast');
+    if (old) old.remove();
+    var d = document.createElement('div');
+    d.className = 'toast' + (bad ? ' bad' : '');
+    d.textContent = msg;
+    document.body.appendChild(d);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ d.remove(); }, bad ? 4200 : 2000);
+  }
+
+  function gate(cls, t1, t2) {
+    elGate.className = 'gate' + (cls ? ' ' + cls : '');
+    elGate.innerHTML = '<div class="g1">' + esc(t1) + '</div><div class="g2">' + esc(t2||'') + '</div>';
+    elGate.hidden = false;
+    elList.hidden = true;
+    elRoster.hidden = true;
+  }
+
+  /* ══ 讀資料 ══════════════════════════════════════════════════════
+     ☢️ 每一次查詢都要接住 error。
+        錯誤和「沒有資料」在 supabase-js 裡都會讓你拿到空陣列，
+        但意思完全相反 —— 一個是系統壞了，一個是今天沒課。（規則 14）
+     ═══════════════════════════════════════════════════════════════ */
+  function loadSessions() {
+    return DB.from('staff_sessions')
+      .select('session_id,session_date,start_time,title,level,session_status,coach_name,starts_at,n_expected,n_present,n_absent,n_pending')
+      .order('session_date', { ascending: false })
+      .order('start_time', { ascending: true })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        SESSIONS = r.data || [];
+      });
+  }
+
+  function loadRoster(sid) {
+    return DB.from('staff_roster')
+      .select('booking_id,session_id,booking_status,checked_at,checked_by_name,customer_id,customer_name,phone_tail,paid_by_customer_id,payer_name,balance')
+      .eq('session_id', sid)
+      .order('customer_name', { ascending: true })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        ROSTER = r.data || [];
+      });
+  }
+
+  /* ══ 畫課次清單 ═══════════════════════════════════════════════ */
+  function renderList() {
+    CUR = null;
+    elBack.hidden = true;
+    elGate.hidden = true;
+    elRoster.hidden = true;
+    elList.hidden = false;
+
+    var today = todayTW();
+    var missed = [], now = [], next = [];
+
+    SESSIONS.forEach(function (s) {
+      if (s.session_date === today) now.push(s);
+      else if (s.session_date > today) next.push(s);
+      // ☢️ 已取消但還有人掛在上面的課【也要出現】。
+      //    那是「課取消了、人卻來了」——教練點不了名，但至少看得到、
+      //    知道要找 Jerec 處理。藏起來的話，那幾個人就永遠不見了。
+      else if (s.n_pending > 0) missed.push(s);
+    });
+
+    var html = '';
+    if (missed.length) {
+      html += '<div class="sec hot">⚠️ 還沒點完 · 過去 7 天（' + missed.length + '）</div>';
+      html += missed.map(card).join('');
+    }
+    html += '<div class="sec">今天　' + dstr(today) + '</div>';
+    html += now.length ? now.map(card).join('') : '<div class="empty">今天沒有團體課</div>';
+    if (next.length) {
+      html += '<div class="sec">接下來</div>' + next.map(card).join('');
+    }
+    if (!missed.length && !now.length && !next.length) {
+      html = '<div class="empty">最近 7 天沒有團體課。<br>如果這不對，先確認你的帳號已開通。</div>';
+    }
+    elList.innerHTML = html;
+
+    Array.prototype.forEach.call(elList.querySelectorAll('.ses'), function (b) {
+      b.onclick = function () { openSession(b.getAttribute('data-id')); };
+    });
+  }
+
+  function card(s) {
+    var dead = s.session_status === 'cancelled';
+    var soon = !dead && isFuture(s);
+    var cls  = dead ? 'dead' : soon ? 'soon' : (s.n_pending > 0 ? 'todo' : 'done');
+    // 未來的課不能點名，所以不要給橘色的「還有 N 人」——
+    // 那顆橘色的意思是「你該去做一件事」，而這裡沒有事情可做。
+    var pill = dead ? '<span class="pill dead">已取消</span>'
+             : soon ? '<span class="pill dead">報名 ' + s.n_expected + ' 人</span>'
+             : s.n_expected === 0 ? '<span class="pill dead">沒人報名</span>'
+             : s.n_pending > 0 ? '<span class="pill todo">還有 ' + s.n_pending + ' 人</span>'
+             : '<span class="pill done">' + s.n_present + ' 到 ✓</span>';
+    return '<button type="button" class="ses ' + cls + '" data-id="' + esc(s.session_id) + '">' +
+             '<div>' +
+               '<div class="t">' + dstr(s.session_date) + '　' + hhmm(s.start_time) + '</div>' +
+               '<div class="n">' + esc(s.title) + '</div>' +
+               '<div class="m">' + esc(s.coach_name || '未指定教練') +
+                 '　·　' + (LV[s.level] || s.level) +
+                 '　·　報名 ' + s.n_expected + ' 人</div>' +
+             '</div>' +
+             '<div class="r">' + pill + '</div>' +
+           '</button>';
+  }
+
+  /* ══ 畫名單 ═══════════════════════════════════════════════════ */
+  function openSession(sid) {
+    var s = SESSIONS.filter(function (x) { return x.session_id === sid; })[0];
+    if (!s) return;
+    CUR = s;
+    gate('', '讀取名單…', '');
+    loadRoster(sid).then(renderRoster, function (e) {
+      gate('err', '讀不到名單', String(e.message || e));
+    });
+  }
+
+  function renderRoster() {
+    var s = CUR;
+    elGate.hidden = true;
+    elList.hidden = true;
+    elRoster.hidden = false;
+    elBack.hidden = false;
+
+    var dead = s.session_status === 'cancelled';
+    var soon = !dead && isFuture(s);
+    var lock = dead || soon;          // 這兩種都點不了名
+    var html = '<div class="head">' +
+      '<div class="h1">' + dstr(s.session_date) + '　' + hhmm(s.start_time) + '　' + esc(s.title) + '</div>' +
+      '<div class="h2">' + esc(s.coach_name || '未指定教練') + '　·　' + (LV[s.level] || s.level) + '</div>' +
+      (dead ? '<div class="banner dead">這堂課已經取消，點不了名。<br>如果實際上有上課，請找 Jerec 在後台改課次狀態。</div>' : '') +
+      (soon ? '<div class="banner soon">這堂課還沒開始，時間到了才能點名。<br>現在可以先把臨時要來的人加進名單。</div>' : '') +
+      '</div>';
+
+    html += ROSTER.filter(function (p) { return p.booking_status !== 'cancelled'; })
+                  .map(function (p) { return person(p, lock); }).join('');
+
+    if (!ROSTER.filter(function (p) { return p.booking_status !== 'cancelled'; }).length) {
+      html += '<div class="empty">這堂課還沒有人報名</div>';
+    }
+
+    html += '<div class="add">' +
+      '<h3>現場加人</h3>' +
+      '<input type="search" id="q" placeholder="打姓名，或手機後三碼" autocomplete="off" ' +
+        (dead ? 'disabled' : '') + '>' +
+      '<div id="hits"></div>' +
+      '</div>';
+
+    elRoster.innerHTML = html;
+    wireRoster(dead);   // 搜尋框只有「已取消」才關；未來的課可以先加人
+  }
+
+  function person(p, lock) {
+    var st  = p.booking_status;
+    var cls = st === 'attended' ? 'on' : st === 'absent' ? 'off' : '';
+    var bal = Number(p.balance);
+    var mine = p.paid_by_customer_id === p.customer_id;
+
+    var meta = '';
+    if (st === 'attended' || st === 'absent') {
+      meta = (st === 'attended' ? '已記出席' : '已記缺席') +
+             (p.checked_by_name ? '　·　' + esc(p.checked_by_name) + ' 點的' : '');
+    }
+
+    return '<div class="p ' + cls + '" data-b="' + esc(p.booking_id) + '">' +
+      '<div class="prow">' +
+        '<span class="nm">' + esc(p.customer_name) + '</span>' +
+        '<span class="tail">' + esc(p.phone_tail) + '</span>' +
+        '<span class="bal' + (bal <= 0 ? ' low' : '') + '">剩 ' + bal + ' 堂</span>' +
+        (mine ? '' : '<span class="payer">由 ' + esc(p.payer_name || '他人') + ' 付</span>') +
+      '</div>' +
+      (meta ? '<div class="meta">' + meta + '</div>' : '') +
+      '<div class="btns">' +
+        '<button type="button" class="b act' + (st === 'attended' ? ' pick-on'  : '') +
+          '" data-b="' + esc(p.booking_id) + '" data-v="1"' + (lock ? ' disabled' : '') + '>出席</button>' +
+        '<button type="button" class="b act' + (st === 'absent'   ? ' pick-off' : '') +
+          '" data-b="' + esc(p.booking_id) + '" data-v="0"' + (lock ? ' disabled' : '') + '>缺席</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function wireRoster(dead) {
+    Array.prototype.forEach.call(elRoster.querySelectorAll('.b.act'), function (b) {
+      b.onclick = function () {
+        mark(b.getAttribute('data-b'), b.getAttribute('data-v') === '1');
+      };
+    });
+    if (dead) return;
+
+    var q = document.getElementById('q');
+    var hits = document.getElementById('hits');
+    var timer;
+    q.oninput = function () {
+      clearTimeout(timer);
+      var v = q.value.trim();
+      if (v.length < 1) { hits.innerHTML = ''; return; }
+      timer = setTimeout(function () { search(v, hits); }, 260);
+    };
+  }
+
+  /* ══ 點名 ══════════════════════════════════════════════════════ */
+  function mark(bookingId, present) {
+    if (busy[bookingId]) return;
+    busy[bookingId] = true;
+
+    var card = elRoster.querySelector('.p[data-b="' + bookingId + '"]');
+    if (card) Array.prototype.forEach.call(card.querySelectorAll('.b'), function(b){ b.disabled = true; });
+
+    DB.rpc('check_in', { p_booking: bookingId, p_present: present })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        // 重讀這一堂的名單 —— 餘額也要跟著更新，不能只改畫面上的字。
+        return loadRoster(CUR.session_id).then(function () {
+          return refreshOneSession(CUR.session_id);
+        });
+      })
+      .then(function () {
+        busy[bookingId] = false;
+        renderRoster();
+      })
+      .catch(function (e) {
+        busy[bookingId] = false;
+        // 失敗一定要說。畫面回到真實狀態，不留下「好像成功了」的樣子。
+        toast(String(e.message || e), true);
+        renderRoster();
+      });
+  }
+
+  // 只重讀這一堂課的統計，讓返回課表時數字是對的
+  function refreshOneSession(sid) {
+    return DB.from('staff_sessions')
+      .select('session_id,session_date,start_time,title,level,session_status,coach_name,starts_at,n_expected,n_present,n_absent,n_pending')
+      .eq('session_id', sid)
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        if (!r.data || !r.data.length) return;
+        var fresh = r.data[0];
+        for (var i = 0; i < SESSIONS.length; i++) {
+          if (SESSIONS[i].session_id === sid) { SESSIONS[i] = fresh; break; }
+        }
+        CUR = fresh;
+      });
+  }
+
+  /* ══ 現場加人 ══════════════════════════════════════════════════ */
+  function search(v, box) {
+    var already = {};
+    ROSTER.forEach(function (p) { if (p.booking_status !== 'cancelled') already[p.customer_id] = 1; });
+
+    var digits = /^\d+$/.test(v);
+    var qy = DB.from('customers').select('id,name,phone').eq('is_active', true).limit(8);
+    qy = digits ? qy.like('phone', '%' + v) : qy.ilike('name', '%' + v + '%');
+
+    qy.then(function (r) {
+      if (r.error) { box.innerHTML = '<div class="empty">查不動：' + esc(r.error.message) + '</div>'; return; }
+      var rows = (r.data || []).filter(function (c) { return !already[c.id]; });
+      if (!rows.length) { box.innerHTML = '<div class="empty">沒有符合的人（已經在名單上的不會出現）</div>'; return; }
+      box.innerHTML = rows.map(function (c) {
+        return '<button type="button" class="hit" data-c="' + esc(c.id) + '">' +
+                 '<span class="hn">' + esc(c.name) + '</span>' +
+                 '<span class="tail">' + esc(String(c.phone).slice(-3)) + '</span>' +
+                 '<span class="hb">加進來 ›</span>' +
+               '</button>';
+      }).join('');
+      Array.prototype.forEach.call(box.querySelectorAll('.hit'), function (b) {
+        b.onclick = function () { addWalkin(b.getAttribute('data-c')); };
+      });
+    });
+  }
+
+  function addWalkin(customerId) {
+    DB.rpc('add_walkin', { p_session: CUR.session_id, p_customer: customerId })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        return loadRoster(CUR.session_id).then(function () { return refreshOneSession(CUR.session_id); });
+      })
+      .then(function () {
+        renderRoster();
+        toast('加進來了，記得幫他點出席');
+      })
+      .catch(function (e) { toast(String(e.message || e), true); });
+  }
+
+  /* ══ 開場 ══════════════════════════════════════════════════════ */
+  function boot() {
+    if (!window.FFF_AUTH || !window.FFF_AUTH.ready) {
+      gate('err', '身分程式沒載進來', 'liff-auth.js 沒跑起來'); return;
+    }
+    window.FFF_AUTH.ready.then(function () {
+      var st = window.FFF_AUTH.state;
+      if (st === 'browsing') {
+        elSub.textContent = '未登入';
+        gate('err', '要從 LINE 裡面開', '請在 LINE 的聊天室點連結，不要複製到瀏覽器');
+        return;
+      }
+      if (st === 'error') {
+        elSub.textContent = '辨識失敗';
+        gate('err', '辨識失敗', window.FFF_AUTH.error || ''); return;
+      }
+      if (!window.fffDB) { gate('err', '資料庫連線沒建立', 'no_fffDB'); return; }
+      DB = window.fffDB;
+
+      DB.auth.getUser().then(function (u) {
+        if (u.error || !u.data || !u.data.user) {
+          gate('err', '拿不到登入身分', (u.error && u.error.message) || 'no_user'); return;
+        }
+        return DB.from('employees')
+          .select('display_name,role,is_active')
+          .eq('auth_user_id', u.data.user.id)
+          .then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            if (!r.data || !r.data.length) {
+              elSub.textContent = '未開通';
+              gate('err', '你的帳號還沒開通',
+                   '先開 staff.html 把登入代號給 Jerec，開通後再回來這一頁');
+              return;
+            }
+            ME = r.data[0];
+            if (ME.is_active === false) {
+              gate('err', ME.display_name + '　已停用', '如果這是誤設，請找 Jerec'); return;
+            }
+            elWho.textContent = ME.display_name;
+            elSub.textContent = '點名核銷';
+            return refresh();
+          });
+      }).catch(function (e) {
+        gate('err', '出事了', String(e.message || e));
+      });
+    });
+  }
+
+  function refresh() {
+    gate('', '讀取課表…', '');
+    return loadSessions().then(renderList, function (e) {
+      gate('err', '讀不到課表', String(e.message || e));
+    });
+  }
+
+  document.getElementById('reload').onclick = function () {
+    if (!ME) return;
+    if (CUR) {
+      var sid = CUR.session_id;
+      loadSessions().then(function () { return loadRoster(sid); }).then(function () {
+        var s = SESSIONS.filter(function (x) { return x.session_id === sid; })[0];
+        if (s) { CUR = s; renderRoster(); } else { renderList(); }
+      }, function (e) { toast(String(e.message || e), true); });
+    } else {
+      refresh();
+    }
+  };
+  document.getElementById('back').onclick = function () { renderList(); };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+</body>
+</html>

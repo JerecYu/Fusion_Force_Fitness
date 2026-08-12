@@ -79,6 +79,8 @@
     background:var(--ink);color:#fff;border:none;border-radius:3px;cursor:pointer}
   .btn:active{background:var(--ink2)}
   .btn.done{background:var(--ok)}
+  a.btn{display:block;text-align:center;text-decoration:none;margin-top:18px}
+  a.btn.go{background:var(--ok)}
   .note{font-size:13px;color:var(--dim);margin-top:14px}
   .note b{color:var(--ink)}
 
@@ -121,6 +123,15 @@
       </div>
     </div>
 
+    <!-- 已開通才會出現 -->
+    <div id="go" hidden>
+      <a class="btn go" href="checkin.html">進入點名核銷 ›</a>
+      <div class="note">
+        建議把這一頁<b>加到手機主畫面</b>或釘選在 LINE 的聊天室，
+        下課前開一下就好。
+      </div>
+    </div>
+
     <!-- 沒在 LINE 裡開才會出現 -->
     <div id="needline" hidden>
       <div class="hint">
@@ -151,6 +162,7 @@
   var need  = document.getElementById('needline');
   var uidEl = document.getElementById('uid');
   var btn   = document.getElementById('copy');
+  var go    = document.getElementById('go');
 
   var ROLE = { owner:'負責人', coach:'教練', staff:'櫃檯', admin:'管理' };
 
@@ -253,6 +265,7 @@
           show('s-ok', '✓', me.display_name, '這支手機以後就認得你了');
           role.textContent = ROLE[me.role] || me.role;
           role.hidden = false;
+          go.hidden = false;
         }, function (e) {
           // 查詢真的壞掉，不能假裝成「還沒開通」
           show('s-err', '✕', '查不到員工名單', String(e && e.message || e));
