@@ -549,7 +549,18 @@
     meId = null; myBookings = []; myCredits = null;
     if (!isBound()) return;
 
-    const me = await window.fffDB.from('customers').select('id').maybeSingle();
+    // ☢️ 一定要自己加 .eq('auth_user_id', …)，不能只靠 RLS 把範圍縮到一列。
+    //    對一般客人來說 RLS 只會回一列，maybeSingle() 剛好成立；
+    //    但【員工同時也是客人】的時候，「員工可讀全部客人」讓他拿到 83 列，
+    //    maybeSingle() 直接報錯 → meId 是 null → 按鈕能按卻訂不了課。
+    //    ☢️ 千萬不要用 .limit(1) 來「修」這個問題 —— 那會讓員工拿到
+    //       【某一個隨機客人】的 id，然後用他的課卡訂課、扣他的堂數。
+    const u = await window.fffDB.auth.getUser();
+    const uid = u && u.data && u.data.user ? u.data.user.id : null;
+    if (!uid){ console.error('[GT-booking] 拿不到登入身分'); return; }
+
+    const me = await window.fffDB.from('customers')
+                     .select('id').eq('auth_user_id', uid).maybeSingle();
     if (me.error){ console.error('[GT-booking] 讀不到自己：', me.error.message); return; }
     meId = me.data ? me.data.id : null;
     if (!meId) return;
