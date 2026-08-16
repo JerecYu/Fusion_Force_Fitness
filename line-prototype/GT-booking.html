@@ -707,11 +707,23 @@
     }
   }
 
+  // ☢️ 預設【不要】停在今天。
+  //    晚上打開的人，今天的課早就上完了 —— 畫面上一堂能訂的都沒有，
+  //    看起來就像「這個系統沒有課表」。實際上明天有三堂。
+  //    所以停在「還有課可以訂」的第一天；全部都過了才退回第一天。
+  function firstBookableDate(){
+    for (let i = 0; i < dates.length; i++){
+      const it = byDate[dates[i]] || [];
+      if (it.some(r => isOpen(r) && !isPast(r))) return dates[i];
+    }
+    return dates[0] || null;
+  }
+
   function regroup(){
     byDate = {};
     all.forEach(r => { (byDate[r.session_date] = byDate[r.session_date] || []).push(r); });
     dates = Object.keys(byDate).sort().slice(0, MAX_TABS);
-    if (!curDate || dates.indexOf(curDate) < 0) curDate = dates[0] || null;
+    if (!curDate || dates.indexOf(curDate) < 0) curDate = firstBookableDate();
   }
 
   /* ── 日期分頁 ─────────────────────────────────────────────── */
@@ -728,6 +740,10 @@
                     '<span class="c">' + (open ? open + ' 堂' : '未開課') + '</span>';
       b.onclick = () => { curDate = ds; render(); };
       w.appendChild(b);
+      // 預設那一天不一定是最左邊的 —— 把它捲進畫面，否則客人不知道自己在看哪天
+      if (ds === curDate) setTimeout(() => {
+        try { b.scrollIntoView({ block:'nearest', inline:'center' }); } catch(e){}
+      }, 0);
     });
   }
 
