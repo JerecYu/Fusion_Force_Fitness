@@ -599,6 +599,25 @@
       const A = window.FFF_AUTH;
       if (A && A.ready){ await A.ready; await loadMine(); render(); }
     }catch(e){ console.warn('[GT-booking] 補讀個人資料失敗：', (e && e.message) || e); }
+
+    // ☢️ 綁定成功之後，liff-bind.js 只會把狀態列從橘色改成綠色 ——
+    //    它不知道要回頭叫 loadMine()，所以 meId 還是 null。
+    //    結果是：按鈕看起來可以按（因為 isBound() 已經是 true），
+    //    按下去卻跳「要先在 LINE 裡完成綁定才能訂課」。
+    //    ☢️ 這種錯最難查 —— 畫面說可以，程式說不行，兩邊都沒報錯。
+    //    這裡攔截狀態列的更新：一變成 bound 就把「我是誰」重讀一次。
+    if (!window.__gtBoundHook){
+      window.__gtBoundHook = true;
+      const origPaint = window.FFF_AUTH_PAINT;
+      window.FFF_AUTH_PAINT = function (state, note, code){
+        if (typeof origPaint === 'function') origPaint(state, note, code);
+        if (state === 'bound'){
+          loadMine()
+            .then(render)
+            .catch(e => console.error('[GT-booking] 綁定後重讀身分失敗：', (e && e.message) || e));
+        }
+      };
+    }
   }
 
   /* ── 訂課 ─────────────────────────────────────────────────── */
