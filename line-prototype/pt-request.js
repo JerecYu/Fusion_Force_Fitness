@@ -170,7 +170,19 @@
       }
 
       // ── 已綁定：直接寫進需求單 ──────────────────────────────
-      var me = await window.fffDB.from('customers').select('id,name').maybeSingle();
+      // ☢️ 一定要自己加 .eq('auth_user_id', …)，不能只靠 RLS 把範圍縮到一列。
+      //    對一般客人來說 RLS 只會回一列，maybeSingle() 剛好成立；
+      //    但【員工同時也是客人】的時候，「員工可讀全部客人」讓他拿到 83 列，
+      //    maybeSingle() 直接報錯 → 需求單送不出去。
+      //    ☢️ 千萬不要用 .limit(1) 來「修」這個問題 —— 那會讓員工用
+      //       【某一個隨機客人】的名義送出需求單。
+      //    （GT-booking.html 2026-08-16 修過同一隻，這裡是漏網的第二處。）
+      var u   = await window.fffDB.auth.getUser();
+      var uid = u && u.data && u.data.user ? u.data.user.id : null;
+      if (!uid) { fail('拿不到你的登入身分，請重開一次頁面。'); return; }
+
+      var me = await window.fffDB.from('customers')
+                     .select('id,name').eq('auth_user_id', uid).maybeSingle();
       if (me.error) throw me.error;            // 規則 14：不要吞掉錯誤
       if (!me.data) { fail('找不到你的會員資料。'); return; }
 
