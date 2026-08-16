@@ -24,7 +24,7 @@
   var OA_ID    = '@fff123';
   var TEL      = '(02) 2356-9462';
   var TEL_HREF = 'tel:0223569462';
-  var HOURS    = '週一至週五 09:00–22:00　·　週六日 09:00–18:00';
+  var HOURS    = '週一至週五 09:00–21:00　·　週六日 09:00–18:00';
 
   var esc = function (s) {
     return String(s == null ? '' : s)

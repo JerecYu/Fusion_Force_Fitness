@@ -244,6 +244,7 @@
     background:var(--adv-s);border-radius:var(--r-sm);padding:8px 10px}
   .rt{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--line);
     border-left:4px solid var(--teal);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:16px}
+  .rt[hidden]{display:none}
   .rt-ico{flex:0 0 auto;width:19px;height:19px;border-radius:50%;background:var(--teal);color:#fff;
     font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
   .rt-txt{flex:1 1 auto;min-width:0;font-size:.71rem;line-height:1.75;color:var(--dim);display:block}
@@ -348,7 +349,6 @@
     <span class="chip">GT</span>
   </div>
   <div class="hd-sub">主題式團體課 · 每週固定時間開課，自由參加</div>
-  <div class="hd-sub" style="opacity:.7;font-size:.66rem;margin-top:3px">課表即時同步自資料庫</div>
   <div class="hd-stats">
     <div class="st">往後 <b id="sDays">–</b> 天有課</div>
     <div class="st">共 <b id="sTotal">–</b> 堂</div>
@@ -394,16 +394,11 @@
       <a href="pricing.html">價目表</a>
     </div>
 
-    <div class="legend">
-      <span class="lg b"><i></i>入門 Beginner</span>
-      <span class="lg i"><i></i>中階 Intermediate</span>
-      <span class="lg a"><i></i>進階 Advanced</span>
-    </div>
-
-    <div class="rt">
+    <!-- ☢️ 已綁定的人不需要這一段（render() 會把它藏起來）——
+         它是給還沒綁定的人看的，留著只是把課表往下推。 -->
+    <div class="rt" id="rtBox">
       <span class="rt-ico">i</span>
-      <span class="rt-txt"><b>這裡的課表是即時從資料庫讀出來的</b>，不是寫死在網頁裡。<br>
-        <span id="rtNote">第一次使用要先<b>綁定手機和姓名</b>（就是你在櫃檯登記的那組），
+      <span class="rt-txt"><span id="rtNote">第一次使用要先<b>綁定手機和姓名</b>（就是你在櫃檯登記的那組），
         綁定之後才看得到自己的堂數，也才能訂課。</span></span>
     </div>
 
@@ -914,7 +909,13 @@
     set('sOpen',  curDate ? (byDate[curDate] || []).filter(isOpen).length : 0);
   }
 
-  const render = () => { renderDays(); renderList(); renderStats(); renderMine(); };
+  // 綁定之後那張說明卡就沒有用了 —— 藏起來，讓課表往上移一格。
+  function renderHint(){
+    const box = document.getElementById('rtBox');
+    if (box) box.hidden = isBound();
+  }
+
+  const render = () => { renderDays(); renderList(); renderStats(); renderMine(); renderHint(); };
 
   /* ── 上下分頁切換（維持原本行為） ─────────────────────────── */
   function showTab(which){
