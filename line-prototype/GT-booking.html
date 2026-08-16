@@ -367,7 +367,23 @@
     <span class="ab-i">◌</span><span class="ab-t">正在辨識身分…</span><span class="ab-s" hidden></span>
   </div>
 
-  <!-- 第 32 步：綁定卡。預設 hidden，由 liff-bind.js 在
+  <div id="vS">
+    <div class="pb">
+      <div class="l">
+        <div class="k">Group Training</div>
+        <div class="v">單堂 <b>NT$400</b>　·　買 10 送 2 <b>NT$4,000</b>
+          <span class="sm">等於上 12 堂，平均一堂 NT$333</span></div>
+      </div>
+      <a href="pricing.html">價目表</a>
+    </div>
+
+    <div class="days" id="days"></div>
+    <div id="list"><div class="skel"></div><div class="skel"></div></div>
+  </div>
+
+  <div id="vM" style="display:none"><div id="myList"></div></div>
+
+  <!-- 第 32 步：綁定卡（2026-08-16 移到課表【下面】）。預設 hidden，由 liff-bind.js 在
        「已辨識但還沒綁手機」時才打開。 -->
   <div class="bd" id="bindBox" hidden>
     <div class="bd-h">第一次使用，先綁定你的資料</div>
@@ -384,29 +400,6 @@
     <div class="bd-m" id="bdMsg" hidden></div>
     <button type="button" class="bd-go" id="bdGo">綁定</button>
   </div>
-  <div id="vS">
-    <div class="pb">
-      <div class="l">
-        <div class="k">Group Training</div>
-        <div class="v">單堂 <b>NT$400</b>　·　買 10 送 2 <b>NT$4,000</b>
-          <span class="sm">等於上 12 堂，平均一堂 NT$333</span></div>
-      </div>
-      <a href="pricing.html">價目表</a>
-    </div>
-
-    <!-- ☢️ 已綁定的人不需要這一段（render() 會把它藏起來）——
-         它是給還沒綁定的人看的，留著只是把課表往下推。 -->
-    <div class="rt" id="rtBox">
-      <span class="rt-ico">i</span>
-      <span class="rt-txt"><span id="rtNote">第一次使用要先<b>綁定手機和姓名</b>（就是你在櫃檯登記的那組），
-        綁定之後才看得到自己的堂數，也才能訂課。</span></span>
-    </div>
-
-    <div class="days" id="days"></div>
-    <div id="list"><div class="skel"></div><div class="skel"></div></div>
-  </div>
-
-  <div id="vM" style="display:none"><div id="myList"></div></div>
 
   <div class="foot">
     每班上限 10 人。額滿仍可報名，現場座位請與教練確認。<br>
@@ -522,6 +515,15 @@
   }
 
   const isBound = () => !!(window.FFF_AUTH && window.FFF_AUTH.state === 'bound');
+
+  // 課表上的「先綁定」按鈕 → 捲到頁面下方那張綁定卡，並把游標放進手機欄。
+  function jumpToBind(){
+    const box = document.getElementById('bindBox');
+    if (!box || box.hidden){ toast('請在 LINE 裡開啟這一頁', true); return; }
+    box.scrollIntoView({ behavior:'smooth', block:'center' });
+    const ph = document.getElementById('bdPhone');
+    if (ph) setTimeout(() => ph.focus({ preventScroll:true }), 420);
+  }
   const bookedSet = () => new Set(
     myBookings.filter(b => b.status === 'booked').map(b => b.session_id));
 
@@ -793,10 +795,17 @@
         //    unbound  = 在 LINE 裡但還沒綁手機（要他往上填那張卡）
         //    error    = 辨識失敗（不是他的錯，叫他重開）
         const st = (window.FFF_AUTH && window.FFF_AUTH.state) || 'browsing';
-        const msg = st === 'unbound' ? '請先綁定手機才能訂課'
-                  : st === 'error'   ? '身分辨識失敗，請重開一次'
-                  :                    '在 LINE 裡開啟才能訂課';
-        btn = '<button class="btn btn-1" disabled>' + msg + '</button>';
+        if (st === 'unbound'){
+          // ☢️ 這顆【不要】disabled。綁定卡已經移到課表下面，
+          //    disabled 的按鈕按不動，客人就沒有路走到那張卡。
+          //    按下去捲過去 —— 整張課表因此都變成「去綁定」的入口。
+          btn = '<button class="btn btn-1" data-bind="1">先綁定手機才能訂課 ' +
+                '<span class="ar">›</span></button>';
+        } else {
+          const msg = st === 'error' ? '身分辨識失敗，請重開一次'
+                                     : '在 LINE 裡開啟才能訂課';
+          btn = '<button class="btn btn-1" disabled>' + msg + '</button>';
+        }
       } else {
         btn = '<button class="btn btn-1" data-s="' + esc(r.session_id) +
               '" data-full="' + (full ? '1' : '') + '">立即預約</button>';
@@ -832,6 +841,8 @@
 
     el.querySelectorAll('[data-s]').forEach(b =>
       b.onclick = () => doBook(b.dataset.s, b, b.dataset.full === '1'));
+
+    el.querySelectorAll('[data-bind]').forEach(b => b.onclick = jumpToBind);
 
     // 課表上直接取消：先找出這堂課對應的那一筆預約
     el.querySelectorAll('[data-cancel-s]').forEach(b => b.onclick = () => {
@@ -909,13 +920,7 @@
     set('sOpen',  curDate ? (byDate[curDate] || []).filter(isOpen).length : 0);
   }
 
-  // 綁定之後那張說明卡就沒有用了 —— 藏起來，讓課表往上移一格。
-  function renderHint(){
-    const box = document.getElementById('rtBox');
-    if (box) box.hidden = isBound();
-  }
-
-  const render = () => { renderDays(); renderList(); renderStats(); renderMine(); renderHint(); };
+  const render = () => { renderDays(); renderList(); renderStats(); renderMine(); };
 
   /* ── 上下分頁切換（維持原本行為） ─────────────────────────── */
   function showTab(which){
