@@ -338,6 +338,29 @@
     border-radius:var(--r-sm);padding:8px 12px}
   .mb-x:disabled{color:var(--faint);border-color:var(--line);cursor:default}
   .mb-s{flex:0 0 auto;font-size:.68rem;font-weight:700;color:var(--faint)}
+  /* ── 第 44 步：週課表 ──────────────────────────────────────
+     ☢️ 刻意【不做】七欄表格。手機寬 430px 除以 7 = 每欄 61px，
+        中文課名在那個寬度會變成一團看不清的小字 ——
+        跟圖文選單 v1 是同一個錯。海報能用是因為它可以雙指放大。 */
+  .wk-note{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);
+    padding:11px 13px;font-size:.72rem;line-height:1.8;color:var(--dim);margin-bottom:16px}
+  .wk-note b{color:var(--ink)}
+  .wk-d{display:flex;align-items:center;gap:9px;margin:18px 0 8px}
+  .wk-d:first-child{margin-top:0}
+  .wk-d i{width:4px;height:14px;border-radius:1px;transform:skewX(-22deg);background:var(--blue);flex:0 0 auto}
+  .wk-d b{font-size:.92rem;font-weight:900;letter-spacing:.06em}
+  .wk-d span{margin-left:auto;font-size:.67rem;color:var(--faint)}
+  .wk-r{display:flex;align-items:center;gap:12px;background:var(--surface);
+    border:1px solid var(--line);border-left:4px solid var(--line-2);
+    border-radius:var(--r-sm);padding:11px 13px;margin-bottom:7px}
+  .wk-r.beg{border-left-color:var(--beg)}
+  .wk-r.int{border-left-color:var(--int)}
+  .wk-r.adv{border-left-color:var(--adv)}
+  .wk-t{flex:0 0 52px;font-family:'JetBrains Mono',monospace;font-size:.92rem;
+    font-weight:700;color:var(--ink);letter-spacing:-.02em}
+  .wk-i{flex:1;min-width:0}
+  .wk-n{font-size:.88rem;font-weight:700;color:var(--ink)}
+  .wk-m{margin-top:3px;font-size:.68rem;color:var(--dim)}
 </style>
 </head>
 <body>
@@ -356,6 +379,7 @@
   </div>
   <div class="tabs">
     <button class="tab on" data-tab="s">課表</button>
+    <button class="tab" data-tab="w">週課表</button>
     <button class="tab" data-tab="m">我的預約 <span id="mCount"></span></button>
   </div>
 </header>
@@ -380,6 +404,8 @@
     <div class="days" id="days"></div>
     <div id="list"><div class="skel"></div><div class="skel"></div></div>
   </div>
+
+  <div id="vW" style="display:none"><div id="weekList"></div></div>
 
   <div id="vM" style="display:none"><div id="myList"></div></div>
 
@@ -927,6 +953,62 @@
       b.onclick = () => doCancel(b.dataset.cancelId, b));
   }
 
+  /* ── 週課表 ───────────────────────────────────────────────── */
+  // ☢️ 這裡【不再查一次資料庫】—— 用的是課表已經抓下來的同一份 all。
+  //    多一次查詢就多一個會壞的地方，而且這兩份資料一定要一致。
+  const WD_FULL = ['週日','週一','週二','週三','週四','週五','週六'];
+
+  function renderWeek(){
+    const el = document.getElementById('weekList');
+    if (!el) return;
+
+    if (state !== 'ok'){
+      el.innerHTML = '<div class="empty"><div class="h">課表讀不到</div>' +
+                     '請先回「課表」分頁看錯誤訊息</div>';
+      return;
+    }
+
+    // 去重：同一個星期幾、同一個時間、同一堂課，只留一列。
+    // 未來 14 天裡每種課會出現兩次，不去重就會看到重複的。
+    const seen = new Map();
+    all.forEach(r => {
+      const p = String(r.session_date).split('-').map(Number);
+      const w = new Date(p[0], p[1]-1, p[2]).getDay();
+      const key = w + '|' + hhmm(r.start_time) + '|' + r.title + '|' + (r.coach_name || '');
+      if (!seen.has(key)) seen.set(key, { w:w, r:r });
+    });
+
+    // 週一開始排（星期日的 getDay() 是 0，要排到最後）
+    const byW = {};
+    seen.forEach(v => { (byW[v.w] = byW[v.w] || []).push(v.r); });
+    const order = [1,2,3,4,5,6,0];
+
+    let html = '<div class="wk-note">這是<b>每週固定開課的時間</b>。' +
+               '想知道某一天實際開不開、還剩幾個位子、或是要訂課，' +
+               '請看「<b>課表</b>」分頁。</div>';
+    let any = false;
+
+    order.forEach(w => {
+      const it = (byW[w] || []).sort((a,b) => hhmm(a.start_time) < hhmm(b.start_time) ? -1 : 1);
+      if (!it.length) return;
+      any = true;
+      html += '<div class="wk-d"><i></i><b>' + WD_FULL[w] + '</b>' +
+              '<span>' + it.length + ' 堂</span></div>';
+      it.forEach(r => {
+        const lv = LV[r.level] ? r.level : '';
+        html += '<div class="wk-r ' + lv + '">' +
+          '<div class="wk-t">' + esc(hhmm(r.start_time)) + '</div>' +
+          '<div class="wk-i"><div class="wk-n">' + esc(r.title) + '</div>' +
+            '<div class="wk-m">' + (lv ? LV[lv] + '　·　' : '') +
+              esc(r.coach_name || '教練待定') + '　·　' +
+              esc(r.duration_min || 60) + ' 分鐘</div></div></div>';
+      });
+    });
+
+    el.innerHTML = any ? html
+      : '<div class="empty"><div class="h">還沒有排定的課</div>排程每天半夜會往前補到未來 14 天</div>';
+  }
+
   /* ── 上方統計 ─────────────────────────────────────────────── */
   function renderStats(){
     const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
@@ -936,13 +1018,14 @@
     set('sOpen',  curDate ? (byDate[curDate] || []).filter(isOpen).length : 0);
   }
 
-  const render = () => { renderDays(); renderList(); renderStats(); renderMine(); };
+  const render = () => { renderDays(); renderList(); renderStats(); renderMine(); renderWeek(); };
 
   /* ── 上下分頁切換（維持原本行為） ─────────────────────────── */
   function showTab(which){
     document.querySelectorAll('.tab').forEach(x =>
       x.classList.toggle('on', x.dataset.tab === which));
     document.getElementById('vS').style.display = which === 's' ? 'block' : 'none';
+    document.getElementById('vW').style.display = which === 'w' ? 'block' : 'none';
     document.getElementById('vM').style.display = which === 'm' ? 'block' : 'none';
   }
   document.querySelectorAll('.tab').forEach(b => b.onclick = () => showTab(b.dataset.tab));
@@ -951,6 +1034,7 @@
   //   https://liff.line.me/2011063116-QOxXN30h/GT-booking.html?tab=m
   // ☢️ LIFF 會把問號後面的東西原封不動帶過來，所以這樣行得通。
   if (/[?&]tab=m\b/.test(location.search)) showTab('m');
+  if (/[?&]tab=w\b/.test(location.search)) showTab('w');
 
   load();
 })();
