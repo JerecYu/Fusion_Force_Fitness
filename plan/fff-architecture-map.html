@@ -564,9 +564,15 @@
     </div>
     <p class="cap">
       <b>怎麼讀這張圖：</b>後台（左，實心綠）＝已完工。舞台（中）上兩位演員都在演了：官網正在上演，預約頁已經接上電、讀得到真實課表。
-      中間那道管線<b>上半綠色實線＝「讀」已經通了</b>（第二幕做的），<b>下半灰色虛線＝「寫」還沒通</b> ——
-      要先蓋好左邊那個「驗票窗口」（第 31 步的 Edge Function），客人才能真的訂課。
-      右邊的觀眾席已經有座位，但大門（LINE）整層還是灰色斜線＝尚未動工。
+      ☢️ <b>這張圖畫的是 2026-08-08（第二幕）的狀態，圖形本身還沒重畫。</b>
+      下面這段是 <b>2026-08-16 切換日之後的現況</b>，以文字為準：<br>
+      <b>「寫」已經通了</b> —— 第 31 步的驗票窗口（Edge Function）蓋好了，
+      第 32 步接上手機綁定，第 33 步打開訂課與取消，第 34 步讓私人課能送需求，
+      第 38～39 步讓六位教練用 LINE 登入並在現場點名核銷，第 40 步把鐘點費算了出來。<br>
+      <b>大門（LINE）也不再是灰色</b> —— 圖文選單六宮格在 2026-08-16 17:00 啟用，
+      舊系統同日退場（設唯讀保留三個月）。<br>
+      <b>還是灰色的：</b>PT／PGT 的線上預約與帳務（走 L2「教練放時段、客人挑」，見附錄四）、
+      RT 場租、課前提醒推播。
       橘色的前台櫃檯畫在觀眾席旁邊，代表它<b>不會被自動化取代</b>，那是刻意的設計。<br>
       <b>紅色定位釘會自己跑</b> —— 它釘在你目前那一幕所在的區塊，資料一改就跟著移。
     </p>
@@ -692,7 +698,7 @@
             <b>✅ 第 19～20 步做完的：</b>
             <ul>
               <li><code>GT-booking.html</code>：候補整套移除；額滿改成「可報但先提醒」；取消的課轉灰變「本日未開課」；日期分頁改成真實日期</li>
-              <li>訂課按鈕停用，腳本第一行 <code>BOOKING_OPEN = false</code> —— <b>第 33 步才打開</b></li>
+              <li>訂課按鈕停用 —— 當時靠腳本第一行的 <code>BOOKING_OPEN</code> 旗標。<b>第 33 步把它拿掉了</b>，改成資料庫裡的一列 <code>app_settings.live</code>，RLS、排程、前端三邊都讀它。<b>2026-08-16 17:00 那一列被改成 true，系統正式上線。</b></li>
             </ul>
             <b>⬜ 還沒做的：</b>
             <ul>
@@ -703,12 +709,14 @@
         </div>
 
         <div class="gap">
-          <div class="ttl"><span class="minipin"></span><b>這條線接了一半</b><span>下一個分水嶺 · 第 31 步</span></div>
-          <p><b>「讀」通了</b>（第二幕，2026-08-08）—— 舞台上的預約頁現在直接讀後台的 <code>public_schedule</code>，
-             改一筆資料網頁就跟著變。風險 1 也在這一刻解除了。<br>
-             <b>「寫」還沒通。</b>客人要能真的訂課，得先蓋好後台那個<b>驗票窗口</b>（Edge Function）——
-             因為<b>沒辦法確認「你是誰」，就沒辦法讓你訂「屬於你的」課</b>。那是第 31 步，整個專案技術上最關鍵的一步。</p>
-          <div class="broken">舞台<i></i>讀 ✓　寫 ✕<i></i>後台</div>
+          <div class="ttl"><span class="minipin"></span><b>這條線已經全通了</b><span>2026-08-16 切換日</span></div>
+          <p><b>「讀」通了</b>（第二幕，2026-08-08）—— 預約頁直接讀後台的 <code>public_schedule</code>。<br>
+             <b>「寫」也通了</b>（第 31～33 步）—— 驗票窗口（Edge Function）驗 LINE 憑證換 Supabase session，
+             手機綁定把人對上名單，RLS 決定他能訂哪一堂。
+             <b>沒辦法確認「你是誰」就沒辦法讓你訂「屬於你的」課</b> —— 那道題解掉了。<br>
+             <b>2026-08-16 17:00 正式上線</b>：82 位客人、561 堂的餘額逐筆搬過來，
+             用指紋比對確認兩邊完全一致（<code>e89ebf8c…</code>）。舊系統同日退場。</p>
+          <div class="broken" style="background:#E4F0EA;border-color:#B9D8C8;color:#2F6B54">舞台<i></i>讀 ✓　寫 ✓<i></i>後台</div>
         </div>
 
         <div class="cell wide"><b>Supabase — 後台道具間＋名冊室<span class="st done">已完工</span></b><small>東京機房 · Free 方案 · 24 小時有人值班。</small></div>
@@ -933,28 +941,6 @@
 <script>
 (function () {
   const R = window.FFF_ROADMAP, P = window.FFF_PROGRESS;
-
-  // ── 找不到資料檔的話，給看得懂的提示，不要丟原始 JS 錯誤 ──────────
-  //    最常見的原因：只單獨打開這一個 HTML（例如在聊天室的預覽視窗裡），
-  //    旁邊沒有 roadmap-data.js。三個檔案必須放在同一個資料夾。
-  if (!R || !P) {
-    const box = document.createElement('div');
-    box.setAttribute('style',
-      'max-width:760px;margin:26px auto;padding:18px 20px;border:2px solid #D8342B;' +
-      'border-radius:3px;background:#FDECEA;color:#A4211A;line-height:1.85;' +
-      'font-family:"Noto Sans TC",system-ui,sans-serif;font-size:14px');
-    box.innerHTML =
-      '<b style="font-size:16px">找不到 <code>roadmap-data.js</code></b><br><br>' +
-      '這一頁的所有數字都是從旁邊那支資料檔算出來的，單獨打開會是空白的。<br><br>' +
-      '<b>兩個常見原因：</b><br>' +
-      '① 你在聊天室或線上預覽視窗開這個檔 —— 那裡只有單一檔案，看不到隔壁的資料檔。<br>' +
-      '② 三個檔案沒放在同一個資料夾。<br><br>' +
-      '<b>正確做法：</b>把 <code>roadmap-data.js</code>、<code>fff-roadmap-steps.html</code>、' +
-      '<code>fff-architecture-map.html</code> 放在同一個 <code>plan/</code> 資料夾裡，直接雙擊 HTML 開啟。';
-    document.body.prepend(box);
-    document.querySelectorAll('#here-co,#here-line').forEach(el => el.textContent = '');
-    return;
-  }
   const act = R.acts[P.currentActIndex];
   const cur = P.current, prev = P.lastDone, next = P.afterCurrent;
   const actLeft = act.steps.filter(s => !s.done).length;

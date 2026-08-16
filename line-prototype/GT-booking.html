@@ -403,8 +403,8 @@
     <div class="rt">
       <span class="rt-ico">i</span>
       <span class="rt-txt"><b>這裡的課表是即時從資料庫讀出來的</b>，不是寫死在網頁裡。<br>
-        <span id="rtNote">線上訂課<b>尚未開放</b> —— 功能都做好了，
-        等舊系統交接完成的那一天才會打開。</span></span>
+        <span id="rtNote">第一次使用要先<b>綁定手機和姓名</b>（就是你在櫃檯登記的那組），
+        綁定之後才看得到自己的堂數，也才能訂課。</span></span>
     </div>
 
     <div class="days" id="days"></div>
@@ -763,7 +763,15 @@
       } else if (!LIVE){
         btn = '<button class="btn btn-1" disabled>線上訂課尚未開放</button>';
       } else if (!isBound()){
-        btn = '<button class="btn btn-1" disabled>在 LINE 裡開啟才能訂課</button>';
+        // ☢️ 未綁定有三種情況，講錯話會讓客人以為自己做錯事：
+        //    browsing = 不在 LINE 裡（真的要他從 LINE 開）
+        //    unbound  = 在 LINE 裡但還沒綁手機（要他往上填那張卡）
+        //    error    = 辨識失敗（不是他的錯，叫他重開）
+        const st = (window.FFF_AUTH && window.FFF_AUTH.state) || 'browsing';
+        const msg = st === 'unbound' ? '請先綁定手機才能訂課'
+                  : st === 'error'   ? '身分辨識失敗，請重開一次'
+                  :                    '在 LINE 裡開啟才能訂課';
+        btn = '<button class="btn btn-1" disabled>' + msg + '</button>';
       } else {
         btn = '<button class="btn btn-1" data-s="' + esc(r.session_id) +
               '" data-full="' + (full ? '1' : '') + '">立即預約</button>';
