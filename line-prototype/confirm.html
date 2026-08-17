@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>確認到課 · 諧動空間</title>
+
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  confirm.html — 學員掃碼確認到課（第 46 步 · 2026-08-17）
+
+  客人不會自己開這一頁。他是在教練舉著手機的時候，
+  用 LINE 掃了螢幕上的 QR，被帶到這裡的。
+
+  網址長這樣（教練那邊產生的）：
+    https://liff.line.me/2011063116-QOxXN30h/confirm.html?t=<憑證>
+
+  ☢️ 一定要是 LIFF 網址。掃到 github.io 的原始網址的話，
+     客人的瀏覽器裡沒有 LINE 身分，my_customer_id() 會是 null，
+     確認一定失敗 —— 而且失敗得莫名其妙。
+
+  ☢️ 這一頁【不會扣課、不會改出席】。
+     它只寫 bookings.confirmed_at ——「我本人當時在現場」這一件事。
+     取代的是舊流程裡「教練和學員一起簽在紙上」那個動作。
+
+  ☢️ 憑證 60 秒過期，而且【沒有任何 select 政策】——
+     沒有人列得出憑證清單，只能靠掃到的那一串去換。
+     它證明的是「掃的人當時看得到教練的螢幕」，不是「他真的來上課」。
+     這不是百分之百，但鑽漏洞的成本已經高到不值得。
+  ═══════════════════════════════════════════════════════════════════
+-->
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --ink:#0E2A3B; --ink2:#1C4257; --blue:#2E86AB; --teal:#6FBAC9;
+    --bg:#F4F8FA; --surface:#FFFFFF; --surface2:#EDF4F7;
+    --line:#DCE8EE; --dim:#587589; --faint:#93AEBD;
+    --ok:#2F6B54; --ok-bg:#E4F0EA; --ok-line:#B9D8C8;
+    --warn:#B4661F; --warn-bg:#FBEFE2; --warn-line:#EBC4A0;
+    --err:#A4211A; --err-bg:#FBE9E7; --err-line:#F3C9C5;
+  }
+  html,body{min-height:100%}
+  body{background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    line-height:1.7;-webkit-text-size-adjust:100%;
+    display:flex;align-items:center;justify-content:center;padding:26px 18px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;
+    padding:30px 22px 24px;width:100%;max-width:360px;text-align:center;
+    box-shadow:0 10px 34px rgba(14,42,59,.07)}
+
+  .mark{width:66px;height:66px;border-radius:50%;margin:0 auto 16px;
+    display:flex;align-items:center;justify-content:center;font-size:30px;line-height:1}
+  .s-wait .mark{background:var(--surface2);color:var(--dim)}
+  .s-ok   .mark{background:var(--ok-bg);  color:var(--ok);  border:1px solid var(--ok-line)}
+  .s-warn .mark{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+  .s-err  .mark{background:var(--err-bg); color:var(--err); border:1px solid var(--err-line)}
+
+  h1{font-size:21px;font-weight:800;letter-spacing:.02em;line-height:1.4}
+  .s-ok  h1{color:var(--ok)}
+  .s-err h1{color:var(--err)}
+  .sub{font-size:13.5px;color:var(--dim);margin-top:9px}
+
+  .what{margin-top:17px;background:var(--surface2);border-radius:13px;padding:13px 14px;
+    font-size:13.5px;font-weight:700;color:var(--ink2);line-height:1.6}
+  .what .w2{display:block;font-size:12px;font-weight:500;color:var(--dim);margin-top:3px}
+
+  /* ☢️ 這句話一定要在畫面上，而且不能小到看不見。
+     客人最怕的是「我按了這個會不會被扣課」。 */
+  .safe{margin-top:14px;font-size:12px;color:var(--dim);line-height:1.7;
+    border-top:1px dashed var(--line);padding-top:12px}
+  .safe b{color:var(--ink2)}
+
+  .btn{display:block;margin-top:16px;width:100%;background:var(--ink);color:#fff;
+    border:0;border-radius:12px;padding:13px;font-family:inherit;font-size:14px;
+    font-weight:700;letter-spacing:.04em;text-decoration:none;cursor:pointer}
+  .btn.alt{background:var(--surface2);color:var(--ink2)}
+  .code{font-size:11px;color:var(--faint);margin-top:12px;letter-spacing:.05em}
+</style>
+</head>
+<body>
+
+<div class="card s-wait" id="card">
+  <div class="mark" id="mark">◌</div>
+  <h1 id="h1">確認中…</h1>
+  <div class="sub" id="sub">正在跟系統核對</div>
+  <div id="extra"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="liff-auth.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  var elCard = document.getElementById('card');
+  var elMark = document.getElementById('mark');
+  var elH1   = document.getElementById('h1');
+  var elSub  = document.getElementById('sub');
+  var elEx   = document.getElementById('extra');
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function paint(state, icon, title, sub, extra) {
+    elCard.className = 'card ' + state;
+    elMark.textContent = icon;
+    elH1.textContent = title;
+    elSub.textContent = sub || '';
+    elEx.innerHTML = extra || '';
+  }
+
+  var SAFE = '<div class="safe">這個動作<b>不會扣你的堂數</b>，也不會改變出席紀錄。<br>' +
+             '它只是留下「你本人當時在現場」的紀錄，<br>取代以前在紙上簽名那一步。</div>';
+
+  var BACK = '<a class="btn alt" href="GT-booking.html?tab=m">看我的預約　›</a>';
+
+  // ☢️ 憑證不能從網址以外的地方拿。沒有 t 就是沒有掃到碼。
+  var token = (function () {
+    var m = /[?&]t=([^&]+)/.exec(location.search);
+    return m ? decodeURIComponent(m[1]) : '';
+  })();
+
+  function run() {
+    if (!token) {
+      paint('s-err', '!', '沒有讀到確認碼',
+            '請直接掃教練手機上的那個碼，不要複製網址。', BACK);
+      return;
+    }
+    if (!window.FFF_AUTH || !window.FFF_AUTH.ready) {
+      paint('s-err', '!', '身分程式沒載進來', 'liff-auth.js 沒跑起來', '');
+      return;
+    }
+
+    window.FFF_AUTH.ready.then(function () {
+      var st = window.FFF_AUTH.state;
+
+      // ☢️ 這三種狀態要分開講。合成一句「失敗」的話，
+      //    客人不知道自己該做什麼 —— 而他正站在教練面前等著。
+      if (st === 'browsing') {
+        paint('s-warn', '○', '要從 LINE 裡面掃',
+              '請用 LINE 的掃描功能掃教練的碼，不要用相機或其他 App。', '');
+        return;
+      }
+      if (st === 'unbound') {
+        paint('s-warn', '●', '你還沒綁定手機',
+              '先綁定才知道你是哪一位學員。綁完再掃一次就好。',
+              '<a class="btn" href="GT-booking.html">去綁定手機　›</a>');
+        return;
+      }
+      if (st === 'error') {
+        paint('s-err', '✕', '身分辨識失敗',
+              window.FFF_AUTH.error || '請關掉重開，或直接告訴教練。', '');
+        return;
+      }
+      if (!window.fffDB) {
+        paint('s-err', '✕', '連不上系統', '請告訴教練，他可以幫你代確認。', '');
+        return;
+      }
+
+      window.fffDB.rpc('confirm_attendance', { p_token: token })
+        .then(function (r) {
+          if (r.error) throw new Error(r.error.message);
+          var d = r.data || {};
+
+          if (d.ok) {
+            paint('s-ok', '✓', '確認完成',
+                  '謝謝，紀錄已經留下來了。',
+                  '<div class="what">' + esc(d.title || '') +
+                  '<span class="w2">' + esc(d.when || '') + '</span></div>' +
+                  SAFE + BACK);
+            return;
+          }
+
+          // ☢️ 三種失敗要給三種不同的下一步，不能都寫「失敗」。
+          if (d.why === 'expired') {
+            paint('s-warn', '↻', '這個碼過期了',
+                  '碼每 60 秒換一次。請教練的畫面重新產生，再掃一次。', BACK);
+          } else if (d.why === 'not_bound') {
+            paint('s-warn', '●', '你還沒綁定手機',
+                  '先綁定才知道你是哪一位學員。',
+                  '<a class="btn" href="GT-booking.html">去綁定手機　›</a>');
+          } else if (d.why === 'no_booking') {
+            paint('s-warn', '?', '你沒有報名這一堂',
+                  '可能是掃到別堂課的碼，或是還沒報名。請告訴教練。', BACK);
+          } else {
+            paint('s-err', '✕', '確認沒有成功',
+                  '請告訴教練，他可以幫你代確認。', BACK);
+          }
+        })
+        .catch(function (e) {
+          // ☢️ 不要吞掉錯誤（規則 14）。客人看得到代碼，教練才查得下去。
+          paint('s-err', '✕', '確認沒有成功',
+                '請告訴教練，他可以幫你代確認。',
+                BACK + '<div class="code">' + esc(String(e.message || e)) + '</div>');
+        });
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+})();
+</script>
+</body>
+</html>

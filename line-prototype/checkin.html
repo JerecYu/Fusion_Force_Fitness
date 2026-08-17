@@ -169,6 +169,44 @@
      這行字的用途就是讓人在按之前知道錢會怎麼動。 */
   .b .hint{display:block;font-size:.68rem;font-weight:500;opacity:.82;margin-top:2px;
     letter-spacing:.02em}
+  /* ══ 出示確認碼 ═══════════════════════════════════════════ */
+  .qrbtn{width:100%;display:flex;align-items:center;gap:11px;margin-top:12px;
+    background:var(--ink);color:#fff;border:0;border-radius:13px;padding:12px 14px;
+    font-family:inherit;text-align:left;cursor:pointer}
+  .qri{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.13);
+    display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--teal)}
+  .qrl{flex:1;min-width:0}
+  .qrl b{display:block;font-size:14px;font-weight:800;letter-spacing:.03em}
+  .qrl i{display:block;font-style:normal;font-size:11px;color:#A9C6D4;margin-top:2px}
+  .qrn{flex:0 0 auto;font-size:12px;font-weight:700;color:var(--teal)}
+
+  .qrov{position:fixed;inset:0;z-index:60;background:rgba(14,42,59,.72);
+    display:flex;align-items:center;justify-content:center;padding:22px}
+  .qrcard{background:#fff;border-radius:20px;padding:18px 18px 14px;width:100%;max-width:340px;
+    text-align:center;box-shadow:0 18px 50px rgba(14,42,59,.3)}
+  .qrhd{font-size:15px;font-weight:800;color:var(--ink)}
+  .qrsub{font-size:12px;color:var(--dim);margin-top:5px;line-height:1.7}
+  .qrc{display:inline-block;margin-top:3px;font-size:12px;color:var(--ink2)}
+  /* ☢️ QR 底下一定要是純白，而且要有靜區。
+     壓在有底色的卡片上、或貼著邊，掃描器會抓不到定位圖案。 */
+  .qrbox{margin:11px auto 0;width:238px;height:238px;background:#fff;
+    display:flex;align-items:center;justify-content:center}
+  .qrbox svg{display:block}
+  .qrwait{font-size:12.5px;color:var(--dim);line-height:1.8;padding:0 8px}
+  .qrwait.bad{color:var(--err)}
+  .qrleft{font-size:11.5px;color:var(--faint);margin-top:8px;min-height:16px;letter-spacing:.04em}
+  .qrclose{margin-top:11px;width:100%;background:var(--surface2);color:var(--ink2);border:0;
+    border-radius:11px;padding:11px;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
+
+  /* ══ 每個人身上的確認狀態 ═══════════════════════════════════ */
+  .cf{margin-top:7px;display:flex;align-items:center;gap:8px;font-size:11.5px;
+    border-top:1px dashed var(--line);padding-top:7px}
+  .cf.qr{color:#2F6B54;font-weight:700}
+  .cf.by{color:var(--dim);font-weight:600}
+  .cf.none{color:var(--faint)}
+  .cfb{margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:8px;
+    padding:5px 11px;font-family:inherit;font-size:11.5px;font-weight:700;color:var(--ink2);
+    cursor:pointer}
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
     background:var(--ink);color:#fff;font-size:14px;font-weight:700;
     padding:12px 18px;border-radius:3px;max-width:88%;text-align:center;
@@ -199,10 +237,328 @@
   <div id="rosterView" hidden></div>
 </div>
 
+<!-- 出示確認碼的蓋板。☢️ 預設 hidden，只有教練按了才會出現。 -->
+<div id="qrOv" class="qrov" hidden>
+  <div class="qrcard">
+    <div class="qrhd" id="qrTitle"></div>
+    <div class="qrsub">請學員用<b>自己的手機</b>掃這個碼<br>
+      <span class="qrc">已確認 <b id="qrCount">0 / 0</b></span></div>
+    <div class="qrbox" id="qrBox"></div>
+    <div class="qrleft" id="qrLeft"></div>
+    <button type="button" class="qrclose" id="qrClose">關閉</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="liff-auth.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  qr.js — 最小的 QR 產生器（只做 8-bit byte 模式、糾錯等級 M）
+//
+//  專案：FFF 預約系統（fff-platform）· 路線圖第 46 步 · 2026-08-17
+//
+//  ☢️ 為什麼要自己寫，不用現成的函式庫？
+//     GitHub Pages 上的頁面可以載 CDN，但這一頁是【教練在場邊、
+//     可能訊號很差的時候】要開的。多一個外部相依就多一個失敗點，
+//     而那個失敗點會剛好在最忙的三十秒發生。
+//     整支壓縮後大約 5 KB，直接內嵌進 checkin.html。
+//
+//  ☢️ 這支【只】把一段文字變成黑白格子。它不知道 token 是什麼、
+//     不連任何網路、不碰資料庫。
+//
+//  範圍：版本 1～10、糾錯等級 M（可容忍約 15% 髒污）。
+//        byte 模式最多 213 個位元組 —— 我們的網址是 88 個。
+// ═══════════════════════════════════════════════════════════════
+
+(function (root) {
+  'use strict';
+
+  // ── GF(256)：Reed-Solomon 用的乘法表 ─────────────────────────
+  var EXP = new Array(512), LOG = new Array(256);
+  (function () {
+    var x = 1;
+    for (var i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 0x100) x ^= 0x11D; }
+    for (var j = 255; j < 512; j++) EXP[j] = EXP[j - 255];
+  })();
+  function gmul(a, b) { return (a === 0 || b === 0) ? 0 : EXP[LOG[a] + LOG[b]]; }
+
+  function genPoly(n) {
+    var g = [1];
+    for (var i = 0; i < n; i++) {
+      var ng = new Array(g.length + 1);
+      for (var k = 0; k < ng.length; k++) ng[k] = 0;
+      for (var j = 0; j < g.length; j++) {
+        ng[j]     ^= g[j];                  // × x
+        ng[j + 1] ^= gmul(g[j], EXP[i]);    // × α^i
+      }
+      g = ng;
+    }
+    return g;
+  }
+
+  function ecc(data, ecLen) {
+    var g = genPoly(ecLen), res = data.slice(), i, j;
+    for (i = 0; i < ecLen; i++) res.push(0);
+    for (i = 0; i < data.length; i++) {
+      var c = res[i];
+      if (c !== 0) for (j = 0; j < g.length; j++) res[i + j] ^= gmul(g[j], c);
+    }
+    return res.slice(data.length);
+  }
+
+  // ── 版本表（糾錯等級 M）──────────────────────────────────────
+  //  [ 每塊的糾錯碼字數, 第一組塊數, 第一組每塊資料碼字, 第二組塊數, 第二組每塊資料碼字 ]
+  //  ☢️ 這張表照規範抄，不能自己推。抄錯的話多數情況還是掃得出來
+  //     （因為糾錯很強），只有某些長度會壞 —— 那種錯最難查。
+  var EC_M = {
+    1:[10,1,16,0,0],   2:[16,1,28,0,0],   3:[26,1,44,0,0],   4:[18,2,32,0,0],
+    5:[24,2,43,0,0],   6:[16,4,27,0,0],   7:[18,4,31,0,0],   8:[22,2,38,2,39],
+    9:[22,3,36,2,37],  10:[26,4,43,1,44]
+  };
+  // byte 模式在等級 M 下，每個版本裝得下幾個位元組
+  var CAP_M = {1:14,2:26,3:42,4:62,5:84,6:106,7:122,8:152,9:180,10:213};
+  // 校正圖案的中心座標
+  var ALIGN = {
+    1:[], 2:[6,18], 3:[6,22], 4:[6,26], 5:[6,30],
+    6:[6,34], 7:[6,22,38], 8:[6,24,42], 9:[6,26,46], 10:[6,28,50]
+  };
+
+  function utf8(str) {
+    var out = [], i, c;
+    for (i = 0; i < str.length; i++) {
+      c = str.charCodeAt(i);
+      if (c < 0x80) out.push(c);
+      else if (c < 0x800) { out.push(0xC0 | (c >> 6), 0x80 | (c & 63)); }
+      else { out.push(0xE0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63)); }
+    }
+    return out;
+  }
+
+  // ── 主要流程 ────────────────────────────────────────────────
+  function make(text) {
+    var bytes = utf8(text), ver = 0, v;
+    for (v = 1; v <= 10; v++) if (CAP_M[v] >= bytes.length) { ver = v; break; }
+    if (!ver) throw new Error('內容太長，這支只做到版本 10（' + CAP_M[10] + ' 位元組）');
+
+    var spec = EC_M[ver];
+    var ecLen = spec[0], nb1 = spec[1], dc1 = spec[2], nb2 = spec[3], dc2 = spec[4];
+    var totalData = nb1 * dc1 + nb2 * dc2;
+
+    // ① 位元流：模式(0100) + 長度 + 資料
+    var bits = [];
+    function put(val, len) { for (var i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); }
+    put(4, 4);
+    put(bytes.length, ver < 10 ? 8 : 16);   // ☢️ 版本 10 以上長度欄位是 16 位元
+    for (var i = 0; i < bytes.length; i++) put(bytes[i], 8);
+
+    // 終止符最多 4 個 0，然後補到整個位元組
+    var room = totalData * 8 - bits.length;
+    put(0, Math.min(4, room));
+    while (bits.length % 8) bits.push(0);
+
+    var dat = [];
+    for (i = 0; i < bits.length; i += 8) {
+      var b = 0; for (var k = 0; k < 8; k++) b = (b << 1) | bits[i + k];
+      dat.push(b);
+    }
+    var pad = [0xEC, 0x11], p = 0;
+    while (dat.length < totalData) { dat.push(pad[p++ % 2]); }
+
+    // ② 切塊、各自算糾錯碼、交錯排列
+    var blocks = [], ecs = [], off = 0;
+    for (i = 0; i < nb1; i++) { blocks.push(dat.slice(off, off + dc1)); off += dc1; }
+    for (i = 0; i < nb2; i++) { blocks.push(dat.slice(off, off + dc2)); off += dc2; }
+    for (i = 0; i < blocks.length; i++) ecs.push(ecc(blocks[i], ecLen));
+
+    var out = [], maxD = Math.max(dc1, dc2);
+    for (i = 0; i < maxD; i++)
+      for (var j = 0; j < blocks.length; j++)
+        if (i < blocks[j].length) out.push(blocks[j][i]);
+    for (i = 0; i < ecLen; i++)
+      for (j = 0; j < ecs.length; j++) out.push(ecs[j][i]);
+
+    // ③ 鋪版面
+    var size = 17 + 4 * ver;
+    var m = [], res = [];
+    for (i = 0; i < size; i++) {
+      m.push(new Array(size).fill(0));
+      res.push(new Array(size).fill(false));
+    }
+    function set(r, c, val) { m[r][c] = val ? 1 : 0; res[r][c] = true; }
+
+    function finder(r, c) {
+      for (var dr = -1; dr <= 7; dr++) for (var dc = -1; dc <= 7; dc++) {
+        var rr = r + dr, cc = c + dc;
+        if (rr < 0 || cc < 0 || rr >= size || cc >= size) continue;
+        var on = (dr >= 0 && dr <= 6 && (dc === 0 || dc === 6)) ||
+                 (dc >= 0 && dc <= 6 && (dr === 0 || dr === 6)) ||
+                 (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4);
+        set(rr, cc, on);
+      }
+    }
+    finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
+
+    for (i = 8; i < size - 8; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+
+    var ac = ALIGN[ver];
+    for (i = 0; i < ac.length; i++) for (var j2 = 0; j2 < ac.length; j2++) {
+      var r0 = ac[i], c0 = ac[j2];
+      // 跟三個定位圖案重疊的不畫
+      if ((r0 <= 8 && c0 <= 8) || (r0 <= 8 && c0 >= size - 9) || (r0 >= size - 9 && c0 <= 8)) continue;
+      for (var dr2 = -2; dr2 <= 2; dr2++) for (var dc2 = -2; dc2 <= 2; dc2++)
+        set(r0 + dr2, c0 + dc2,
+            Math.max(Math.abs(dr2), Math.abs(dc2)) !== 1);
+    }
+
+    set(size - 8, 8, true);                       // ☢️ 永遠是黑的那一格
+
+    // 保留格式資訊的位置（先佔位，值稍後填）
+    for (i = 0; i <= 8; i++) { if (!res[8][i]) set(8, i, false); if (!res[i][8]) set(i, 8, false); }
+    for (i = 0; i < 8; i++) { if (!res[8][size - 1 - i]) set(8, size - 1 - i, false);
+                              if (!res[size - 1 - i][8]) set(size - 1 - i, 8, false); }
+
+    if (ver >= 7) {
+      // 版本資訊：BCH(18,6)
+      var d = ver << 12;
+      for (i = 0; i < 6; i++) if (d & (1 << (17 - i))) d ^= 0x1F25 << (5 - i);
+      var vinfo = (ver << 12) | d;
+      for (i = 0; i < 18; i++) {
+        var bit = (vinfo >> i) & 1;
+        set(Math.floor(i / 3), size - 11 + (i % 3), bit);
+        set(size - 11 + (i % 3), Math.floor(i / 3), bit);
+      }
+    }
+
+    // ④ 資料往裡填：從右下角開始，每次兩欄，蛇行
+    var idx = 0, bitPos = 0, up = true;
+    for (var col = size - 1; col > 0; col -= 2) {
+      if (col === 6) col--;                       // 第 6 欄是時序圖案，跳過
+      for (var t = 0; t < size; t++) {
+        var row = up ? size - 1 - t : t;
+        for (var s = 0; s < 2; s++) {
+          var cc2 = col - s;
+          if (res[row][cc2]) continue;
+          var bv = 0;
+          if (idx < out.length) bv = (out[idx] >> (7 - bitPos)) & 1;
+          m[row][cc2] = bv;
+          bitPos++;
+          if (bitPos === 8) { bitPos = 0; idx++; }
+        }
+      }
+      up = !up;
+    }
+
+    // ⑤ 八種遮罩全部試一次，挑罰分最低的
+    var MASKS = [
+      function (i, j) { return (i + j) % 2 === 0; },
+      function (i)    { return i % 2 === 0; },
+      function (i, j) { return j % 3 === 0; },
+      function (i, j) { return (i + j) % 3 === 0; },
+      function (i, j) { return (Math.floor(i / 2) + Math.floor(j / 3)) % 2 === 0; },
+      function (i, j) { return (i * j) % 2 + (i * j) % 3 === 0; },
+      function (i, j) { return ((i * j) % 2 + (i * j) % 3) % 2 === 0; },
+      function (i, j) { return ((i + j) % 2 + (i * j) % 3) % 2 === 0; }
+    ];
+
+    var best = null, bestScore = Infinity, bestMask = 0;
+    for (var mk = 0; mk < 8; mk++) {
+      var t2 = m.map(function (r) { return r.slice(); });
+      for (i = 0; i < size; i++) for (j = 0; j < size; j++)
+        if (!res[i][j] && MASKS[mk](i, j)) t2[i][j] ^= 1;
+      putFormat(t2, res, size, mk);
+      var sc = penalty(t2, size);
+      if (sc < bestScore) { bestScore = sc; best = t2; bestMask = mk; }
+    }
+    return { size: size, version: ver, mask: bestMask, modules: best };
+  }
+
+  function putFormat(t, res, size, mask) {
+    // 等級 M = 00，接三位遮罩號碼；BCH(15,5)，最後跟 0x5412 互斥或
+    var data = (0 << 3) | mask, d = data << 10, i;
+    for (i = 0; i < 5; i++) if (d & (1 << (14 - i))) d ^= 0x537 << (4 - i);
+    var f = ((data << 10) | d) ^ 0x5412;
+
+    // ☢️ 這 15 個位元的落點【不是】連續的，中間會跳過時序圖案那一格。
+    //    寫錯的話圖看起來完全正常，只是掃不出來 —— 沒有任何地方會報錯。
+    for (i = 0; i < 15; i++) {
+      var bit = (f >> i) & 1;
+      // 直的那一條：第 8 欄，由上往下
+      if (i < 6)      t[i][8] = bit;
+      else if (i < 8) t[i + 1][8] = bit;
+      else            t[size - 15 + i][8] = bit;
+      // 橫的那一條：第 8 列，由右往左
+      if (i < 8)       t[8][size - 1 - i] = bit;
+      else if (i === 8) t[8][7] = bit;
+      else             t[8][14 - i] = bit;
+    }
+    t[size - 8][8] = 1;
+  }
+
+  function penalty(t, size) {
+    var s = 0, i, j, k, run, dark = 0;
+    // 規則 1：同色連續 5 格以上
+    for (i = 0; i < size; i++) {
+      run = 1;
+      for (j = 1; j < size; j++) {
+        if (t[i][j] === t[i][j - 1]) { run++; } else { if (run >= 5) s += 3 + (run - 5); run = 1; }
+      }
+      if (run >= 5) s += 3 + (run - 5);
+      run = 1;
+      for (j = 1; j < size; j++) {
+        if (t[j][i] === t[j - 1][i]) { run++; } else { if (run >= 5) s += 3 + (run - 5); run = 1; }
+      }
+      if (run >= 5) s += 3 + (run - 5);
+    }
+    // 規則 2：2×2 同色
+    for (i = 0; i < size - 1; i++) for (j = 0; j < size - 1; j++) {
+      var a = t[i][j];
+      if (a === t[i][j + 1] && a === t[i + 1][j] && a === t[i + 1][j + 1]) s += 3;
+    }
+    // 規則 3：1011101 這種假定位圖案
+    var P1 = [1,0,1,1,1,0,1,0,0,0,0], P2 = [0,0,0,0,1,0,1,1,1,0,1];
+    function hit(get, n) {
+      for (var x = 0; x + 11 <= n; x++) {
+        var m1 = true, m2 = true;
+        for (var y = 0; y < 11; y++) {
+          if (get(x + y) !== P1[y]) m1 = false;
+          if (get(x + y) !== P2[y]) m2 = false;
+        }
+        if (m1 || m2) s += 40;
+      }
+    }
+    for (i = 0; i < size; i++) {
+      (function (r) { hit(function (c) { return t[r][c]; }, size); })(i);
+      (function (c) { hit(function (r) { return t[r][c]; }, size); })(i);
+    }
+    // 規則 4：黑白比例偏離一半太多
+    for (i = 0; i < size; i++) for (j = 0; j < size; j++) if (t[i][j]) dark++;
+    var pct = dark * 100 / (size * size);
+    s += Math.floor(Math.abs(pct - 50) / 5) * 10;
+    return s;
+  }
+
+  // ── 畫成 SVG。☢️ 用 SVG 不用 canvas：放大不會糊，
+  //    而且教練的手機有各種螢幕密度，canvas 要自己處理 devicePixelRatio。
+  function svg(text, opt) {
+    opt = opt || {};
+    var q = make(text);
+    var quiet = opt.quiet == null ? 4 : opt.quiet;   // ☢️ 靜區不能省，省了掃不到
+    var n = q.size + quiet * 2;
+    var d = '';
+    for (var i = 0; i < q.size; i++) for (var j = 0; j < q.size; j++)
+      if (q.modules[i][j]) d += 'M' + (j + quiet) + ' ' + (i + quiet) + 'h1v1h-1z';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + n + ' ' + n + '" ' +
+           'shape-rendering="crispEdges" width="100%" height="100%">' +
+           '<rect width="' + n + '" height="' + n + '" fill="#fff"/>' +
+           '<path d="' + d + '" fill="#000"/></svg>';
+  }
+
+  root.FFF_QR = { make: make, svg: svg };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
 
 <script>
 (function () {
@@ -464,6 +820,11 @@
       '<div class="h2">' + esc(s.coach_name || '未指定教練') + '　·　' + (LV[s.level] || s.level) + '</div>' +
       (dead ? '<div class="banner dead">這堂課已經取消，點不了名。<br>如果實際上有上課，請找 Jerec 在後台改課次狀態。</div>' : '') +
       (soon ? '<div class="banner soon">還太早 —— <b>課前 15 分鐘</b>才能開始點名。<br>現在可以先把臨時要來的人加進名單。</div>' : '') +
+      (lock ? '' : '<button type="button" class="qrbtn" id="qrOpen">' +
+        '<span class="qri">▣</span>' +
+        '<span class="qrl"><b>出示確認碼</b>' +
+        '<i>學員用自己的手機掃一下，等於在紙上簽名</i></span>' +
+        '<span class="qrn">' + confCount() + '</span></button>') +
       '</div>';
 
     html += ROSTER.filter(function (p) { return p.booking_status !== 'cancelled'; })
@@ -482,6 +843,13 @@
 
     elRoster.innerHTML = html;
     wireRoster(dead);   // 搜尋框只有「已取消」才關；未來的課可以先加人
+  }
+
+  // 這一堂有幾個人確認過了。分母不含已取消的人。
+  function confCount() {
+    var live = ROSTER.filter(function (p) { return p.booking_status !== 'cancelled'; });
+    var ok   = live.filter(function (p) { return p.confirmed_at; });
+    return ok.length + ' / ' + live.length;
   }
 
   function person(p, lock) {
@@ -506,7 +874,32 @@
       (meta ? '<div class="meta">' + meta + '</div>' : '') +
       btns(p, st, lock) +
       guests(p, st, lock) +
+      confirmRow(p, lock) +
     '</div>';
+  }
+
+  /* ══ 到課共同確認（路線圖第 46 步）══════════════════════════
+     ☢️ 這一整塊【跟扣課完全無關】。
+        客人確認不會扣他的課，不確認也不會擋住核銷。
+        它取代的是舊流程裡「教練和學員一起簽在紙上」那個動作 ——
+        客人手機沒電、忘了帶、當場不會用，課都還是要能結算。
+        做成前提的話，第一次遇到沒電就會癱在現場，然後大家回去用紙。
+     ═══════════════════════════════════════════════════════════ */
+  function confirmRow(p, lock) {
+    if (lock) return '';
+    var id = esc(p.booking_id);
+    if (p.confirmed_at) {
+      // ☢️ qr 和 staff 要看得出差別。
+      //    qr    = 客人拿自己的手機掃了教練螢幕（雙方在場）
+      //    staff = 教練說他來了（單方）—— 帳上可信度比較低，不能長一樣
+      var byQr = p.confirmed_by !== 'staff';
+      return '<div class="cf' + (byQr ? ' qr' : ' by') + '">' +
+             (byQr ? '✓　本人已確認' : '✓　教練代確認') + '</div>';
+    }
+    return '<div class="cf none">' +
+      '<span>還沒確認</span>' +
+      '<button type="button" class="cfb" data-cf="' + id + '">代確認</button>' +
+      '</div>';
   }
 
   // ☢️ 選中的那一顆是【狀態】不是按鈕：打勾、實心、不吃點擊。
@@ -568,6 +961,11 @@
         setGuests(b.getAttribute('data-g'), Number(b.getAttribute('data-n')));
       };
     });
+    Array.prototype.forEach.call(elRoster.querySelectorAll('[data-cf]'), function (b) {
+      b.onclick = function () { proxyConfirm(b.getAttribute('data-cf')); };
+    });
+    var qb = document.getElementById('qrOpen');
+    if (qb) qb.onclick = openQR;
     if (dead) return;
 
     var q = document.getElementById('q');
@@ -579,6 +977,99 @@
       if (v.length < 1) { hits.innerHTML = ''; return; }
       timer = setTimeout(function () { search(v, hits); }, 260);
     };
+  }
+
+  /* ══ 出示確認碼 ════════════════════════════════════════════════
+     ☢️ 憑證 60 秒過期。教練把手機舉著讓大家輪流掃，所以蓋板打開的
+        期間要自己換新的 —— 不換的話第二個人就掃到過期的碼。
+     ☢️ 但不能無限換下去。舉著手機十分鐘沒人掃，代表這張碼已經
+        沒在被使用，繼續發等於一直產生「可以帶回家的空白簽名」。
+     ═══════════════════════════════════════════════════════════ */
+  var QR = { open: false, timer: null, tick: null, left: 0, rounds: 0 };
+  var QR_MAX_ROUNDS = 10;          // 10 次 × 60 秒 = 10 分鐘
+
+  function qrURL(token) {
+    // ☢️ 一定要是 LIFF 網址，不能是 github.io 的原始網址。
+    //    掃到原始網址的話，客人的瀏覽器裡沒有 LINE 身分，
+    //    my_customer_id() 會是 null，確認一定失敗。
+    return 'https://liff.line.me/2011063116-QOxXN30h/confirm.html?t=' + encodeURIComponent(token);
+  }
+
+  function openQR() {
+    if (!CUR) return;
+    QR.open = true; QR.rounds = 0;
+    var ov = document.getElementById('qrOv');
+    ov.hidden = false;
+    document.getElementById('qrTitle').textContent =
+      dstr(CUR.session_date) + '　' + hhmm(CUR.start_time) + '　' + CUR.title;
+    document.getElementById('qrBox').innerHTML = '<div class="qrwait">產生中…</div>';
+    issue();
+  }
+
+  function closeQR() {
+    QR.open = false;
+    clearTimeout(QR.timer); clearInterval(QR.tick);
+    document.getElementById('qrOv').hidden = true;
+    // 關掉的時候重讀一次名單 —— 剛剛掃的人要立刻看得到
+    if (CUR) loadRoster(CUR.session_id).then(renderRoster, function () {});
+  }
+
+  function issue() {
+    if (!QR.open || !CUR) return;
+    if (QR.rounds >= QR_MAX_ROUNDS) {
+      document.getElementById('qrBox').innerHTML =
+        '<div class="qrwait">已經開著十分鐘了。<br>還要用的話關掉再按一次。</div>';
+      document.getElementById('qrLeft').textContent = '';
+      return;
+    }
+    QR.rounds++;
+    DB.rpc('issue_checkin_token', { p_session: CUR.session_id })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        if (!QR.open) return;
+        document.getElementById('qrBox').innerHTML = window.FFF_QR.svg(qrURL(r.data));
+        QR.left = 60;
+        document.getElementById('qrLeft').textContent = '這張碼還有 60 秒';
+        clearInterval(QR.tick);
+        QR.tick = setInterval(function () {
+          QR.left--;
+          if (QR.left <= 0) { clearInterval(QR.tick); return; }
+          document.getElementById('qrLeft').textContent = '這張碼還有 ' + QR.left + ' 秒';
+        }, 1000);
+        clearTimeout(QR.timer);
+        // 55 秒就換，留 5 秒緩衝 —— 剛好在換的瞬間掃到過期碼最難解釋
+        QR.timer = setTimeout(issue, 55000);
+        // 順便更新「已確認 N / M」
+        loadRoster(CUR.session_id).then(function () {
+          var n = document.getElementById('qrCount');
+          if (n) n.textContent = confCount();
+        }, function () {});
+      })
+      .catch(function (e) {
+        document.getElementById('qrBox').innerHTML =
+          '<div class="qrwait bad">' + esc(String(e.message || e)) + '</div>';
+        document.getElementById('qrLeft').textContent = '';
+      });
+  }
+
+  // 教練代確認。☢️ 這【不會】扣課，也不會改出席狀態。
+  function proxyConfirm(bookingId) {
+    if (busy['cf' + bookingId]) return;
+    busy['cf' + bookingId] = true;
+    DB.rpc('confirm_by_staff', { p_booking: bookingId })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        return loadRoster(CUR.session_id);
+      })
+      .then(function () {
+        busy['cf' + bookingId] = false;
+        renderRoster();
+        toast('已記成教練代確認');
+      })
+      .catch(function (e) {
+        busy['cf' + bookingId] = false;
+        toast(String(e.message || e), true);
+      });
   }
 
   /* ══ 點名 ══════════════════════════════════════════════════════ */
@@ -797,6 +1288,11 @@
     }
   };
   document.getElementById('back').onclick = function () { renderList(); };
+  document.getElementById('qrClose').onclick = closeQR;
+  // ☢️ 蓋板打開時按手機的返回鍵，應該是關蓋板，不是離開頁面
+  document.getElementById('qrOv').onclick = function (e) {
+    if (e.target === this) closeQR();
+  };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

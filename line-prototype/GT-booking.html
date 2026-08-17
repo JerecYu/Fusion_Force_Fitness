@@ -340,6 +340,11 @@
   .mb-t em{font-family:'JetBrains Mono',monospace;font-style:normal;color:var(--blue);
     margin-right:6px}
   .mb-m{margin-top:3px;font-size:.68rem;color:var(--dim)}
+  /* 到課確認的小字。☢️ 灰的那一種【不要】用紅或橘 ——
+     它不是錯誤，也不是催繳，只是一個還沒發生的動作。 */
+  .mb-cf{margin-top:4px;font-size:.63rem;letter-spacing:.03em;color:var(--faint)}
+  .mb-cf.ok{color:#2F6B54;font-weight:700}
+  .bal-note.nc{border-left:3px solid var(--teal)}
   .mb-x{flex:0 0 auto;font:inherit;font-size:.72rem;font-weight:700;cursor:pointer;
     background:#fff;color:var(--adv);border:1.5px solid var(--adv-s);
     border-radius:var(--r-sm);padding:8px 12px}
@@ -602,7 +607,8 @@
     const [b, c] = await Promise.all([
       window.fffDB.from('my_bookings')
         .select('id,session_id,status,session_date,start_time,duration_min,' +
-                'title,level,coach_name,can_cancel,starts_at,charged_delta')
+                'title,level,coach_name,can_cancel,starts_at,charged_delta,' +
+                'confirmed_at,needs_confirm')
         .order('starts_at', { ascending: false }).limit(200),
       window.fffDB.from('my_credits').select('product,balance')
     ]);
@@ -914,13 +920,23 @@
       : (b.can_cancel
           ? '<button class="mb-x" data-cancel-id="' + esc(b.id) + '">取消</button>'
           : '<button class="mb-x" disabled>不可取消</button>');
+    // ☢️ 只在【已上課而且真的扣了課】的那幾筆講確認。
+    //    舊系統轉過來的「未扣課」不該出現「還沒確認」——
+    //    那是 8/16 以前的紀錄，當時根本還沒有確認這件事。
+    const charged = Number(b.charged_delta || 0) < 0;
+    let cf = '';
+    if (past && b.status === 'attended' && charged){
+      cf = b.confirmed_at
+        ? '<div class="mb-cf ok">✓ 已確認到課</div>'
+        : '<div class="mb-cf">未確認到課</div>';
+    }
     return '<div class="mb' + (past ? ' done' : '') + '">' +
       '<div class="mb-d"><b>' + esc(bits.md) + '</b><span>' + esc(bits.wd) + '</span></div>' +
       '<div class="mb-i"><div class="mb-t"><em>' + esc(hhmm(b.start_time)) + '</em>' +
         esc(b.title) + '</div>' +
         '<div class="mb-m">' + esc(b.coach_name || '教練待定') +
         (LV[b.level] ? '　·　' + LV[b.level] : '') +
-        '　·　' + esc(b.duration_min || 60) + ' 分鐘</div></div>' +
+        '　·　' + esc(b.duration_min || 60) + ' 分鐘</div>' + cf + '</div>' +
       right + '</div>';
   }
 
@@ -971,6 +987,18 @@
 
     if (past.length){
       html += '<div class="mb-h">最近的紀錄</div>';
+
+      // ☢️ 這一段【只是提醒，不是催繳】。
+      //    沒確認不會影響堂數、不會影響下次訂課 —— 講清楚，
+      //    不然客人會以為自己欠了什麼東西。
+      const nc = past.filter(b => b.needs_confirm && Number(b.charged_delta || 0) < 0);
+      if (nc.length){
+        html += '<div class="bal-note nc" style="margin-top:0">' +
+          '有 <b>' + nc.length + '</b> 堂還沒有你本人的到課確認。<br>' +
+          '下次上課時，請教練出示確認碼掃一下就好 —— ' +
+          '<b>這不影響你的堂數</b>，只是留一份雙方都認可的紀錄。' +
+          '</div>';
+      }
 
       // ☢️ 2026-08-16：有客人問「這堂我沒上，為什麼寫已上課？」
       //    舊系統的【報名紀錄】和【扣課紀錄】本來就是兩份對不起來的資料 ——
