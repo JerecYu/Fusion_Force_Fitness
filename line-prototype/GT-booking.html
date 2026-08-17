@@ -293,6 +293,13 @@
     background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);
     padding:11px 12px;-webkit-appearance:none}
   .bd-f input:focus{outline:none;border-color:var(--blue);background:#fff}
+  /* ☢️ 原本用 var(--faint) #93AEBD，在 #EDF4F7 底色上對比只有 2.09:1，
+     WCAG 小字要 4.5。我們的客群是抗老化體適能 —— 手機在陽光下更看不到。
+     #526E7E 是 4.85:1，還是比正文淡（正文 13.4:1），看得出是提示不是輸入。 */
+  .bd-f input::placeholder{color:#526E7E;opacity:1}
+  /* ☢️ 提示字一打字就消失。真正的規則不能只放在提示字裡 ——
+     所以規則放在下面這一行，它不會不見。 */
+  .bd-hint2{margin-top:6px;font-size:.7rem;line-height:1.6;color:var(--dim)}
   .bd-go{width:100%;margin-top:14px;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;
     background:var(--blue);color:#fff;border:0;border-radius:var(--r-sm);padding:13px}
   .bd-go:active{background:var(--blue-d)}
@@ -413,15 +420,18 @@
        「已辨識但還沒綁手機」時才打開。 -->
   <div class="bd" id="bindBox" hidden>
     <div class="bd-h">第一次使用，先綁定你的資料</div>
-    <div class="bd-sub">填你在諧動空間登記的手機和姓名，兩個都對才能綁定。<br>
+    <div class="bd-sub">填你在諧動空間登記的<b>手機</b>和<b>姓名</b>。<br>
       這是為了確認課卡是你的 —— 綁定之後才看得到自己的堂數和預約。</div>
     <div class="bd-f">
       <label for="bdPhone">手機號碼</label>
-      <input type="tel" id="bdPhone" inputmode="numeric" autocomplete="tel" placeholder="09xx-xxx-xxx">
+      <input type="tel" id="bdPhone" inputmode="numeric" autocomplete="tel" placeholder="0912345678">
+      <div class="bd-hint2">10 碼。有沒有加橫線都可以。</div>
     </div>
     <div class="bd-f">
       <label for="bdName">姓名</label>
-      <input type="text" id="bdName" autocomplete="name" placeholder="與櫃檯登記的姓名相同">
+      <input type="text" id="bdName" autocomplete="name" placeholder="例：王小明">
+      <div class="bd-hint2">填<b>你在櫃檯登記的那個名字</b>。
+        後面多加英文名沒關係（例如「王小明 Mike」），但不能少字。</div>
     </div>
     <div class="bd-m" id="bdMsg" hidden></div>
     <button type="button" class="bd-go" id="bdGo">綁定</button>

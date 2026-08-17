@@ -56,6 +56,31 @@ function normName(v: string): string {
   return String(v ?? '').replace(/[\s　]/g, '').toLowerCase()
 }
 
+// ☢️ 姓名比對放寬：客人填的只要【包含完整的登記姓名】就算過。多寫可以，少寫不行。
+//
+//    起因是 2026-08-17 早上翻 signup_requests 看到的兩筆：
+//      「廖庭均 Teresa」 對不上登記的「廖庭均」 —— 試了 5 次，從 17:15 到隔天 08:53
+//      「荔芬Adele」    對不上登記的「Adele」  —— 試了 3 次
+//    兩位的手機【一個數字都沒錯】。他們只是多打了自己的另一個名字。
+//
+//    ☢️ 手機那一關【不放寬】，還是要完全一致。
+//       能走到姓名比對這一步的人，本來就已經知道正確手機號碼了 ——
+//       所以放寬姓名的邊際風險很小，而擋掉真客人的代價是可以量的。
+//
+//    ☢️ 但登記姓名太短時不能用包含比對：只有一個字（例如「王」）的話，
+//       任何含「王」的名字都會通過。所以要求登記姓名至少 2 個字。
+//       （2026-08-17 查過：最短的登記姓名是 2 個字，沒有 1 個字的。）
+function nameMatches(registered: string, typed: string): boolean {
+  const a = normName(registered), b = normName(typed)
+  if (!a || !b) return false
+  if (a === b) return true
+  // ☢️ 這裡是【不對稱】的：客人填的必須包含【完整的】登記姓名。
+  //    多寫沒關係（廖庭均 Teresa ⊃ 廖庭均），少寫不行（王惠 ⊅ 王惠君）。
+  //    對稱寫法（誰包含誰都算）測出來太鬆 —— 那等於「猜對姓 ＋ 一個字」就能過。
+  //    今天兩個真實案例都是「多寫」，沒有人是「少寫」。
+  return a.length >= 2 && b.includes(a)
+}
+
 // 留言簿：同一個 LINE 帳號只留一筆，重試就把次數加一。
 // 失敗不影響綁定流程的回應 —— 記錄壞掉不該讓客人看到錯誤。
 async function leaveNote(lineUserId: string, name: string, phone: string) {
@@ -128,7 +153,7 @@ Deno.serve(async (req) => {
 
     // ☢️ 手機查無、和姓名對不上，一律回同一個 reason。
     //    如果分開講，這支就變成「輸入手機就能查出這個人叫什麼名字」的工具。
-    if (!cust || normName(cust.name) !== normName(name)) {
+    if (!cust || !nameMatches(cust.name, name)) {
       await leaveNote(lineUserId, name, phone)
       return json({ ok: false, reason: 'not_found' })
     }
