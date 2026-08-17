@@ -188,6 +188,21 @@
   .cp{display:block;margin-top:4px;background:#fff;border:1px solid var(--line);border-radius:7px;
     padding:7px 8px;font-family:ui-monospace,Menlo,monospace;font-size:11px;
     color:var(--ink2);word-break:break-all;line-height:1.6}
+  /* ══ 封存堂數 ═════════════════════════════════════════════ */
+  .lg{background:#FFF9EC;border:1px solid #EBC4A0;border-radius:12px;padding:11px 12px;margin-top:9px}
+  .lg.done{background:var(--ok-bg);border-color:var(--ok-line)}
+  .lgh{font-size:13px;color:#7C420E;font-weight:700}
+  .lgh b{font-size:15px;font-weight:800;color:var(--ink)}
+  .lgh span{float:right;background:#fff;border:1px solid #EBC4A0;border-radius:999px;
+    padding:2px 9px;font-size:12px;font-weight:800;color:#7C420E}
+  .lgm{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.6}
+  .lga{margin-top:9px;display:flex;flex-direction:column;gap:6px}
+  .lgb{background:var(--ink);color:#fff;border:0;border-radius:9px;padding:9px 10px;
+    font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+  .lgb:disabled{opacity:.55}
+  .lgnote{font-size:11.5px;color:var(--ink2);background:#fff;border:1px dashed #EBC4A0;
+    border-radius:9px;padding:8px 10px;line-height:1.7}
+  .lgr .res{margin-top:8px}
   .gate{text-align:center;padding:60px 20px;color:var(--dim)}
   .gate .g1{font-size:17px;font-weight:800;color:var(--ink)}
   .gate.err .g1{color:var(--err)}
@@ -781,16 +796,95 @@
       });
   }
 
+  /* ══ 封存堂數等候區 ═══════════════════════════════════════════
+     ☢️ 這一塊存在的理由：孤兒之所以出現，就是因為當初有人把
+        「資料不齊的人」放在系統【外面】的資料夾，交接時忘了。
+        近期不會再來的人如果留在 Excel，就是用同樣的方式製造
+        下一批孤兒。所以他們進系統 —— 只是不進 customers。
+     ☢️ 而這一塊真正的價值不是「存起來」，是【教練查名字時系統會自己講】。
+        只放在 Excel 的話，要靠人記得去翻，而那正是失敗過一次的做法。
+     ═══════════════════════════════════════════════════════════ */
+  function legacyCards(rows, custs) {
+    if (!rows.length) return '';
+    return rows.map(function (g) {
+      var opts = custs.length
+        ? custs.map(function (c) {
+            return '<button type="button" class="lgb" data-lg="' + esc(g.legacy_id) + '" ' +
+              'data-c="' + esc(c.id) + '" data-cn="' + esc(c.name) + '" ' +
+              'data-n="' + g.credits + '">轉給 ' + esc(c.name) + '（' + esc(c.phone_tail) + '）</button>';
+          }).join('')
+        : '<div class="lgnote">這個人系統裡還沒有 —— ' +
+          '請先用上面的<b>新增客人</b>建檔（要手機），建完再回來這裡按轉入。</div>';
+      return '<div class="lg">' +
+        '<div class="lgh">封存區　<b>' + esc(g.name) + '</b>　<span>' + g.credits + ' 堂</span></div>' +
+        '<div class="lgm">' + esc(g.source || '舊表') +
+          '　·　☢️ 堂數還有效，只是這個人還沒建檔</div>' +
+        '<div class="lga">' + opts + '</div>' +
+        '<div class="lgr"></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function wireLegacy(box) {
+    Array.prototype.forEach.call(box.querySelectorAll('[data-lg]'), function (b) {
+      b.onclick = function () {
+        var wrap = b.closest('.lg'), res = wrap.querySelector('.lgr');
+        if (b.disabled) return;
+        b.disabled = true; b.textContent = '轉入中…';
+        DB.rpc('claim_legacy', { p_legacy: b.getAttribute('data-lg'), p_customer: b.getAttribute('data-c') })
+          .then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            var d = r.data || {};
+            if (!d.ok) {
+              var m = { already_claimed:'這一筆已經在 ' + (d.claimed_at||'') + ' 轉出去了。',
+                        not_found:'找不到這筆封存。', no_customer:'找不到這位客人。',
+                        inactive:'這位客人已停用。' }[d.why] || d.why;
+              res.innerHTML = '<div class="res bad">' + esc(m) + '</div>';
+              b.disabled = false; b.textContent = '轉給 ' + b.getAttribute('data-cn');
+              return;
+            }
+            // ☢️ 結果留在畫面上，不要重畫把它洗掉（今天已經踩過三次）
+            res.innerHTML = '<div class="res ok">已轉入：<b>' + esc(d.name) + '</b>　＋' +
+              d.credits + ' 堂　→　現在剩 <b>' + d.balance + ' 堂</b></div>';
+            wrap.classList.add('done');
+            Array.prototype.forEach.call(wrap.querySelectorAll('.lgb'), function (x) {
+              x.disabled = true;
+            });
+            b.textContent = '已轉入 ✓';
+            toast(d.name + '　＋' + d.credits + ' 堂　·　現在剩 ' + d.balance + ' 堂');
+          })
+          .catch(function (e) {
+            res.innerHTML = '<div class="res bad">' + esc(String(e.message || e)) + '</div>';
+            b.disabled = false; b.textContent = '轉給 ' + b.getAttribute('data-cn');
+          });
+      };
+    });
+  }
+
   function search(v, box) {
     var digits = /^\d+$/.test(v);
     var qy = DB.from('staff_customers').select('id,name,phone_tail,balance,bound,is_active').limit(10);
     qy = digits ? qy.like('phone', '%' + v) : qy.ilike('name', '%' + v + '%');
+
+    // ☢️ 封存區只有名字，沒有手機 —— 所以只在「用名字查」的時候才查它。
+    var lq = digits
+      ? Promise.resolve([])
+      : DB.from('staff_legacy').select('legacy_id,name,credits,source,claimed')
+          .eq('claimed', false).ilike('name', '%' + v + '%').limit(5)
+          .then(function (r) { return (!r.error && r.data) ? r.data : []; },
+                function () { return []; });
+
     qy.then(function (r) {
       // ☢️ 查不動要說出來（規則 14）。空白畫面跟「查無此人」意思完全不同。
       if (r.error) { box.innerHTML = '<div class="res bad">查不動：' + esc(r.error.message) + '</div>'; return; }
       var rows = r.data || [];
-      if (!rows.length) { box.innerHTML = '<div class="empty">沒有符合的人</div>'; return; }
+
       HITS = rows;
+      lq.then(function (lg) { paintHits(rows, lg, box); });
+    });
+  }
+
+  function paintHits(rows, lg, box) {
       box.innerHTML = rows.map(function (c) {
         var b = Number(c.balance);
         return '<div class="hitwrap">' +
@@ -804,9 +898,10 @@
           '</div>' +
           '<div class="buywrap" id="buy-' + esc(c.id) + '" hidden></div>' +
         '</div>';
-      }).join('');
+      }).join('') + legacyCards(lg, rows);
+      if (!rows.length && !lg.length) box.innerHTML = '<div class="empty">沒有符合的人</div>';
       wireHits(box);
-    });
+      wireLegacy(box);
   }
 
   /* ══ 開場 ══════════════════════════════════════════════════ */
