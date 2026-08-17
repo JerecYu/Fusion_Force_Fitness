@@ -208,10 +208,18 @@
     var dt = new Date(+p[0], +p[1]-1, +p[2]);
     return (+p[1]) + '/' + (+p[2]) + '（' + WD[dt.getDay()] + '）';
   }
-  // 課還沒開始 → 點不了名。starts_at 是資料庫算好的 timestamptz，
-  // 前端不要自己拿 session_date + start_time 去湊（那正是規則 16 那個坑）。
+  // ☢️ 「還不能點名」的界線是【課前 15 分鐘】，不是課程開始。
+  //    2026-08-17 教練回報習慣是「下課後核銷、偶爾課前核銷」，
+  //    而資料庫的 check_in() 和 issue_checkin_token() 都用課前 15 分。
+  //    ☢️ 這個數字前端和資料庫必須一樣 —— 不一樣的話畫面會給一顆
+  //       按下去才報錯的按鈕，或反過來擋住其實可以按的。
+  var EARLY_MS = 15 * 60 * 1000;
+  // starts_at 是資料庫算好的 timestamptz，前端不要自己拿
+  // session_date + start_time 去湊（那正是規則 16 那個坑）。
   function isFuture(s) {
-    return s && s.starts_at ? (new Date(s.starts_at).getTime() > Date.now()) : false;
+    return s && s.starts_at
+      ? (new Date(s.starts_at).getTime() - EARLY_MS > Date.now())
+      : false;
   }
 
   // ☢️ 「今天」用台灣時間算，不要用瀏覽器的 toISOString（那是 UTC）。
@@ -355,7 +363,7 @@
       '<div class="h1">' + dstr(s.session_date) + '　' + hhmm(s.start_time) + '　' + esc(s.title) + '</div>' +
       '<div class="h2">' + esc(s.coach_name || '未指定教練') + '　·　' + (LV[s.level] || s.level) + '</div>' +
       (dead ? '<div class="banner dead">這堂課已經取消，點不了名。<br>如果實際上有上課，請找 Jerec 在後台改課次狀態。</div>' : '') +
-      (soon ? '<div class="banner soon">這堂課還沒開始，時間到了才能點名。<br>現在可以先把臨時要來的人加進名單。</div>' : '') +
+      (soon ? '<div class="banner soon">還太早 —— <b>課前 15 分鐘</b>才能開始點名。<br>現在可以先把臨時要來的人加進名單。</div>' : '') +
       '</div>';
 
     html += ROSTER.filter(function (p) { return p.booking_status !== 'cancelled'; })
