@@ -144,9 +144,21 @@ grant execute on function public.confirm_payment(uuid) to authenticated;
 create or replace function public.void_purchase(p_ledger uuid, p_why text default null)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare v_l record; v_bal integer;
+declare v_l record; v_bal integer; v_why text;
 begin
-  if not public.is_staff() then raise exception '只有員工可以沖銷'; end if;
+  -- ☢️ 2026-08-17 Jerec 調查實際發生頻率之後的決定：
+  --      只有他能按 · 往回不限時間 · 原因必填
+  --    這裡【不是】is_staff()。沖銷會同時改掉堂數和金額，而且是往回改 ——
+  --    這個能力不該散給六位教練。教練按錯 → 告訴 Jerec → Jerec 沖銷。
+  if not public.is_owner() then
+    raise exception '只有負責人可以沖銷。教練按錯的話，請告訴 Jerec。';
+  end if;
+
+  -- ☢️ 原因必填。沒有原因的沖銷，三個月後跟「資料被人偷偷動過」長得一模一樣。
+  v_why := btrim(coalesce(p_why, ''));
+  if length(v_why) < 2 then
+    return jsonb_build_object('ok', false, 'why', 'need_reason');
+  end if;
 
   select l.*, c.name as cname into v_l
   from public.credit_ledger l join public.customers c on c.id = l.customer_id
@@ -165,13 +177,14 @@ begin
     (customer_id, delta, reason, product, note, created_by, amount, product_code)
   values
     (v_l.customer_id, -v_l.delta, 'adjust', v_l.product,
-     '沖銷 ' || p_ledger::text || coalesce('：' || p_why, ''),
+     '沖銷 ' || p_ledger::text || '：' || v_why,
      public.my_employee_id(), -coalesce(v_l.amount, 0), v_l.product_code);
 
   select coalesce(sum(delta),0) into v_bal
   from public.credit_ledger where customer_id = v_l.customer_id and product = v_l.product;
 
-  return jsonb_build_object('ok', true, 'name', v_l.cname, 'balance', v_bal);
+  return jsonb_build_object('ok', true, 'name', v_l.cname, 'balance', v_bal,
+           'credits', v_l.delta, 'amount', v_l.amount, 'reason', v_why);
 end $$;
 
 revoke all on function public.void_purchase(uuid, text) from public;
@@ -205,8 +218,12 @@ where public.is_staff()
 comment on view public.staff_unpaid is '匯款但還沒確認入帳的課購。純讀。';
 grant select on public.staff_unpaid to authenticated;
 
--- ── ⑦ 最近的課購（給後台顯示，順便可以沖銷）──────────────────
-create or replace view public.staff_recent_purchases as
+-- ── ⑦ 最近的課購（給 Jerec 看，也是沖銷的入口）──────────────
+--  ☢️ 用 drop + create，不是 create or replace ——
+--     replace 不能把新欄位插到中間，只能加在最後。
+drop view if exists public.staff_recent_purchases;
+
+create view public.staff_recent_purchases as
 select l.id             as ledger_id,
        l.created_at,
        c.name           as customer_name,
@@ -216,18 +233,27 @@ select l.id             as ledger_id,
        l.pay_method,
        l.paid_at,
        l.product_code,
+       l.note,
        e.display_name   as created_by_name,
-       exists (select 1 from public.credit_ledger x
-               where x.reason = 'adjust' and x.note like '沖銷 ' || l.id::text || '%') as voided
+       (v.id is not null) as voided,
+       -- 沖銷的原因、誰沖的、什麼時候 —— 讓那一列自己說完整個故事
+       substring(v.note from '^沖銷 [0-9a-f-]+：(.*)$') as void_reason,
+       ve.display_name  as voided_by_name,
+       v.created_at     as voided_at
 from public.credit_ledger l
 join public.customers c on c.id = l.customer_id
 left join public.employees e on e.id = l.created_by
+left join lateral (
+  select x.* from public.credit_ledger x
+  where x.reason = 'adjust' and x.note like '沖銷 ' || l.id::text || '%'
+  order by x.created_at limit 1
+) v on true
+left join public.employees ve on ve.id = v.created_by
 where public.is_staff()
   and l.reason = 'purchase'
   and l.product_code is not null;         -- 只看新系統開出來的，不含搬遷資料
 
 grant select on public.staff_recent_purchases to authenticated;
-
 
 -- ── 驗收 ──────────────────────────────────────────────────────
 -- ☢️ 三支動到錢的函式，都要有擋非員工，而且不能改到別人的餘額
@@ -249,3 +275,11 @@ where n.nspname='public' and c.relkind='v'
 -- ☢️ 待入帳清單【不能】把搬遷進來的舊資料算進去（那些 paid_at 也是 null）
 select count(*) as 待入帳筆數 from public.staff_unpaid;
 -- 剛上線時期望：0
+
+-- ☢️ 沖銷只有負責人能做、原因必填、而且【不刪任何東西】
+select (pg_get_functiondef(p.oid) ilike '%is_owner%')    as 只有負責人,
+       (pg_get_functiondef(p.oid) ilike '%need_reason%') as 原因必填,
+       (pg_get_functiondef(p.oid) ilike '%delete %')     as 有刪除動作
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname='public' and p.proname='void_purchase';
+-- 期望：true / true / false

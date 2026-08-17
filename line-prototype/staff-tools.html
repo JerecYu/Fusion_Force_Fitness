@@ -141,6 +141,50 @@
   .buygo{width:100%;margin-top:7px;background:var(--ok);color:#fff;border:0;border-radius:10px;
     padding:11px;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
   .buygo:disabled{opacity:.55}
+  /* ══ 最近的課購 ＋ 沖銷（只有 owner 看得到）═══════════════ */
+  /* ☢️「什麼時候該用」要在按鈕旁邊，不是在手冊裡。 */
+  .whenuse{background:var(--surface2);border-radius:11px;padding:11px 12px;margin-bottom:11px;
+    font-size:11.5px;line-height:1.75;color:var(--ink2)}
+  .whenuse b{display:block;font-size:12px;font-weight:800;margin-bottom:2px}
+  .whenuse b.no{margin-top:9px;color:#7E1A15}
+  .whenuse ul{margin:0 0 0 16px;padding:0}
+  .whenuse li{margin:1px 0}
+  .whenuse .mini{display:block;margin-top:9px;padding-top:8px;border-top:1px dashed var(--line);
+    color:var(--dim)}
+
+  .pv{display:flex;align-items:flex-start;gap:9px;padding:9px 0;
+    border-bottom:1px dashed var(--line);flex-wrap:wrap}
+  .pv:last-child{border-bottom:0}
+  .pv.off{opacity:.62}
+  .pvl{flex:1;min-width:0}
+  .pvl b{font-size:13.5px;font-weight:800}
+  .pvl span{font-size:11px;color:var(--faint);letter-spacing:.06em;margin-left:5px}
+  .pvl i{display:block;font-style:normal;font-size:10.5px;color:var(--dim);margin-top:2px;
+    line-height:1.6}
+  .pvl u{display:block;text-decoration:none;font-size:10.5px;color:#7E1A15;margin-top:3px}
+  .pvb{flex:0 0 auto;background:#fff;border:1px solid var(--err-line);color:var(--err);
+    border-radius:9px;padding:6px 12px;font-family:inherit;font-size:12px;font-weight:800;
+    cursor:pointer}
+  .pvx{flex:0 0 auto;font-size:11px;color:var(--faint);padding:6px 4px}
+
+  .vf{flex:0 0 100%;margin-top:8px;background:var(--err-bg);border:1px solid var(--err-line);
+    border-radius:11px;padding:10px 11px}
+  .vfh{font-size:12.5px;font-weight:800;color:#7E1A15;margin-bottom:7px}
+  .vfi{width:100%;padding:9px 10px;border:1px solid var(--err-line);border-radius:9px;
+    font-family:inherit;font-size:14px;background:#fff}
+  .vfi::placeholder{color:#8A5B56}
+  .vfa{display:flex;gap:7px;margin-top:8px}
+  .vfno{flex:0 0 auto;background:#fff;border:1px solid var(--line);color:var(--ink2);
+    border-radius:9px;padding:9px 15px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .vfgo{flex:1;background:var(--err);color:#fff;border:0;border-radius:9px;padding:9px;
+    font-family:inherit;font-size:13px;font-weight:800;cursor:pointer}
+  .vfgo:disabled{opacity:.55}
+  .vfr .res{margin-top:8px}
+  .cpb{margin-top:7px;width:100%;background:var(--ink);color:#fff;border:0;border-radius:8px;
+    padding:8px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+  .cp{display:block;margin-top:4px;background:#fff;border:1px solid var(--line);border-radius:7px;
+    padding:7px 8px;font-family:ui-monospace,Menlo,monospace;font-size:11px;
+    color:var(--ink2);word-break:break-all;line-height:1.6}
   .gate{text-align:center;padding:60px 20px;color:var(--dim)}
   .gate .g1{font-size:17px;font-weight:800;color:var(--ink)}
   .gate.err .g1{color:var(--err)}
@@ -181,6 +225,7 @@
   var DB = null, ME = null;
   var SIGNUPS = [];
   var UNPAID = [], PRODUCTS = [];
+  var RECENT = [];          // 最近的課購（只有 owner 看得到，也是沖銷的入口）
   var HITS = [];
 
   var elGate = document.getElementById('gate');
@@ -272,6 +317,14 @@
         .eq('product','GT').eq('is_active', true).order('sort_order')
         .then(function (r) { PRODUCTS = (!r.error && r.data) ? r.data : []; },
               function () { PRODUCTS = []; }),
+      (ME && ME.role === 'owner'
+        ? DB.from('staff_recent_purchases')
+            .select('ledger_id,created_at,customer_name,phone_tail,credits,amount,' +
+                    'pay_method,paid_at,note,created_by_name,voided,void_reason,voided_by_name')
+            .order('created_at', { ascending: false }).limit(20)
+            .then(function (r) { RECENT = (!r.error && r.data) ? r.data : []; },
+                  function () { RECENT = []; })
+        : Promise.resolve()),
       DB.from('staff_unpaid')
         .select('ledger_id,created_at,customer_name,phone_tail,credits,amount,created_by_name,waited_days')
         .order('created_at', { ascending: true })
@@ -298,6 +351,49 @@
            '<div class="card">' + rows +
            '<div class="hint" style="margin-top:8px">☢️ 這些人的<b>堂數已經給了</b>，只差錢還沒確認進帳戶。' +
            '按「錢到了」＝確認入帳，不會改動堂數。</div></div>';
+  }
+
+  // 最近的課購。☢️ 只有 owner 看得到 —— 這一塊是沖銷的入口。
+  function recentBlock() {
+    if (!ME || ME.role !== 'owner') return '';
+    var rows = RECENT.map(function (x) {
+      var t = new Date(x.created_at), p2 = function (n) { return (n < 10 ? '0' : '') + n; };
+      var when = (t.getMonth()+1) + '/' + t.getDate() + ' ' + p2(t.getHours()) + ':' + p2(t.getMinutes());
+      var pay = x.pay_method === 'cash' ? '現金' : (x.paid_at ? '匯款・已入帳' : '匯款・待入帳');
+      return '<div class="pv' + (x.voided ? ' off' : '') + '">' +
+        '<div class="pvl">' +
+          '<b>' + esc(x.customer_name) + '</b> <span>' + esc(x.phone_tail) + '</span>' +
+          '<i>' + when + '　·　' + esc(x.note || '') + '　·　＋' + x.credits +
+            ' 堂　·　NT$' + (x.amount == null ? '—' : x.amount) + '　·　' + pay +
+            '　·　' + esc(x.created_by_name || '') + ' 入的</i>' +
+          (x.voided ? '<u>已沖銷　·　' + esc(x.voided_by_name || '') + '：' +
+                      esc(x.void_reason || '') + '</u>' : '') +
+        '</div>' +
+        (x.voided ? '<span class="pvx">已沖銷</span>'
+                  : '<button type="button" class="pvb" data-void="' + esc(x.ledger_id) + '" ' +
+                    'data-n="' + esc(x.customer_name) + '" data-c="' + x.credits + '" ' +
+                    'data-a="' + (x.amount == null ? '' : x.amount) + '">沖銷</button>') +
+      '</div>';
+    }).join('');
+
+    // ☢️ Jerec 的第 4 點：使用時機要寫在按鈕【旁邊】，不是寫在手冊裡。
+    //    沖銷最大的風險不是被亂按，是【被用在不該用的地方】——
+    //    尤其是拿來當退費，那會讓帳上看起來退了、錢其實還在店裡。
+    return '<div class="sec">最近的課購</div><div class="card">' +
+      '<div class="whenuse">' +
+        '<b>沖銷用在這三種狀況：</b>' +
+        '<ul><li>按錯人（幫 A 買成 B）</li>' +
+            '<li>按錯方案（單堂按成買 10 送 2）</li>' +
+            '<li>手滑重複按了兩次</li></ul>' +
+        '<b class="no">☢️ 這三種不要用沖銷：</b>' +
+        '<ul><li><b>客人要退費</b> —— 那要真的把錢退給他。沖銷只會讓帳上看起來退了、錢其實還在店裡。</li>' +
+            '<li><b>客人上課上到負數</b> —— 那是他該補買，不是這一筆買錯。</li>' +
+            '<li><b>匯款一直沒進來</b> —— 那是「待入帳」的事，先去確認，不要直接抹掉。</li></ul>' +
+        '<span class="mini">共同點：沖銷是在說「<b>這件事根本沒發生過</b>」。' +
+        '只要事情真的發生過，就不該用它。</span>' +
+      '</div>' +
+      (RECENT.length ? rows : '<div class="empty">還沒有任何課購紀錄</div>') +
+    '</div>';
   }
 
   // 幫某一位客人課購。☢️ 兩段式：先選方案＋付款方式，再確定。
@@ -353,6 +449,7 @@
         '<div id="nRes"></div>' +
       '</div>' +
 
+      '<div id="recentBox">' + recentBlock() + '</div>' +
       '<div class="sec">查客人</div>' +
       '<div class="card">' +
         '<input id="q" type="search" placeholder="打姓名，或手機後三碼" autocomplete="off">' +
@@ -379,6 +476,7 @@
 
     document.getElementById('nGo').onclick = createOne;
     wirePaid(elMain);
+    wireVoid(elMain);
 
     var rl = document.getElementById('reload');
     if (rl) rl.onclick = function () {
@@ -398,6 +496,124 @@
       if (!v) { hits.innerHTML = ''; return; }
       t = setTimeout(function () { search(v, hits); }, 260);
     };
+  }
+
+  // ☢️ 沖銷是兩段：先填原因（必填），再確定。
+  //    這裡【故意】比課購還多一道 —— 課購是往前記一件剛發生的事，
+  //    沖銷是往回改一件已經記進帳的事。
+  function wireVoid(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-void]'), function (b) {
+      b.onclick = function () {
+        var row = b.parentNode;
+        if (row.querySelector('.vf')) { row.querySelector('.vf').remove(); return; }
+        var box = document.createElement('div');
+        box.className = 'vf';
+        box.innerHTML =
+          '<div class="vfh">沖銷「' + esc(b.getAttribute('data-n')) + '」的 ＋' +
+            b.getAttribute('data-c') + ' 堂' +
+            (b.getAttribute('data-a') ? '（NT$' + b.getAttribute('data-a') + '）' : '') + '</div>' +
+          '<input type="text" class="vfi" placeholder="為什麼要沖銷？（必填，例：按錯人）" ' +
+            'maxlength="60" autocomplete="off">' +
+          '<div class="vfa">' +
+            '<button type="button" class="vfno">取消</button>' +
+            '<button type="button" class="vfgo">確定沖銷</button>' +
+          '</div>' +
+          '<div class="vfr"></div>';
+        row.appendChild(box);
+        var inp = box.querySelector('.vfi');
+        inp.focus({ preventScroll: true });
+        box.querySelector('.vfno').onclick = function () { box.remove(); };
+        box.querySelector('.vfgo').onclick = function () {
+          doVoid(b.getAttribute('data-void'), inp.value, box);
+        };
+      };
+    });
+  }
+
+  function doVoid(ledgerId, why, box) {
+    var go = box.querySelector('.vfgo'), res = box.querySelector('.vfr');
+    if (String(why || '').trim().length < 2) {
+      res.innerHTML = '<div class="res bad">☢️ 一定要填原因。沒有原因的沖銷，' +
+                      '三個月後跟「資料被人動過」長得一模一樣。</div>';
+      return;
+    }
+    go.disabled = true; go.textContent = '沖銷中…';
+    DB.rpc('void_purchase', { p_ledger: ledgerId, p_why: why })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        var d = r.data || {};
+        if (!d.ok) {
+          var m = { need_reason:'一定要填原因。', not_found:'找不到這一筆。',
+                    not_purchase:'這一筆不是課購，不能沖銷。',
+                    already_voided:'這一筆已經沖銷過了。' }[d.why] || d.why;
+          res.innerHTML = '<div class="res bad">' + esc(m) + '</div>';
+          go.disabled = false; go.textContent = '確定沖銷';
+          return;
+        }
+        toast(d.name + '　已沖銷 ' + d.credits + ' 堂　·　現在剩 ' + d.balance + ' 堂');
+        // ☢️ 按鈕不能停在「沖銷中…」。做完了就要說做完了 ——
+        //    停在進行式會讓人以為卡住，然後再按一次。
+        go.textContent = '已沖銷';
+        var no = box.querySelector('.vfno');
+        if (no) no.textContent = '關閉';
+
+        // ☢️ Jerec：「同時告訴你也可以，雙重保險」—— 給一段可以直接複製的紀錄。
+        //    ☢️ 這一段【一定要留在畫面上】。第一版寫完就去重畫整個清單，
+        //       結果這句話連同輸入框一起被洗掉 —— 而它正是他要的那份保險。
+        res.innerHTML = '<div class="res ok">已沖銷。' +
+          '<br><b>傳給 Claude 的話，複製這一段：</b>' +
+          '<code class="cp">沖銷　' + esc(d.name) + '　' + d.credits + ' 堂　NT$' +
+          (d.amount == null ? '—' : d.amount) + '　原因：' + esc(d.reason) +
+          '　→ 現在剩 ' + d.balance + ' 堂</code>' +
+          '<button type="button" class="cpb">複製</button></div>';
+        res.querySelector('.cpb').onclick = function () {
+          var t = res.querySelector('.cp').textContent, b2 = res.querySelector('.cpb');
+          var done = function () { b2.textContent = '已複製 ✓'; };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(t).then(done, legacy);
+          } else { legacy(); }
+          function legacy() {
+            // 桌機／舊 WebView 的退路
+            var ta = document.createElement('textarea');
+            ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); done(); } catch (e2) { b2.textContent = '複製不了，長按上面選取'; }
+            document.body.removeChild(ta);
+          }
+        };
+
+        // ☢️ 就地把那一列改成「已沖銷」，不要重畫整塊 —— 重畫會把上面那段洗掉。
+        var row = box.parentNode;
+        if (row) {
+          row.classList.add('off');
+          var btn = row.querySelector('.pvb');
+          if (btn) {
+            var sp = document.createElement('span');
+            sp.className = 'pvx'; sp.textContent = '已沖銷';
+            btn.parentNode.replaceChild(sp, btn);
+          }
+          var u = document.createElement('u');
+          u.textContent = '已沖銷　·　' + (ME ? ME.display_name : '') + '：' + d.reason;
+          var l = row.querySelector('.pvl');
+          if (l) l.appendChild(u);
+        }
+        RECENT.forEach(function (x) {
+          if (x.ledger_id === ledgerId) {
+            x.voided = true; x.void_reason = d.reason;
+            x.voided_by_name = ME ? ME.display_name : '';
+          }
+        });
+
+        // 待入帳可能少一筆（沖銷的是匯款的話），那一塊可以安全重畫
+        return loadPurchaseBits().then(function () {
+          var ub = document.getElementById('unpaidBox');
+          if (ub) { ub.innerHTML = unpaidBlock(); wirePaid(ub); }
+        });
+      })
+      .catch(function (e) {
+        res.innerHTML = '<div class="res bad">' + esc(String(e.message || e)) + '</div>';
+        go.disabled = false; go.textContent = '確定沖銷';
+      });
   }
 
   function wireHits(box) {
