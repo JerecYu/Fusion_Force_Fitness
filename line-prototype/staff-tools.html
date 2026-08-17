@@ -406,9 +406,18 @@
           .then(function (r) {
             if (r.error) throw new Error(r.error.message);
             if (!r.data || !r.data.length) {
+              // ☢️ 2026-08-17 現場發現：原本只寫「先開 staff.html」，
+              //    但畫面上沒有連結、也沒有代號 —— 等於叫人自己去記網址。
+              //    未開通的人【本來就沒辦法】照做，這種指示形同沒有。
               elSub.textContent = '未開通';
-              gate('err', '你的帳號還沒開通',
-                   '先開 staff.html 把登入代號給 Jerec，開通後再回來這一頁'); return;
+              elGate.className = 'gate err';
+              elGate.innerHTML =
+                '<div class="g1">你的帳號還沒開通</div>' +
+                '<div class="g2">按下面拿到你的登入代號，傳給 Jerec 就可以開通。</div>' +
+                '<a class="btn" style="max-width:280px;margin:16px auto 0;display:block;' +
+                'text-align:center;text-decoration:none" href="staff.html">拿我的登入代號 ›</a>';
+              elGate.hidden = false; elMain.hidden = true;
+              return;
             }
             ME = r.data[0];
             if (ME.is_active === false) {
