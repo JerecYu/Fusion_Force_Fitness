@@ -71,6 +71,13 @@ begin
     raise exception '確認碼只能在課前 30 分鐘到課後 2 小時之間產生';
   end if;
 
+  -- ☢️☢️ 2026-08-17：下面這一行是【錯的】，線上會噴
+  --        function gen_random_bytes(integer) does not exist。
+  --        gen_random_bytes 來自 pgcrypto，而 pgcrypto 裝在 extensions schema，
+  --        這支的 search_path 鎖成 public，所以找不到。
+  --        ☢️ 正解在 db/26-fix-token-random.sql：改用核心的 gen_random_uuid()。
+  --        ☢️ 教訓：建立函式的時候 plpgsql 不會解析函式體，所以【不會報錯】。
+  --           只建立不呼叫 = 沒有測過。
   v_token := encode(gen_random_bytes(16), 'hex');
 
   insert into public.checkin_tokens (token, session_id, issued_by, expires_at)
@@ -139,6 +146,12 @@ grant execute on function public.confirm_attendance(text) to authenticated;
 --          的條件改嚴了 —— 那會讓「已上課」的紀錄突然變成可取消的樣子。
 --          ☢️ 改檢視表之前一定要先 pg_get_viewdef 看一次。）
 create or replace view public.my_bookings
+-- ☢️☢️ 2026-08-17：下面這一行 with (security_invoker = true) 是【錯的】，
+--        它讓 my_bookings 在線上整張讀不到（permission denied for table class_sessions）。
+--        這幾張檢視表【必須是 definer】—— 牆是 where 裡的 my_customer_id()／is_staff()，
+--        不是底層資料表的權限，而 authenticated 對 class_sessions 故意沒有 SELECT。
+--        ☢️ 要重跑這一支的話，跑完一定要接著跑 db/25-fix-view-security.sql。
+--        原因寫在 25 那一支的開頭。
   with (security_invoker = true) as
 select b.id,
        b.session_id,

@@ -180,6 +180,9 @@
   .qrl i{display:block;font-style:normal;font-size:11px;color:#A9C6D4;margin-top:2px}
   .qrn{flex:0 0 auto;font-size:12px;font-weight:700;color:var(--teal)}
 
+  .qrnote{margin-top:12px;background:var(--surface2);border-radius:11px;padding:10px 12px;
+    font-size:12px;color:var(--dim);line-height:1.7}
+  .qrnote b{color:var(--ink2)}
   .qrov{position:fixed;inset:0;z-index:60;background:rgba(14,42,59,.72);
     display:flex;align-items:center;justify-content:center;padding:22px}
   .qrcard{background:#fff;border-radius:20px;padding:18px 18px 14px;width:100%;max-width:340px;
@@ -570,6 +573,7 @@
   var CUR = null;                // 目前打開的課次
   var ROSTER = [];
   var OVERDUE = [];   // 逾期未核銷（課開始 2 小時後還有人沒點）
+  var OVERDUE_ERR = null;   // ☢️ 讀不到就要講，不能安靜地當成「沒有逾期」
   var busy = {};                 // booking_id -> true，防連點
 
   var elGate   = document.getElementById('gate');
@@ -599,6 +603,21 @@
   //    ☢️ 這個數字前端和資料庫必須一樣 —— 不一樣的話畫面會給一顆
   //       按下去才報錯的按鈕，或反過來擋住其實可以按的。
   var EARLY_MS = 15 * 60 * 1000;
+  var LATE_MS  = 2 * 60 * 60 * 1000;   // 課後 2 小時，跟 issue_checkin_token 同一條線
+
+  // ☢️ 確認碼的時窗跟【點名】的時窗不一樣，不要混在一起：
+  //      點名   課前 15 分 ～ 課後 7 天
+  //      確認碼 課前 15 分 ～ 課後 2 小時
+  //    所以會出現「還能點名、但發不出確認碼」的狀態 —— 那是對的。
+  //    ☢️ 2026-08-17 現場踩到：時窗外按下去才跳紅字。
+  //       按了才知道不能按，等於這顆按鈕在騙人。
+  function qrWindow(s) {
+    if (!s || !s.starts_at) return 'late';
+    var t = new Date(s.starts_at).getTime(), now = Date.now();
+    if (now < t - EARLY_MS) return 'early';
+    if (now > t + LATE_MS)  return 'late';
+    return 'ok';
+  }
   // starts_at 是資料庫算好的 timestamptz，前端不要自己拿
   // session_date + start_time 去湊（那正是規則 16 那個坑）。
   function isFuture(s) {
@@ -672,6 +691,7 @@
       .then(function (r) {
         if (r.error) throw new Error(r.error.message);
         OVERDUE = r.data || [];
+        OVERDUE_ERR = null;
       });
   }
 
@@ -700,6 +720,13 @@
   }
 
   function odBlock() {
+    if (OVERDUE_ERR) {
+      return '<div class="odbox"><div class="odh">逾期提醒暫時讀不到</div>' +
+        '<div class="od late"><div class="odl">' +
+        '<div class="odt">課表和點名都正常，可以照常使用</div>' +
+        '<div class="odm">把這行告訴 Jerec：' + esc(OVERDUE_ERR) + '</div>' +
+        '</div></div></div>';
+    }
     if (!OVERDUE.length || !ME) return '';
     var mine = [], others = [];
     OVERDUE.forEach(function (s) {
@@ -756,7 +783,7 @@
       html += '<div class="sec">接下來</div>' + next.map(card).join('');
     }
     // ☢️ 逾期區塊在的時候不能整個蓋掉 —— 那是這一頁最重要的一塊。
-    if (!missed.length && !now.length && !next.length && !OVERDUE.length) {
+    if (!missed.length && !now.length && !next.length && !OVERDUE.length && !OVERDUE_ERR) {
       html = '<div class="empty">最近 7 天沒有團體課。<br>如果這不對，先確認你的帳號已開通。</div>';
     }
     elList.innerHTML = html;
@@ -820,11 +847,7 @@
       '<div class="h2">' + esc(s.coach_name || '未指定教練') + '　·　' + (LV[s.level] || s.level) + '</div>' +
       (dead ? '<div class="banner dead">這堂課已經取消，點不了名。<br>如果實際上有上課，請找 Jerec 在後台改課次狀態。</div>' : '') +
       (soon ? '<div class="banner soon">還太早 —— <b>課前 15 分鐘</b>才能開始點名。<br>現在可以先把臨時要來的人加進名單。</div>' : '') +
-      (lock ? '' : '<button type="button" class="qrbtn" id="qrOpen">' +
-        '<span class="qri">▣</span>' +
-        '<span class="qrl"><b>出示確認碼</b>' +
-        '<i>學員用自己的手機掃一下，等於在紙上簽名</i></span>' +
-        '<span class="qrn">' + confCount() + '</span></button>') +
+      qrArea(s, lock) +
       '</div>';
 
     html += ROSTER.filter(function (p) { return p.booking_status !== 'cancelled'; })
@@ -843,6 +866,28 @@
 
     elRoster.innerHTML = html;
     wireRoster(dead);   // 搜尋框只有「已取消」才關；未來的課可以先加人
+  }
+
+  // 確認碼那一塊：時窗內才是按鈕，時窗外只講一句話。
+  function qrArea(s, lock) {
+    if (lock) return '';
+    var w = qrWindow(s);
+    if (w === 'ok') {
+      return '<button type="button" class="qrbtn" id="qrOpen">' +
+        '<span class="qri">▣</span>' +
+        '<span class="qrl"><b>出示確認碼</b>' +
+        '<i>學員用自己的手機掃一下，等於在紙上簽名</i></span>' +
+        '<span class="qrn">' + confCount() + '</span></button>';
+    }
+    if (w === 'early') {
+      return '<div class="qrnote">確認碼在<b>課前 15 分鐘</b>才能出示。</div>';
+    }
+    // 過了 2 小時。☢️ 這時候還有沒確認的人，唯一的路是代確認 —— 要講出來。
+    var live = ROSTER.filter(function (p) { return p.booking_status !== 'cancelled'; });
+    var left = live.filter(function (p) { return !p.confirmed_at; }).length;
+    return '<div class="qrnote">確認碼的時間已經過了（<b>課後 2 小時</b>內才能出示）。' +
+           (left ? '<br>還有 <b>' + left + '</b> 位沒確認，可以用下面每個人的「代確認」。' : '') +
+           '</div>';
   }
 
   // 這一堂有幾個人確認過了。分母不含已取消的人。
@@ -1003,6 +1048,10 @@
     document.getElementById('qrTitle').textContent =
       dstr(CUR.session_date) + '　' + hhmm(CUR.start_time) + '　' + CUR.title;
     document.getElementById('qrBox').innerHTML = '<div class="qrwait">產生中…</div>';
+    // ☢️ 先填目前的人數。原本只在發碼成功後才更新 —— 發碼失敗的時候
+    //    畫面就停在「已確認 0 / 0」，看起來像這堂課沒有人。
+    document.getElementById('qrCount').textContent = confCount();
+    document.getElementById('qrLeft').textContent = '';
     issue();
   }
 
@@ -1264,7 +1313,11 @@
     return loadSessions()
       .then(function () {
         return loadOverdue().catch(function (e) {
-          console.warn('[checkin] 逾期清單讀不到：', (e && e.message) || e);
+          // ☢️ 2026-08-17：原本這裡是整段吞掉。結果逾期清單因為權限設定
+          //    壞了一整批，畫面卻【完全正常】—— 看起來就像「沒有人逾期」。
+          //    提醒功能讀不到，本身就是一件要被提醒的事。
+          OVERDUE_ERR = (e && e.message) || String(e);
+          console.warn('[checkin] 逾期清單讀不到：', OVERDUE_ERR);
           OVERDUE = [];
         });
       })
