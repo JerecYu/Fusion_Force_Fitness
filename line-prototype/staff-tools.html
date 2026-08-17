@@ -145,8 +145,11 @@
   /* ☢️「什麼時候該用」要在按鈕旁邊，不是在手冊裡。 */
   .whenuse{background:var(--surface2);border-radius:11px;padding:11px 12px;margin-bottom:11px;
     font-size:11.5px;line-height:1.75;color:var(--ink2)}
-  .whenuse b{display:block;font-size:12px;font-weight:800;margin-bottom:2px}
-  .whenuse b.no{margin-top:9px;color:#7E1A15}
+  /* ☢️ 只有【直接放在 .whenuse 底下】的粗體才獨佔一行（那兩個小標題）。
+     原本寫成 .whenuse b，連句子中間的粗體也被迫換行 ——
+     最後那句「沖銷是在說『這件事根本沒發生過』」的引號被拆成三行。 */
+  .whenuse > b{display:block;font-size:12px;font-weight:800;margin-bottom:2px}
+  .whenuse > b.no{margin-top:9px;color:#7E1A15}
   .whenuse ul{margin:0 0 0 16px;padding:0}
   .whenuse li{margin:1px 0}
   .whenuse .mini{display:block;margin-top:9px;padding-top:8px;border-top:1px dashed var(--line);
