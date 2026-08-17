@@ -50,6 +50,30 @@
   .iconbtn:active{background:rgba(255,255,255,.25)}
 
   /* ── 區塊標題 ── */
+  /* ══ 逾期未核銷 ══════════════════════════════════════════════
+     ☢️ 這一塊放在課表【最上面】，而且顏色比任何東西都重。
+        它的用途是「教練一打開就被擋住」—— 放在下面等於沒做。 */
+  .odbox{background:var(--err-bg);border:1px solid var(--err-line);border-radius:14px;
+    padding:11px 11px 6px;margin:0 0 16px}
+  .odbox.other{background:var(--warn-bg);border-color:var(--warn-line);margin-top:-6px}
+  .odh{font-size:13px;font-weight:800;color:var(--err);letter-spacing:.04em;margin:1px 3px 9px}
+  /* ☢️ 這裡【不能】直接用 var(--warn)。#B4661F 壓在 --warn-bg 上只有 3.82:1，
+     小字沒過 AA（要 4.5）。--warn 原本是給 pill 那種一兩個字的標籤用的，
+     這一區是要讀完整句話的地方，所以另外壓深一階到 4.98:1。 */
+  .odbox.other .odh{color:#9C5518}
+  .od{width:100%;display:flex;align-items:center;gap:10px;text-align:left;
+    background:var(--surface);border:1px solid var(--err-line);border-radius:11px;
+    padding:10px 12px;margin-bottom:6px;font-family:inherit;cursor:pointer}
+  .odbox.other .od{border-color:var(--warn-line)}
+  .od:last-child{margin-bottom:5px}
+  .odl{min-width:0;flex:1}
+  .odt{font-size:14px;font-weight:700;color:var(--ink)}
+  .odm{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.5}
+  .odr{flex:0 0 auto;white-space:nowrap;font-size:12px;font-weight:700;color:var(--err)}
+  .odbox.other .odr{color:#9C5518}
+  /* 超過 7 天：教練按不動了，所以【不做成按鈕】—— 按了沒反應比不能按更糟 */
+  .od.late{cursor:default;background:#FFF7F6;border-style:dashed}
+  .od.late .odr{color:var(--dim);font-weight:600}
   .sec{margin:20px 0 9px;font-size:11px;font-weight:800;letter-spacing:.18em;color:var(--faint)}
   .sec.hot{color:var(--warn)}
 
@@ -189,6 +213,7 @@
   var SESSIONS = [];
   var CUR = null;                // 目前打開的課次
   var ROSTER = [];
+  var OVERDUE = [];   // 逾期未核銷（課開始 2 小時後還有人沒點）
   var busy = {};                 // booking_id -> true，防連點
 
   var elGate   = document.getElementById('gate');
@@ -279,6 +304,71 @@
       });
   }
 
+  // ☢️ 為什麼不從 SESSIONS 自己算就好？
+  //    因為 staff_sessions 的範圍寫死了「過去 7 天」，超過就整堂消失 ——
+  //    而超過 7 天的那一筆正是最需要有人看到的（教練已經按不動了）。
+  //    overdue_checkins 是另一張沒有時間下限的檢視表。
+  function loadOverdue() {
+    return DB.from('overdue_checkins')
+      .select('session_id,session_date,start_time,title,session_status,coach_id,coach_name,n_pending,n_expected,overdue_hours,too_late')
+      .order('session_date', { ascending: true })
+      .order('start_time', { ascending: true })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        OVERDUE = r.data || [];
+      });
+  }
+
+  /* ══ 逾期未核銷 ═══════════════════════════════════════════════
+     ☢️ 這一整段【只會顯示東西】，不會改任何資料。
+        提醒功能不該有能力動到帳。
+     ═══════════════════════════════════════════════════════════ */
+  function odRow(s, showCoach) {
+    var late = s.too_late === true;
+    var hrs  = Number(s.overdue_hours || 0);
+    var age  = hrs >= 48 ? Math.round(hrs / 24) + ' 天' : hrs + ' 小時';
+    return '<' + (late ? 'div' : 'button type="button"') +
+             ' class="od' + (late ? ' late' : '') + '"' +
+             (late ? '' : ' data-od="' + esc(s.session_id) + '"') + '>' +
+             '<div class="odl">' +
+               '<div class="odt">' + dstr(s.session_date) + '　' + hhmm(s.start_time) +
+                 '　' + esc(s.title) + '</div>' +
+               '<div class="odm">' +
+                 (showCoach ? esc(s.coach_name || '未指定教練') + '　·　' : '') +
+                 '還有 ' + s.n_pending + ' 人沒點　·　逾期 ' + age +
+                 (s.session_status === 'cancelled' ? '　·　這堂課已取消' : '') +
+               '</div>' +
+             '</div>' +
+             '<div class="odr">' + (late ? '要找 Jerec' : '去點名 ›') + '</div>' +
+           '</' + (late ? 'div' : 'button') + '>';
+  }
+
+  function odBlock() {
+    if (!OVERDUE.length || !ME) return '';
+    var mine = [], others = [];
+    OVERDUE.forEach(function (s) {
+      if (s.coach_id && ME.id && s.coach_id === ME.id) mine.push(s); else others.push(s);
+    });
+
+    var html = '';
+    // (A) 你自己的 —— 每一位教練都看得到自己的
+    if (mine.length) {
+      html += '<div class="odbox">' +
+        '<div class="odh">⚠️　你有 ' + mine.length + ' 堂還沒核銷</div>' +
+        mine.map(function (s) { return odRow(s, false); }).join('') +
+        '</div>';
+    }
+    // (B) 其他教練的 —— ☢️ 只有 owner 看得到。
+    //     一般教練看到別人的待辦只是雜訊，而且那不是他能處理的事。
+    if (ME.role === 'owner' && others.length) {
+      html += '<div class="odbox other">' +
+        '<div class="odh">全館還沒核銷（' + others.length + ' 堂）</div>' +
+        others.map(function (s) { return odRow(s, true); }).join('') +
+        '</div>';
+    }
+    return html;
+  }
+
   /* ══ 畫課次清單 ═══════════════════════════════════════════════ */
   function renderList() {
     CUR = null;
@@ -299,7 +389,7 @@
       else if (s.n_pending > 0) missed.push(s);
     });
 
-    var html = '';
+    var html = odBlock();
     if (missed.length) {
       html += '<div class="sec hot">⚠️ 還沒點完 · 過去 7 天（' + missed.length + '）</div>';
       html += missed.map(card).join('');
@@ -309,13 +399,17 @@
     if (next.length) {
       html += '<div class="sec">接下來</div>' + next.map(card).join('');
     }
-    if (!missed.length && !now.length && !next.length) {
+    // ☢️ 逾期區塊在的時候不能整個蓋掉 —— 那是這一頁最重要的一塊。
+    if (!missed.length && !now.length && !next.length && !OVERDUE.length) {
       html = '<div class="empty">最近 7 天沒有團體課。<br>如果這不對，先確認你的帳號已開通。</div>';
     }
     elList.innerHTML = html;
 
     Array.prototype.forEach.call(elList.querySelectorAll('.ses'), function (b) {
       b.onclick = function () { openSession(b.getAttribute('data-id')); };
+    });
+    Array.prototype.forEach.call(elList.querySelectorAll('.od[data-od]'), function (b) {
+      b.onclick = function () { openSession(b.getAttribute('data-od')); };
     });
   }
 
@@ -345,7 +439,9 @@
   /* ══ 畫名單 ═══════════════════════════════════════════════════ */
   function openSession(sid) {
     var s = SESSIONS.filter(function (x) { return x.session_id === sid; })[0];
-    if (!s) return;
+    // ☢️ 從逾期清單點進來的課有可能不在 SESSIONS 裡（那張表只放過去 7 天）。
+    //    原本這裡是 return，畫面【什麼都不會發生】—— 使用者只會覺得按鈕壞了。
+    if (!s) { toast('這堂課超出課表範圍，請找 Jerec 從後台處理', true); return; }
     CUR = s;
     gate('', '讀取名單…', '');
     loadRoster(sid).then(renderRoster, function (e) {
@@ -538,6 +634,9 @@
         // 重讀這一堂的名單 —— 餘額也要跟著更新，不能只改畫面上的字。
         return loadRoster(CUR.session_id).then(function () {
           return refreshOneSession(CUR.session_id);
+        }).then(function () {
+          // 點完最後一個人，紅框就該消失 —— 不重讀的話它會留在畫面上騙人
+          return loadOverdue().catch(function () { /* 提醒壞掉不影響點名 */ });
         });
       })
       .then(function () {
@@ -643,7 +742,7 @@
           gate('err', '拿不到登入身分', (u.error && u.error.message) || 'no_user'); return;
         }
         return DB.from('employees')
-          .select('display_name,role,is_active')
+          .select('id,display_name,role,is_active')
           .eq('auth_user_id', u.data.user.id)
           .then(function (r) {
             if (r.error) throw new Error(r.error.message);
@@ -669,16 +768,27 @@
 
   function refresh() {
     gate('', '讀取課表…', '');
-    return loadSessions().then(renderList, function (e) {
-      gate('err', '讀不到課表', String(e.message || e));
-    });
+    // ☢️ 逾期清單讀不到【不能】把整個課表擋掉。
+    //    它是提醒，不是主要功能 —— 壞掉的時候要讓教練照樣點名。
+    return loadSessions()
+      .then(function () {
+        return loadOverdue().catch(function (e) {
+          console.warn('[checkin] 逾期清單讀不到：', (e && e.message) || e);
+          OVERDUE = [];
+        });
+      })
+      .then(renderList, function (e) {
+        gate('err', '讀不到課表', String(e.message || e));
+      });
   }
 
   document.getElementById('reload').onclick = function () {
     if (!ME) return;
     if (CUR) {
       var sid = CUR.session_id;
-      loadSessions().then(function () { return loadRoster(sid); }).then(function () {
+      loadSessions()
+        .then(function () { return loadOverdue().catch(function(){ OVERDUE = []; }); })
+        .then(function () { return loadRoster(sid); }).then(function () {
         var s = SESSIONS.filter(function (x) { return x.session_id === sid; })[0];
         if (s) { CUR = s; renderRoster(); } else { renderList(); }
       }, function (e) { toast(String(e.message || e), true); });
