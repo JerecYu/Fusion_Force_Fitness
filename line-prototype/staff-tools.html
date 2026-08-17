@@ -63,6 +63,7 @@
   /* ── 綁不上的人 ── */
   .sg{border-left:4px solid var(--line)}
   .sg.no_phone{border-left-color:var(--err)}
+  .sg.retry{border-left-color:var(--ok)}
   .sg.name_mismatch{border-left-color:var(--warn)}
   .sg.taken,.sg.inactive{border-left-color:var(--dim)}
   .sg-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
@@ -73,6 +74,7 @@
   .sg.no_phone .sg-why{background:var(--err-bg);color:#7E1A15}
   .sg.name_mismatch .sg-why{background:var(--warn-bg);color:#7C420E}
   .sg.taken .sg-why,.sg.inactive .sg-why{background:var(--surface2);color:var(--ink2)}
+  .sg.retry .sg-why{background:var(--ok-bg);color:#1F4A3A}
   .sg-why b{font-weight:800}
   .sg-act{margin-top:9px;width:100%;background:var(--ink);color:#fff;border:0;border-radius:10px;
     padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
@@ -126,7 +128,8 @@
     <div class="sub" id="whoSub">辨識中…</div>
   </div>
   <div class="sp"></div>
-  <a class="iconbtn" href="checkin.html">點名核銷 ›</a>
+  <button type="button" class="iconbtn" id="reload">重新整理</button>
+  <a class="iconbtn" href="checkin.html" style="margin-left:7px">點名核銷 ›</a>
 </div>
 
 <div class="wrap">
@@ -191,7 +194,15 @@
 
   function sgCard(s) {
     var why = s.why, body = '', act = '';
-    if (why === 'no_phone') {
+    if (why === 'retry') {
+      // ☢️ 2026-08-17 現場發現的：教練用這一頁建完客人之後，那筆留言簿
+      //    【還會留著】—— 它要等客人真的綁成功才會自動消失。
+      //    原本這種情況會掉進 name_mismatch，畫面就會說
+      //    「請他改打『林正明』」，而他打的就是林正明 —— 自相矛盾。
+      body = '<b>資料都對得上了，就差他再送一次。</b><br>' +
+             '名單上是「<b>' + esc(s.registered_name) + '</b>」，手機也對。<br>' +
+             '請他<b>用自己的手機重新綁定一次</b>，這張卡就會自動消失。';
+    } else if (why === 'no_phone') {
       body = '<b>這支手機不在名單裡。</b><br>' +
              '他可能是新客人，或是登記時留的是別支手機。<br>' +
              '確定是新客人 → 按下面建檔，然後請他<b>再綁一次</b>。';
@@ -230,6 +241,13 @@
     html += SIGNUPS.length
       ? SIGNUPS.map(sgCard).join('')
       : '<div class="card"><div class="empty">目前沒有人卡住 ✓</div></div>';
+    // ☢️ 多位教練同時開這一頁的時候，畫面【不會自己更新】。
+    //    別人剛處理掉的那一筆，在你這邊還看得到 —— 不講的話，
+    //    兩個人會同時去聯絡同一位客人。
+    if (SIGNUPS.length) {
+      html += '<div class="hint" style="margin:-2px 3px 0">☢️ 這份清單是<b>打開頁面當下</b>的。' +
+              '其他教練同時在處理的話，按上面的<b>重新整理</b>才會看到最新的。</div>';
+    }
 
     html +=
       '<div class="sec">新增客人</div>' +
@@ -273,6 +291,15 @@
     });
 
     document.getElementById('nGo').onclick = createOne;
+    var rl = document.getElementById('reload');
+    if (rl) rl.onclick = function () {
+      if (!DB) return;
+      rl.disabled = true;
+      loadSignups().then(function () { render(); toast('已更新'); },
+                         function (e) { toast(String(e.message || e), true); })
+                   .then(function () { var r2 = document.getElementById('reload');
+                                       if (r2) r2.disabled = false; });
+    };
 
     var q = document.getElementById('q'), hits = document.getElementById('hits'), t;
     q.oninput = function () {
@@ -309,7 +336,13 @@
         var m = { bad_phone:'手機格式不對，要是 09 開頭的 10 碼。',
                   bad_name:'姓名至少要兩個字。' }[d.why];
         if (d.why === 'phone_taken') {
-          m = '這支手機已經是「<b>' + esc(d.name) + '</b>」了' +
+          // ☢️ race = 另一位教練在這幾毫秒之間先建好了。
+          //    那不是錯誤，結果就是我們要的 —— 訊息要講成「已經有人建好了」，
+          //    不要講成「你做錯了」。
+          m = d.race
+            ? '<b>剛剛有別的教練同時建好了同一位。</b><br>' +
+              '名單上現在是「<b>' + esc(d.name) + '</b>」，不用再建一次。'
+            : '這支手機已經是「<b>' + esc(d.name) + '</b>」了' +
               (d.bound ? '，而且已經綁過 LINE' : '，還沒綁 LINE') + '。<br>' +
               '不要重複建 —— 如果是同一個人，請他用<b>這個名字</b>去綁。';
         }

@@ -26,6 +26,22 @@
 --  ☢️ 不要加 with (security_invoker = true)。
 --     牆是下面那行 is_staff()，不是底層資料表的權限。
 --     （2026-08-17 因為加了這一行，線上三張檢視表整個讀不到，見 db/25。）
+-- ☢️ 姓名比對要跟 line-bind 的 nameMatches() 【完全一致】。
+--    不一致的話畫面會說「這樣打會過」，實際上卻不會過 —— 比沒有這一頁更糟。
+--    規則：去掉所有空白、不分大小寫，客人打的要【包含】登記姓名，
+--          而且登記姓名至少 2 個字（只有一個字的話，任何含那個字的名字都會過）。
+create or replace function public.name_matches(p_registered text, p_typed text)
+returns boolean
+language sql immutable set search_path = public as $$
+  select case
+    when a = '' or b = '' then false
+    when a = b then true
+    else length(a) >= 2 and position(a in b) > 0
+  end
+  from (select lower(regexp_replace(coalesce(p_registered,''), '[\s　]', '', 'g')) as a,
+               lower(regexp_replace(coalesce(p_typed,''),      '[\s　]', '', 'g')) as b) t;
+$$;
+
 create or replace view public.staff_signups as
 select
   r.line_user_id,
@@ -36,17 +52,22 @@ select
   c.id                                            as matched_customer_id,
   c.name                                          as registered_name,
   case
-    when c.id is null              then 'no_phone'        -- 這支手機不在名單裡
+    when c.id is null               then 'no_phone'       -- 這支手機不在名單裡
     when c.line_user_id is not null then 'taken'          -- 已經被別支 LINE 綁走
-    when c.is_active = false       then 'inactive'        -- 客人被停用
-    else                                'name_mismatch'   -- 手機對、姓名對不上
+    when c.is_active = false        then 'inactive'       -- 客人被停用
+    -- ☢️ 2026-08-17 上線當天發現漏掉的第四種：【姓名其實對得上，他只是還沒重試】。
+    --    這正是教練用這一頁建完客人之後的必然狀態（留言簿要等他真的綁成功才會消失）。
+    --    漏掉它的後果是：這一頁最主要的流程走完，畫面會說
+    --    「請他改打『林正明』」—— 而他打的就是林正明。自相矛盾。
+    when public.name_matches(c.name, r.name) then 'retry'
+    else                                 'name_mismatch'  -- 手機對、姓名真的對不上
   end                                             as why
 from public.signup_requests r
 left join public.customers c on c.phone = r.phone
 where public.is_staff();
 
 comment on view public.staff_signups is
-  '綁不上的人，以及卡在哪。純讀。why：no_phone／name_mismatch／taken／inactive。';
+  '綁不上的人，以及卡在哪。純讀。why：no_phone／retry／name_mismatch／taken／inactive。';
 
 grant select on public.staff_signups to authenticated;
 
@@ -118,10 +139,25 @@ begin
 
   -- ☢️ 這裡【只】寫 customers。一個字都不碰 credit_ledger ——
   --    建出來的客人就是 0 堂，堂數要另外走課購流程（C 第二期）。
-  insert into public.customers (name, phone, is_active, note)
-  values (v_name, v_phone, true,
-          to_char(now() at time zone 'Asia/Taipei', 'YYYY-MM-DD') || ' 教練後台建立')
-  returning id into v_id;
+  --
+  -- ☢️ 上面那個 select 到這個 insert 之間有一段空隙。
+  --    2026-08-17 Jerec 找了多位教練一起上後台，兩個人同時對同一位按建立，
+  --    兩邊的 select 都會說「沒有」，然後第二個 insert 撞上 customers_phone_key。
+  --    unique 索引擋住資料是【好事】—— 要修的是那句看不懂的原始錯誤訊息。
+  begin
+    insert into public.customers (name, phone, is_active, note)
+    values (v_name, v_phone, true,
+            to_char(now() at time zone 'Asia/Taipei', 'YYYY-MM-DD') || ' 教練後台建立')
+    returning id into v_id;
+  exception when unique_violation then
+    -- 別人在這幾毫秒之間先建好了。這不是錯誤，結果就是我們要的。
+    select c.id, c.name, (c.line_user_id is not null) as bound, c.is_active
+      into v_exist
+    from public.customers c where c.phone = v_phone;
+    return jsonb_build_object('ok', false, 'why', 'phone_taken',
+             'name', v_exist.name, 'bound', v_exist.bound, 'active', v_exist.is_active,
+             'race', true);
+  end;
 
   return jsonb_build_object('ok', true, 'id', v_id, 'name', v_name,
                             'phone_tail', right(v_phone, 3));
