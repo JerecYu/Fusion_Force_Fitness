@@ -164,11 +164,21 @@
   .hit .hb{margin-left:auto;font-size:12px;color:var(--dim)}
 
   /* ── 雜項 ── */
-  .tools{display:flex;align-items:center;gap:8px;margin:26px 0 8px;padding:12px 14px;
-    background:var(--surface);border:1px solid var(--line);border-radius:12px;
-    text-decoration:none;color:var(--ink2);font-size:13px;font-weight:700}
-  .tools span{font-weight:500;color:var(--dim);font-size:11.5px}
-  .tools ::after{content:''}
+  /* ══ 教練後台入口 ═══════════════════════════════════════════
+     排在課表最上面。☢️ 但永遠在逾期紅框【之後】—— 那一塊比較急。 */
+  .tools{display:flex;align-items:center;gap:11px;margin:2px 0 18px;padding:12px 13px;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 1px 3px rgba(14,42,59,.05);text-decoration:none;color:var(--ink)}
+  .tools .ti{flex:0 0 auto;width:38px;height:38px;border-radius:11px;color:#fff;
+    background:linear-gradient(140deg,#1A5E80,#2E86AB);
+    display:flex;align-items:center;justify-content:center}
+  .tools .tt{min-width:0;flex:1}
+  .tools .tt b{display:block;font-size:14px;font-weight:800;letter-spacing:.03em}
+  .tools .tt i{display:block;font-style:normal;font-size:11px;color:var(--dim);margin-top:2px}
+  /* 有人卡住才出現。白字壓在 #A4211A 上是 7.5:1，戶外也看得見。 */
+  .tools .tb{flex:0 0 auto;background:var(--err);color:#fff;font-size:11px;font-weight:800;
+    border-radius:999px;padding:4px 9px;letter-spacing:.02em}
+  .tools .ta{flex:0 0 auto;color:var(--faint);font-size:17px;font-weight:700;line-height:1}
   .empty{text-align:center;color:var(--faint);font-size:13px;padding:34px 10px}
   /* 「退回 N 堂／扣 N 堂」：第二行，比按鈕字小，但不能淡到看不見 ——
      這行字的用途就是讓人在按之前知道錢會怎麼動。 */
@@ -579,6 +589,7 @@
   var ROSTER = [];
   var OVERDUE = [];   // 逾期未核銷（課開始 2 小時後還有人沒點）
   var OVERDUE_ERR = null;   // ☢️ 讀不到就要講，不能安靜地當成「沒有逾期」
+  var STUCK = 0;            // 綁不上的人數（教練後台入口上的那個數字）
   var busy = {};                 // booking_id -> true，防連點
 
   var elGate   = document.getElementById('gate');
@@ -757,6 +768,24 @@
     return html;
   }
 
+  // 教練後台的入口。☢️ 帶一個「有幾個人綁不上」的數字 ——
+  //    只有連結的話它是裝飾，帶了數字才是訊號：不用點進去就知道有沒有事。
+  function toolsCard() {
+    var n = STUCK;
+    return '<a class="tools" href="staff-tools.html">' +
+      '<span class="ti">' +
+        '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" ' +
+        'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M15.5 20v-1.6a3.6 3.6 0 0 0-3.6-3.6H6.1A3.6 3.6 0 0 0 2.5 18.4V20"/>' +
+        '<circle cx="9" cy="7.4" r="3.4"/><path d="M18.6 8.2v5"/><path d="M21.1 10.7h-5"/>' +
+        '</svg></span>' +
+      '<span class="tt"><b>教練後台</b>' +
+        '<i>新增客人　·　綁定卡住的人</i></span>' +
+      (n > 0 ? '<span class="tb">' + n + ' 人卡住</span>' : '') +
+      '<span class="ta">›</span>' +
+    '</a>';
+  }
+
   /* ══ 畫課次清單 ═══════════════════════════════════════════════ */
   function renderList() {
     CUR = null;
@@ -777,7 +806,13 @@
       else if (s.n_pending > 0) missed.push(s);
     });
 
-    var html = odBlock();
+    // ☢️ 順序是有意義的：逾期紅框 → 教練後台 → 今天的課。
+    //    2026-08-17 Jerec：「教練後台的點擊頁面在最下方太不顯眼」——
+    //    原本放在最下面，教練根本滑不到。
+    //    但它【不能】排在逾期紅框前面：那一塊是「現在有事情沒做完」，
+    //    永遠比「遇到問題才去的地方」急。沒有逾期的時候（常態），
+    //    這一條自然就是畫面第一個東西。
+    var html = odBlock() + toolsCard();
     if (missed.length) {
       html += '<div class="sec hot">⚠️ 還沒點完 · 過去 7 天（' + missed.length + '）</div>';
       html += missed.map(card).join('');
@@ -791,11 +826,6 @@
     if (!missed.length && !now.length && !next.length && !OVERDUE.length && !OVERDUE_ERR) {
       html = '<div class="empty">最近 7 天沒有團體課。<br>如果這不對，先確認你的帳號已開通。</div>';
     }
-    // 教練後台的入口。☢️ 放在最下面，不要放進上面那排按鈕 ——
-    //    上面那排是「現在正在做的事」，這一條是「遇到問題才去的地方」。
-    html += '<a class="tools" href="staff-tools.html">' +
-            '教練後台　<span>新增客人・綁定卡住的人</span>　›</a>';
-
     elList.innerHTML = html;
 
     Array.prototype.forEach.call(elList.querySelectorAll('.ses'), function (b) {
@@ -1321,6 +1351,13 @@
     // ☢️ 逾期清單讀不到【不能】把整個課表擋掉。
     //    它是提醒，不是主要功能 —— 壞掉的時候要讓教練照樣點名。
     return loadSessions()
+      .then(function () {
+        // 綁不上的人數。☢️ 讀不到就當 0 —— 這只是入口上的一個數字，
+        //    壞掉不該擋住課表，也不該在課表頁跳錯誤（那一頁自己會講）。
+        return DB.from('staff_signups').select('line_user_id')
+          .then(function (r) { STUCK = (!r.error && r.data) ? r.data.length : 0; },
+                function ()  { STUCK = 0; });
+      })
       .then(function () {
         return loadOverdue().catch(function (e) {
           // ☢️ 2026-08-17：原本這裡是整段吞掉。結果逾期清單因為權限設定
