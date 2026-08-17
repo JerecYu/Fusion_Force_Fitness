@@ -164,6 +164,11 @@
   .hit .hb{margin-left:auto;font-size:12px;color:var(--dim)}
 
   /* ── 雜項 ── */
+  .tools{display:flex;align-items:center;gap:8px;margin:26px 0 8px;padding:12px 14px;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    text-decoration:none;color:var(--ink2);font-size:13px;font-weight:700}
+  .tools span{font-weight:500;color:var(--dim);font-size:11.5px}
+  .tools ::after{content:''}
   .empty{text-align:center;color:var(--faint);font-size:13px;padding:34px 10px}
   /* 「退回 N 堂／扣 N 堂」：第二行，比按鈕字小，但不能淡到看不見 ——
      這行字的用途就是讓人在按之前知道錢會怎麼動。 */
@@ -786,6 +791,11 @@
     if (!missed.length && !now.length && !next.length && !OVERDUE.length && !OVERDUE_ERR) {
       html = '<div class="empty">最近 7 天沒有團體課。<br>如果這不對，先確認你的帳號已開通。</div>';
     }
+    // 教練後台的入口。☢️ 放在最下面，不要放進上面那排按鈕 ——
+    //    上面那排是「現在正在做的事」，這一條是「遇到問題才去的地方」。
+    html += '<a class="tools" href="staff-tools.html">' +
+            '教練後台　<span>新增客人・綁定卡住的人</span>　›</a>';
+
     elList.innerHTML = html;
 
     Array.prototype.forEach.call(elList.querySelectorAll('.ses'), function (b) {

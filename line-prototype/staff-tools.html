@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>FFF 教練後台</title>
+
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  staff-tools.html — 教練後台（第 48 步 · 2026-08-17）
+
+  網址：https://liff.line.me/2011063116-QOxXN30h/staff-tools.html
+
+  起因：2026-08-17 林正明綁不上，查了半天才發現「他根本不在名單裡」。
+        真正花時間的不是建一筆資料，是【查出他為什麼綁不上】。
+        那一步做成畫面，教練自己三秒就看得懂。
+
+  ☢️ 這一頁【完全不碰堂數】。
+     Jerec 2026-08-17 的決定（原話）：「舊系統……不只新增客人還直接可選
+     購買方案，這會有『先上車，但不一定會補票』的問題，所以我選 1
+     不碰堂數，只建人」。
+     建出來的客人固定 0 堂，堂數走課購流程（C 第二期）。
+     ☢️ 這同時守住第 39 步：動到錢的入口只有一個。
+
+  三塊：
+    ① 綁不上的人 —— 卡在哪，以及下一步該做什麼
+    ② 新增客人   —— 姓名 ＋ 手機
+    ③ 查客人     —— 剩幾堂、綁定了沒
+  ═══════════════════════════════════════════════════════════════════
+-->
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --ink:#0E2A3B; --ink2:#1C4257; --blue:#2E86AB; --teal:#6FBAC9;
+    --bg:#F4F8FA; --surface:#FFF; --surface2:#EDF4F7;
+    --line:#DCE8EE; --dim:#587589; --faint:#93AEBD;
+    --ok:#2F6B54; --ok-bg:#E4F0EA; --ok-line:#B9D8C8;
+    --warn:#B4661F; --warn-bg:#FBEFE2; --warn-line:#EBC4A0;
+    --err:#A4211A; --err-bg:#FBE9E7; --err-line:#F3C9C5;
+  }
+  body{background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:44px}
+
+  .top{background:var(--ink);color:#fff;padding:13px 15px;display:flex;align-items:center;gap:10px}
+  .who{font-size:16px;font-weight:800;letter-spacing:.03em}
+  .sub{font-size:11px;color:#A9C6D4;margin-top:1px}
+  .sp{flex:1}
+  .iconbtn{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:9px;
+    padding:9px 12px;font-family:inherit;font-size:12.5px;font-weight:700;
+    text-decoration:none;display:inline-block}
+
+  .wrap{max-width:520px;margin:0 auto;padding:14px 14px 0}
+  .sec{margin:22px 0 9px;font-size:11px;font-weight:800;letter-spacing:.18em;color:var(--faint)}
+  .sec:first-child{margin-top:6px}
+  .sec.hot{color:var(--err)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:13px 14px;margin-bottom:9px}
+  .empty{text-align:center;color:var(--faint);font-size:13px;padding:22px 10px}
+
+  /* ── 綁不上的人 ── */
+  .sg{border-left:4px solid var(--line)}
+  .sg.no_phone{border-left-color:var(--err)}
+  .sg.name_mismatch{border-left-color:var(--warn)}
+  .sg.taken,.sg.inactive{border-left-color:var(--dim)}
+  .sg-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .sg-n{font-size:15px;font-weight:800}
+  .sg-p{font-size:12px;color:var(--dim);letter-spacing:.04em}
+  .sg-t{margin-left:auto;font-size:11px;color:var(--faint)}
+  .sg-why{margin-top:7px;font-size:12.5px;line-height:1.7;padding:8px 10px;border-radius:9px}
+  .sg.no_phone .sg-why{background:var(--err-bg);color:#7E1A15}
+  .sg.name_mismatch .sg-why{background:var(--warn-bg);color:#7C420E}
+  .sg.taken .sg-why,.sg.inactive .sg-why{background:var(--surface2);color:var(--ink2)}
+  .sg-why b{font-weight:800}
+  .sg-act{margin-top:9px;width:100%;background:var(--ink);color:#fff;border:0;border-radius:10px;
+    padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+
+  /* ── 表單 ── */
+  label{display:block;font-size:11.5px;font-weight:700;color:var(--ink2);margin:9px 0 4px;
+    letter-spacing:.04em}
+  input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
+    font-family:inherit;font-size:15px;color:var(--ink);background:#fff}
+  /* ☢️ 提示字的對比要過 AA（4.5:1）。淺灰 placeholder 在手機戶外看不見。 */
+  input::placeholder{color:#526E7E}
+  input:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,134,171,.13)}
+  .hint{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.6}
+  .hint b{color:var(--ink2)}
+  .btn{margin-top:13px;width:100%;background:var(--ink);color:#fff;border:0;border-radius:11px;
+    padding:13px;font-family:inherit;font-size:14px;font-weight:800;letter-spacing:.04em;cursor:pointer}
+  .btn:disabled{opacity:.5}
+  .res{margin-top:10px;font-size:12.5px;line-height:1.7;padding:10px 12px;border-radius:10px}
+  .res.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line)}
+  .res.bad{background:var(--err-bg);color:var(--err);border:1px solid var(--err-line)}
+
+  /* ── 查客人 ── */
+  .hit{width:100%;display:flex;align-items:center;gap:9px;background:#fff;
+    border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:7px;
+    font-family:inherit;text-align:left}
+  .hit .hn{font-size:14px;font-weight:700}
+  .hit .tl{font-size:11.5px;color:var(--faint);letter-spacing:.06em}
+  .hit .bal{margin-left:auto;font-size:12px;font-weight:700;background:var(--surface2);
+    color:var(--ink2);border-radius:999px;padding:3px 9px}
+  .hit .bal.low{background:var(--err-bg);color:var(--err)}
+  .hit .bd{font-size:11px;padding:2px 7px;border-radius:999px}
+  .hit .bd.y{background:var(--ok-bg);color:var(--ok)}
+  .hit .bd.n{background:var(--warn-bg);color:#7C420E}
+
+  .gate{text-align:center;padding:60px 20px;color:var(--dim)}
+  .gate .g1{font-size:17px;font-weight:800;color:var(--ink)}
+  .gate.err .g1{color:var(--err)}
+  .gate .g2{font-size:12.5px;margin-top:6px}
+
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:11px 17px;border-radius:11px;
+    font-size:13px;font-weight:600;max-width:88%;text-align:center;z-index:50}
+  .toast.bad{background:var(--err)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div>
+    <div class="who" id="who">教練後台</div>
+    <div class="sub" id="whoSub">辨識中…</div>
+  </div>
+  <div class="sp"></div>
+  <a class="iconbtn" href="checkin.html">點名核銷 ›</a>
+</div>
+
+<div class="wrap">
+  <div id="gate" class="gate"><div class="g1">辨識中…</div><div class="g2">跟資料庫確認你是誰</div></div>
+  <div id="main" hidden></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="liff-auth.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  var DB = null, ME = null;
+  var SIGNUPS = [];
+
+  var elGate = document.getElementById('gate');
+  var elMain = document.getElementById('main');
+  var elWho  = document.getElementById('who');
+  var elSub  = document.getElementById('whoSub');
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function gate(cls, t1, t2) {
+    elGate.className = 'gate' + (cls ? ' ' + cls : '');
+    elGate.innerHTML = '<div class="g1">' + esc(t1) + '</div><div class="g2">' + esc(t2||'') + '</div>';
+    elGate.hidden = false; elMain.hidden = true;
+  }
+  var toastTimer;
+  function toast(msg, bad) {
+    var old = document.querySelector('.toast'); if (old) old.remove();
+    var d = document.createElement('div');
+    d.className = 'toast' + (bad ? ' bad' : ''); d.textContent = msg;
+    document.body.appendChild(d);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ d.remove(); }, bad ? 4200 : 2200);
+  }
+  function tw(iso) {
+    if (!iso) return '';
+    var d = new Date(iso), p = function (n) { return n < 10 ? '0' + n : String(n); };
+    return (d.getMonth()+1) + '/' + d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  /* ══ 綁不上的人 ══════════════════════════════════════════════
+     ☢️ 這一塊的重點【不是】列出誰綁不上，是講出「卡在哪、下一步做什麼」。
+        2026-08-17 林正明那件事，難的是診斷不是動作。
+     ═══════════════════════════════════════════════════════════ */
+  function loadSignups() {
+    return DB.from('staff_signups')
+      .select('line_user_id,typed_name,typed_phone,tries,updated_at,registered_name,why')
+      .order('updated_at', { ascending: false })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        SIGNUPS = r.data || [];
+      });
+  }
+
+  function sgCard(s) {
+    var why = s.why, body = '', act = '';
+    if (why === 'no_phone') {
+      body = '<b>這支手機不在名單裡。</b><br>' +
+             '他可能是新客人，或是登記時留的是別支手機。<br>' +
+             '確定是新客人 → 按下面建檔，然後請他<b>再綁一次</b>。';
+      act  = '<button type="button" class="sg-act" data-new="1" ' +
+             'data-n="' + esc(s.typed_name) + '" data-p="' + esc(s.typed_phone) + '">' +
+             '用這筆資料去建客人 ›</button>';
+    } else if (why === 'name_mismatch') {
+      body = '<b>手機對得上，姓名對不上。</b><br>' +
+             '名單上登記的是「<b>' + esc(s.registered_name) + '</b>」。<br>' +
+             '☢️ 客人打的姓名要<b>包含</b>登記姓名 —— 多寫沒關係，少寫不行。<br>' +
+             '請他改打「' + esc(s.registered_name) + '」再送一次就會過。';
+    } else if (why === 'taken') {
+      body = '<b>這筆客人已經被另一支 LINE 綁走了。</b><br>' +
+             '可能是他換手機、或家人幫他綁過。<b>這個要找 Jerec 處理</b>，' +
+             '教練這邊改不了（改綁的權限故意沒有開）。';
+    } else {
+      body = '<b>這位客人被停用了。</b>要找 Jerec 確認是不是誤設。';
+    }
+    return '<div class="card sg ' + why + '">' +
+      '<div class="sg-h">' +
+        '<span class="sg-n">' + esc(s.typed_name) + '</span>' +
+        '<span class="sg-p">' + esc(s.typed_phone) + '</span>' +
+        '<span class="sg-t">試 ' + s.tries + ' 次　·　' + tw(s.updated_at) + '</span>' +
+      '</div>' +
+      '<div class="sg-why">' + body + '</div>' + act +
+    '</div>';
+  }
+
+  /* ══ 畫面 ══════════════════════════════════════════════════ */
+  function render() {
+    elGate.hidden = true; elMain.hidden = false;
+
+    var html = '';
+    html += '<div class="sec' + (SIGNUPS.length ? ' hot' : '') + '">' +
+            (SIGNUPS.length ? '⚠️ 綁不上的人（' + SIGNUPS.length + '）' : '綁不上的人') + '</div>';
+    html += SIGNUPS.length
+      ? SIGNUPS.map(sgCard).join('')
+      : '<div class="card"><div class="empty">目前沒有人卡住 ✓</div></div>';
+
+    html +=
+      '<div class="sec">新增客人</div>' +
+      '<div class="card">' +
+        '<label for="nName">姓名</label>' +
+        '<input id="nName" type="text" placeholder="例：王小明" autocomplete="off">' +
+        '<div class="hint">☢️ 登記<b>短的</b>就好。比對規則是「客人打的要<b>包含</b>登記姓名」' +
+          '—— 登記「王小明」，他打「王小明 Ming」也會過；登記「王小明 Ming」，' +
+          '他打「王小明」就過不了。</div>' +
+        '<label for="nPhone">手機</label>' +
+        '<input id="nPhone" type="tel" inputmode="numeric" placeholder="0912345678" autocomplete="off">' +
+        '<div class="hint">要跟他綁定時打的<b>完全一樣</b>。</div>' +
+        '<button type="button" class="btn" id="nGo">建立客人</button>' +
+        '<div class="hint" style="margin-top:9px">☢️ 建出來是 <b>0 堂</b>。' +
+          '堂數不從這裡進 —— 有買方案的話，另外告訴 Jerec。</div>' +
+        '<div id="nRes"></div>' +
+      '</div>' +
+
+      '<div class="sec">查客人</div>' +
+      '<div class="card">' +
+        '<input id="q" type="search" placeholder="打姓名，或手機後三碼" autocomplete="off">' +
+        '<div class="hint">看得到剩幾堂、綁定了沒。</div>' +
+        '<div id="hits" style="margin-top:10px"></div>' +
+      '</div>';
+
+    elMain.innerHTML = html;
+    wire();
+  }
+
+  function wire() {
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-new]'), function (b) {
+      b.onclick = function () {
+        document.getElementById('nName').value  = b.getAttribute('data-n');
+        document.getElementById('nPhone').value = b.getAttribute('data-p');
+        document.getElementById('nName').scrollIntoView({ behavior:'smooth', block:'center' });
+        // ☢️ 故意【不】直接建。姓名那一欄正是最常出問題的地方，
+        //    要讓教練有機會把「廖庭均 Teresa」改成「廖庭均」再送。
+        setTimeout(function () { document.getElementById('nName').focus({ preventScroll:true }); }, 420);
+        toast('資料帶好了，確認姓名再按建立');
+      };
+    });
+
+    document.getElementById('nGo').onclick = createOne;
+
+    var q = document.getElementById('q'), hits = document.getElementById('hits'), t;
+    q.oninput = function () {
+      clearTimeout(t);
+      var v = q.value.trim();
+      if (!v) { hits.innerHTML = ''; return; }
+      t = setTimeout(function () { search(v, hits); }, 260);
+    };
+  }
+
+  function createOne() {
+    var bn = document.getElementById('nGo'), res = document.getElementById('nRes');
+    var name = document.getElementById('nName').value.trim();
+    var phone = document.getElementById('nPhone').value.trim();
+    res.innerHTML = '';
+    bn.disabled = true; bn.textContent = '建立中…';
+
+    DB.rpc('create_customer', { p_name: name, p_phone: phone })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        var d = r.data || {};
+        if (d.ok) {
+          res.innerHTML = '<div class="res ok">已建立：<b>' + esc(d.name) + '</b>（' + esc(d.phone_tail) + '）' +
+            '<br>☢️ 目前 <b>0 堂</b>。請他<b>用自己的手機</b>再綁定一次。</div>';
+          document.getElementById('nName').value = '';
+          document.getElementById('nPhone').value = '';
+          // 建完把留言簿重讀一次 —— 那個人應該還在（要等他真的綁成功才會消失）
+          return loadSignups().then(function () {
+            var keep = document.getElementById('nRes').innerHTML;
+            render();
+            document.getElementById('nRes').innerHTML = keep;
+          });
+        }
+        var m = { bad_phone:'手機格式不對，要是 09 開頭的 10 碼。',
+                  bad_name:'姓名至少要兩個字。' }[d.why];
+        if (d.why === 'phone_taken') {
+          m = '這支手機已經是「<b>' + esc(d.name) + '</b>」了' +
+              (d.bound ? '，而且已經綁過 LINE' : '，還沒綁 LINE') + '。<br>' +
+              '不要重複建 —— 如果是同一個人，請他用<b>這個名字</b>去綁。';
+        }
+        res.innerHTML = '<div class="res bad">' + (m || esc(d.why || '沒有建立')) + '</div>';
+      })
+      .catch(function (e) {
+        res.innerHTML = '<div class="res bad">' + esc(String(e.message || e)) + '</div>';
+      })
+      .then(function () {
+        var b2 = document.getElementById('nGo');
+        if (b2) { b2.disabled = false; b2.textContent = '建立客人'; }
+      });
+  }
+
+  function search(v, box) {
+    var digits = /^\d+$/.test(v);
+    var qy = DB.from('staff_customers').select('id,name,phone_tail,balance,bound,is_active').limit(10);
+    qy = digits ? qy.like('phone', '%' + v) : qy.ilike('name', '%' + v + '%');
+    qy.then(function (r) {
+      // ☢️ 查不動要說出來（規則 14）。空白畫面跟「查無此人」意思完全不同。
+      if (r.error) { box.innerHTML = '<div class="res bad">查不動：' + esc(r.error.message) + '</div>'; return; }
+      var rows = r.data || [];
+      if (!rows.length) { box.innerHTML = '<div class="empty">沒有符合的人</div>'; return; }
+      box.innerHTML = rows.map(function (c) {
+        var b = Number(c.balance);
+        return '<div class="hit">' +
+          '<span class="hn">' + esc(c.name) + (c.is_active === false ? '（已停用）' : '') + '</span>' +
+          '<span class="tl">' + esc(c.phone_tail) + '</span>' +
+          '<span class="bd ' + (c.bound ? 'y">已綁定' : 'n">未綁定') + '</span>' +
+          '<span class="bal' + (b <= 0 ? ' low' : '') + '">剩 ' + b + ' 堂</span>' +
+        '</div>';
+      }).join('');
+    });
+  }
+
+  /* ══ 開場 ══════════════════════════════════════════════════ */
+  function boot() {
+    if (!window.FFF_AUTH || !window.FFF_AUTH.ready) {
+      gate('err', '身分程式沒載進來', 'liff-auth.js 沒跑起來'); return;
+    }
+    window.FFF_AUTH.ready.then(function () {
+      var st = window.FFF_AUTH.state;
+      if (st === 'browsing') {
+        elSub.textContent = '未登入';
+        gate('err', '要從 LINE 裡面開', '請在 LINE 的聊天室點連結，不要複製到瀏覽器'); return;
+      }
+      if (st === 'error') {
+        elSub.textContent = '辨識失敗';
+        gate('err', '辨識失敗', window.FFF_AUTH.error || ''); return;
+      }
+      if (!window.fffDB) { gate('err', '資料庫連線沒建立', 'no_fffDB'); return; }
+      DB = window.fffDB;
+
+      DB.auth.getUser().then(function (u) {
+        if (u.error || !u.data || !u.data.user) {
+          gate('err', '拿不到登入身分', (u.error && u.error.message) || 'no_user'); return;
+        }
+        return DB.from('employees')
+          .select('id,display_name,role,is_active')
+          .eq('auth_user_id', u.data.user.id)
+          .then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            if (!r.data || !r.data.length) {
+              elSub.textContent = '未開通';
+              gate('err', '你的帳號還沒開通',
+                   '先開 staff.html 把登入代號給 Jerec，開通後再回來這一頁'); return;
+            }
+            ME = r.data[0];
+            if (ME.is_active === false) {
+              gate('err', ME.display_name + '　已停用', '如果這是誤設，請找 Jerec'); return;
+            }
+            elWho.textContent = ME.display_name;
+            elSub.textContent = '教練後台';
+            gate('', '讀取中…', '');
+            return loadSignups().then(render, function (e) {
+              gate('err', '讀不到留言簿', String(e.message || e));
+            });
+          });
+      }).catch(function (e) {
+        gate('err', '出事了', String(e.message || e));
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+</body>
+</html>
