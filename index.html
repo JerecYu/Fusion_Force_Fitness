@@ -494,8 +494,12 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 /* ── 場館空間 ─────────────────────────────────────────────── */
 .fac{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(9px,1.5vw,14px)}
 .fac>:nth-child(1){grid-column:span 4;aspect-ratio:2.16/1}
+/* ☢️ 這個網格是 4 欄，每一列要湊滿 4 才不會留空：
+   1 跨 4 ／ 2、3 各跨 2 ／ 4~7 各跨 1 ／ 8、9 各跨 2 ／ 10、11 各跨 2。
+   ☢️ 所以照片【要成雙加】—— 只加一張會孤零零掉在左下角，右邊空一大片。 */
 .fac>:nth-child(2),.fac>:nth-child(3),
-.fac>:nth-child(8),.fac>:nth-child(9){grid-column:span 2}
+.fac>:nth-child(8),.fac>:nth-child(9),
+.fac>:nth-child(10),.fac>:nth-child(11){grid-column:span 2}
 .fac-home{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(12px,2vw,18px)}
 .fac-i{position:relative;overflow:hidden;border-radius:var(--r-sm);cursor:pointer;
   aspect-ratio:3/2;background:var(--surface-2);border:1px solid var(--line)}
@@ -516,7 +520,8 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 @media (max-width:860px){
   .fac{grid-template-columns:repeat(2,1fr)}
   .fac>:nth-child(1){grid-column:span 2}
-  .fac>:nth-child(8),.fac>:nth-child(9){grid-column:span 1}
+  .fac>:nth-child(8),.fac>:nth-child(9),
+  .fac>:nth-child(10),.fac>:nth-child(11){grid-column:span 1}
 }
 @media (max-width:640px){.fac-home{grid-template-columns:1fr}}
 
@@ -2142,7 +2147,11 @@ var FFDATA = {
     { src: 'assets/facility/dumbbells.jpg',
       t: '啞鈴區', d: '從輕到重完整級距，方便漸進式加重' },
     { src: 'assets/facility/sled.jpg',
-      t: '雪橇車', d: '推拉訓練，強化下肢驅動與核心穩定' }
+      t: '雪橇車', d: '推拉訓練，強化下肢驅動與核心穩定' },
+    { src: 'assets/facility/washroom.jpg',
+      t: '盥洗室', d: '大理石檯面與獨立隔間，練完梳洗不用擠' },
+    { src: 'assets/facility/restroom.jpg',
+      t: '淋浴間', d: '獨立淋浴間，另設親子友善廁所' }
   ],
 
   /* ── 價格 ─────────────────────────────────────────────── */
