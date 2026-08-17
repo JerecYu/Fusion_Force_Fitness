@@ -202,8 +202,10 @@
      結果就是他反應的「不顯眼」—— 不是不夠亮，是沒有分別。
      這裡改用 LOGO 本身的深藍→品牌藍，圖示直接放 LOGO 的白色剪影。
      ☢️ 全頁只有這一顆是深色底，掃過去一眼就找得到。 */
-  .link-card .ic-web{background:linear-gradient(140deg,#0E2A3B,#256F8F)}
-  .link-card .ic-web img{height:26px;width:auto;display:block;position:relative;z-index:1}
+  /* ☢️ 亮端不能再亮了。#3E9BBF 對白色只有 3.16:1，剛好卡在圖形的
+     最低標上；#2E86AB 是 4.11:1，而且它就是 LOGO 本身那顆藍。 */
+  .link-card .ic-web{background:linear-gradient(140deg,#1A5E80,#2E86AB)}
+  .link-card .ic-web img{height:32px;width:auto;display:block;position:relative;z-index:1}
   .link-card .t{font-size:.94rem;font-weight:700;letter-spacing:.03em;display:block}
   .link-card .d{font-size:.7rem;color:var(--dim);margin-top:3px;line-height:1.6;display:block}
   .link-card .ar{margin-left:auto;color:var(--faint)}

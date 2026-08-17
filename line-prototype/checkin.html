@@ -141,6 +141,10 @@
 
   /* ── 雜項 ── */
   .empty{text-align:center;color:var(--faint);font-size:13px;padding:34px 10px}
+  /* 「退回 N 堂／扣 N 堂」：第二行，比按鈕字小，但不能淡到看不見 ——
+     這行字的用途就是讓人在按之前知道錢會怎麼動。 */
+  .b .hint{display:block;font-size:.68rem;font-weight:500;opacity:.82;margin-top:2px;
+    letter-spacing:.02em}
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
     background:var(--ink);color:#fff;font-size:14px;font-weight:700;
     padding:12px 18px;border-radius:3px;max-width:88%;text-align:center;
@@ -411,18 +415,28 @@
 
   // ☢️ 選中的那一顆是【狀態】不是按鈕：打勾、實心、不吃點擊。
   //    另一顆是【改成…】，一看就知道要改才按。都沒選就是兩顆對等的動作。
+  //
+  // ☢️ 「退回 N 堂」這幾個字是 2026-08-17 加的，起因是教練問
+  //    「核銷頁面能不能有返還課程的功能？舊系統有，因為會點錯點到別人的」。
+  //    ── 功能本來就在，就是「改成缺席」：check_in(p_present=false) 會把
+  //       目標算成 0，然後補一筆 +1 的 adjust 把堂數退回去。
+  //    ── 但按鈕上只寫「改成缺席」，沒有一個字提到錢，所以沒有人知道
+  //       這顆就是返還。教練不會去按一顆他不確定會發生什麼事的按鈕。
+  //    ☢️ 所以要修的是【說明】不是【功能】。多寫一個新的 RPC 只會有
+  //       兩條路都能改堂數 —— 那正好違反第 39 步「動到錢的入口只有一個」。
   function btns(p, st, lock) {
     var id = esc(p.booking_id), d = lock ? ' disabled' : '';
+    var n  = 1 + Number(p.guest_count || 0);   // 帶朋友來的話，一次動的是好幾堂
     if (st === 'attended') {
       return '<div class="btns">' +
         '<button type="button" class="b pick-on" tabindex="-1">✓　已出席</button>' +
         '<button type="button" class="b act alt" data-b="' + id + '" data-v="0"' + d +
-          '>改成缺席</button></div>';
+          '>改成缺席<span class="hint">退回 ' + n + ' 堂</span></button></div>';
     }
     if (st === 'absent') {
       return '<div class="btns">' +
         '<button type="button" class="b act alt" data-b="' + id + '" data-v="1"' + d +
-          '>改成出席</button>' +
+          '>改成出席<span class="hint">扣 ' + n + ' 堂</span></button>' +
         '<button type="button" class="b pick-off" tabindex="-1">✓　已缺席</button></div>';
     }
     return '<div class="btns">' +
@@ -498,9 +512,22 @@
       });
   }
 
+  function findInRoster(bookingId) {
+    for (var i = 0; i < ROSTER.length; i++) {
+      if (ROSTER[i].booking_id === bookingId) return ROSTER[i];
+    }
+    return null;
+  }
+
   function mark(bookingId, present) {
     if (busy[bookingId]) return;
     busy[bookingId] = true;
+
+    // ☢️ 先把動之前的餘額記下來。做完之後要跟客人的名字一起講出來 ——
+    //    教練點錯人的時候，唯一救得回來的東西是「他馬上看到自己動到了誰」。
+    var before = findInRoster(bookingId);
+    var who    = before ? before.customer_name : '';
+    var wasBal = before ? Number(before.balance) : null;
 
     var card = elRoster.querySelector('.p[data-b="' + bookingId + '"]');
     if (card) Array.prototype.forEach.call(card.querySelectorAll('.b'), function(b){ b.disabled = true; });
@@ -516,6 +543,18 @@
       .then(function () {
         busy[bookingId] = false;
         renderRoster();
+
+        // ☢️ 差額是【算出來的】，不是猜的。帶朋友、重複按、原本就已經扣過，
+        //    這幾種狀況下實際變動都不一定是 1 —— 讀真正的餘額差最誠實。
+        var after = findInRoster(bookingId);
+        if (after && wasBal !== null) {
+          var d = Number(after.balance) - wasBal;
+          var msg;
+          if (d > 0)      msg = who + '　退回 ' + d + ' 堂　·　現在剩 ' + after.balance + ' 堂';
+          else if (d < 0) msg = who + '　扣 ' + (-d) + ' 堂　·　現在剩 ' + after.balance + ' 堂';
+          else            msg = who + '　已記' + (present ? '出席' : '缺席') + '　·　堂數沒有變動';
+          toast(msg);
+        }
       })
       .catch(function (e) {
         busy[bookingId] = false;
