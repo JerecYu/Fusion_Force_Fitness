@@ -71,17 +71,24 @@
     text-decoration:none;transition:transform .12s ease,box-shadow .2s ease,background .2s ease;
     min-height:52px;padding:14px 18px;font-size:.9rem;width:100%}
   .btn:active{transform:scale(.985)}
-  .btn-1{background:linear-gradient(105deg,var(--blue),#38A6CA);color:#fff;box-shadow:var(--sh-blue);
-    position:relative;overflow:hidden}
-  .btn-1::before{content:'';position:absolute;left:-6px;top:-14%;width:24px;height:128%;
-    background:rgba(255,255,255,.18);transform:skewX(-22deg)}
+  /* ☢️ 斜切高光原本是 .btn-1::before —— 絕對定位的偽元素會蓋在按鈕文字【上面】，
+     把白字洗淡。改成畫進 background-image，背景永遠在文字下面。 */
+  .btn-1{background-image:
+      linear-gradient(112deg,rgba(255,255,255,0) 0 4px,rgba(255,255,255,.17) 4px 26px,rgba(255,255,255,0) 26px),
+      linear-gradient(105deg,var(--blue),#38A6CA);
+    color:#fff;box-shadow:var(--sh-blue);position:relative;overflow:hidden}
   .btn-1:disabled{background:var(--line);color:var(--faint);box-shadow:none;cursor:not-allowed}
-  .btn-1:disabled::before{display:none}
   .btn-2{background:#fff;color:var(--blue);border:1.5px solid var(--line-2)}
   .btn-3{background:var(--surface-2);color:var(--dim)}
   .btn-w{background:var(--adv);color:#fff;box-shadow:0 10px 24px -10px rgba(222,122,56,.55)}
-  .ar{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:1.1rem;
-    transform:skewX(-12deg);display:inline-block}
+  /* ☢️ 2026-08-17 Jerec 反應：箭頭太小太細，看起來像圖片上的雜訊。
+     原本是 Saira Condensed 的「›」字元 —— 窄體字本來就細，再 skew 一下更糊。
+     改成用兩條邊框畫出來的 V 形：粗細自己說了算，不靠字型、放大也不會糊。
+     font-size:0 是把 HTML 裡原本那個「›」字元藏起來，不用改每一頁的字。 */
+  .ar{display:inline-block;flex:0 0 auto;width:9px;height:9px;
+    border-right:2.6px solid currentColor;border-top:2.6px solid currentColor;
+    border-radius:1.5px;transform:rotate(45deg);
+    font-size:0;line-height:0;vertical-align:middle;margin:0 3px 1px 5px}
 
   /* ── form ── */
   .f{margin-bottom:13px}
@@ -325,7 +332,7 @@
   <div class="foot">
     本頁價格依最新價目表整理，實際費用以現場公告為準。<br>
     Fusion Force Fitness 諧動空間抗老化中心<br>
-    <a href="https://jerecyu.github.io/Fusion_Force_Fitness/" target="_blank" rel="noopener">諧動空間官方網站　›</a>
+    <a href="https://jerecyu.github.io/Fusion_Force_Fitness/" target="_blank" rel="noopener">諧動空間官方網站<span class="ar">›</span></a>
   </div>
 </div>
 </body>

@@ -120,7 +120,7 @@ revoke all on function public.import_legacy_vault(jsonb, boolean) from public;
 grant execute on function public.import_legacy_vault(jsonb, boolean) to authenticated;
 
 -- ── ② 人出現了：把封存的堂數轉給一位真的客人 ──────────────────
---  ☢️ 這是動到錢的入口，規矩跟課購一樣：走函式、記是誰做的、不刪東西。
+--  ☢️ 這是動到錢的入口，規矩跟購課一樣：走函式、記是誰做的、不刪東西。
 create or replace function public.claim_legacy(p_legacy uuid, p_customer uuid)
 returns jsonb
 language plpgsql security definer set search_path = public as $$

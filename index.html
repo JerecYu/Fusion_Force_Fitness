@@ -116,6 +116,16 @@ a{color:inherit}
   padding:11px 16px;border-radius:10px;letter-spacing:.04em;transition:all .18s ease;white-space:nowrap}
 .nav-links a:hover{color:var(--ink);background:var(--surface-2)}
 .nav-links a.on{color:var(--blue);font-weight:700}
+/* ☢️ 2026-08-17 Jerec 反應「立即預約那四個字太淡」——
+   原因不是顏色調錯，是【被上面那三條蓋掉】。
+   .nav-links a 的特異度 (0,1,1) 大於 .btn-1 的 (0,1,0)，
+   所以藍底按鈕上的白字被改成灰藍 var(--dim)。這條規則沒包在 media query 裡，
+   所以【手機和電腦都中招】—— 量到的 computed color 是 rgb(84,114,138)。
+   ☢️ 這種「明明寫了 color:#fff 卻沒生效」只看檔案看不出來，要量瀏覽器算完的值。 */
+.nav-links a.btn{color:#fff;font-weight:700}
+.nav-links a.btn:hover{color:#fff;background:none}
+.nav-links a.btn-2{color:var(--blue)}
+.nav-links a.btn-2:hover{color:var(--blue)}
 .nav-cta{flex:0 0 auto}
 .nav-toggle{display:none;flex:0 0 auto;margin-left:auto;width:54px;height:54px;border:none;
   background:var(--surface);border:1.5px solid var(--line-2);border-radius:14px;cursor:pointer;
@@ -145,12 +155,14 @@ a{color:inherit}
   padding:16px 27px;min-height:63px;border:none;border-radius:14px;cursor:pointer;
   text-decoration:none;transition:transform .12s ease,box-shadow .2s ease,background .2s ease}
 .btn:active{transform:scale(.985)}
-.btn-1{background:linear-gradient(105deg,var(--blue),var(--blue-l));color:#fff;
-  box-shadow:var(--sh-blue);position:relative;overflow:hidden}
-.btn-1::before{content:'';position:absolute;left:-6px;top:-14%;width:24px;height:128%;
-  background:rgba(255,255,255,.18);transform:skewX(-22deg)}
+/* ☢️ 斜切高光原本是 .btn-1::before —— 絕對定位的偽元素會蓋在按鈕文字【上面】，
+   把白字洗淡。改成畫進 background-image（112deg 等同原本的 skewX(-22deg)），
+   背景永遠在文字下面，就不會有這個問題。 */
+.btn-1{background-image:
+    linear-gradient(112deg,rgba(255,255,255,0) 0 4px,rgba(255,255,255,.17) 4px 26px,rgba(255,255,255,0) 26px),
+    linear-gradient(105deg,var(--blue),var(--blue-l));
+  color:#fff;box-shadow:var(--sh-blue);position:relative;overflow:hidden}
 .btn-1:disabled{background:var(--line);color:var(--faint);box-shadow:none;cursor:not-allowed}
-.btn-1:disabled::before{display:none}
 .btn-2{background:var(--surface);color:var(--blue);border:1.5px solid var(--line-2)}
 .btn-2:hover{border-color:var(--teal)}
 .btn-3{background:var(--surface-2);color:var(--dim)}
@@ -158,8 +170,14 @@ a{color:inherit}
 .btn-ghost-light{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.4)}
 .btn-ghost-light:hover{background:rgba(255,255,255,.12)}
 .btn-sm{min-height:42px;padding:10px 16px;font-size:1.168rem;border-radius:11px}
-.ar{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:1.322rem;
-  transform:skewX(-12deg);display:inline-block}
+/* ☢️ 2026-08-17 Jerec 反應：箭頭太小太細，看起來像圖片上的雜訊。
+   原本是 Saira Condensed 的「›」字元 —— 窄體字本來就細，再 skew 一下更糊。
+   改成用兩條邊框畫出來的 V 形：粗細自己說了算，不靠字型、放大也不會糊。
+   font-size:0 是把 HTML 裡原本那個「›」字元藏起來，不用改每一頁的字。 */
+.ar{display:inline-block;flex:0 0 auto;width:9px;height:9px;
+  border-right:2.6px solid currentColor;border-top:2.6px solid currentColor;
+  border-radius:1.5px;transform:rotate(45deg);
+  font-size:0;line-height:0;vertical-align:middle;margin:0 3px 1px 5px}
 .btn-row{display:flex;gap:12px;flex-wrap:wrap}
 .btn-row.center{justify-content:center}
 
@@ -457,8 +475,10 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   transform:skewX(-22deg);background:var(--teal)}
 .cch .more{margin-top:auto;padding-top:13px;font-size:1.197rem;color:var(--blue);font-weight:500;
   letter-spacing:.04em;display:flex;align-items:center;gap:6px}
-.cch .more span{transition:transform .25s ease}
-.cch:hover .more span{transform:translateX(3px)}
+.cch .more .ar{transition:transform .25s ease}
+/* ☢️ 這裡要連 rotate 一起寫。只寫 translateX 會【整個換掉】transform，
+   箭頭的 45 度旋轉會被洗掉，滑過去就變成一個方框。 */
+.cch:hover .more .ar{transform:translateX(3px) rotate(45deg)}
 @media (max-width:560px){
   #about-team{grid-template-columns:1fr}
   /* 手機改為上下堆疊：照片在上、文字吃滿整個寬度，避免文字被擠到跳行 */
@@ -541,6 +561,13 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   display:flex;align-items:center;justify-content:center;font-size:1.31rem;
   transition:background .18s ease,border-color .18s ease}
 .lbox-nv button:hover{background:rgba(255,255,255,.24);border-color:#fff}
+/* ☢️ 上下一張原本是「‹」「›」兩個字元，42px 的圓圈裡只有 21px 的細筆畫。
+   同樣改成邊框畫的 V 形。只挑這兩顆，關閉的 ✕ 不能被 font-size:0 藏掉。 */
+#lb-prev,#lb-next{font-size:0}
+#lb-prev::before,#lb-next::before{content:'';width:11px;height:11px;border-radius:2px;
+  border-right:2.8px solid currentColor;border-top:2.8px solid currentColor}
+#lb-next::before{transform:rotate(45deg);margin-right:4px}
+#lb-prev::before{transform:rotate(-135deg);margin-left:4px}
 .lbox-n{font-family:'JetBrains Mono',monospace;font-size:1.224rem;color:var(--aqua);flex:0 0 auto}
 @media (max-width:560px){.lbox-bar{flex-wrap:wrap}.lbox-tx{flex:1 1 100%;order:2}}
 .coach-mini{text-align:center;padding:clamp(18px,3vw,24px)}
@@ -884,7 +911,11 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
 .ch.map .ic{background:linear-gradient(140deg,#2C4E7D,#4271A6)}
 .ch h3{font-size:1.18rem;font-weight:700;letter-spacing:.04em}
 .ch .v{font-size:1.192rem;color:var(--dim);margin-top:5px;line-height:1.7}
-.ch .ar{margin-left:auto;color:var(--faint)}
+/* ☢️ 這三張聯絡卡原本沒有箭頭 —— .ch .ar 這條規則寫了，但 HTML 裡沒有那個 span。
+   同一頁其他可點的東西都有箭頭，只有這三張沒有，看起來就不像可以按。
+   ☢️ 原本 var(--faint) #8DA9B9 對白底只有 2.47:1 —— 圖形最低要 3:1。
+   「太淡」是它看起來像雜訊的另一半原因。--blue 是 4.11:1，也就是 LOGO 那顆藍。 */
+.ch .ar{margin-left:auto;color:var(--blue)}
 .hours{overflow:hidden}
 .hours .hd{background:linear-gradient(115deg,var(--ink),var(--ink-3));color:#fff;
   padding:clamp(18px,2.8vw,24px);position:relative;overflow:hidden}
@@ -1748,13 +1779,13 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   <div class="sec sec-alt"><div class="wrap">
     <div class="grid g3">
       <a class="card ch tel" href="tel:0223569462">
-        <span class="ic">☏</span><span><h3>電話</h3><span class="v">(02) 2356-9462</span></span>
+        <span class="ic">☏</span><span><h3>電話</h3><span class="v">(02) 2356-9462</span></span><span class="ar">›</span>
         </a>
       <a class="card ch line" href="https://lin.ee/9tthCBh" target="_blank" rel="noopener">
-        <span class="ic">◗</span><span><h3>官方 LINE</h3><span class="v">加入好友即時詢問</span></span>
+        <span class="ic">◗</span><span><h3>官方 LINE</h3><span class="v">加入好友即時詢問</span></span><span class="ar">›</span>
         </a>
       <a class="card ch map" href="https://maps.google.com/?q=台北市信義路二段74號" target="_blank" rel="noopener">
-        <span class="ic">⌖</span><span><h3>地址</h3><span class="v">信義路 2 段 74 號 10 樓</span></span>
+        <span class="ic">⌖</span><span><h3>地址</h3><span class="v">信義路 2 段 74 號 10 樓</span></span><span class="ar">›</span>
         </a>
     </div>
   </div></div>
@@ -2450,7 +2481,7 @@ window.addEventListener('hashchange', function () { goRoute(currentRoute()); });
       '<div class="zh">' + c.zh + '</div>' +
       '<div class="role">' + c.role + '</div><ul>' +
       c.skills.map(function (s) { return '<li>' + s + '</li>'; }).join('') + '</ul>' +
-      '<div class="more">看完整資歷 <span>›</span></div></div>';
+      '<div class="more">看完整資歷<span class="ar">›</span></div></div>';
     FF.coachImg(d.querySelector('.ph'), c.photo, c.name + ' 教練', 800, 1000, c.initial);
     d.addEventListener('click', function () { openCoach(c); });
     d.addEventListener('keydown', function (e) {

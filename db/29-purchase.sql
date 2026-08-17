@@ -1,13 +1,13 @@
 -- ═══════════════════════════════════════════════════════════════
---  29-purchase.sql  ·  課購（C 第二期第一段）
+--  29-purchase.sql  ·  購課（C 第二期第一段）
 --  2026-08-17
 --
 --  Jerec 2026-08-17 的三個決定：
 --    ① 匯款【先給堂數】，但標成「待入帳」
 --    ② 付款方式只有兩種：現金、匯款／轉帳
---    ③ 所有教練都能課購（跟現場收錢的是同一批人）
+--    ③ 所有教練都能購課（跟現場收錢的是同一批人）
 --
---  ☢️ 為什麼要現在做：上線兩天，課購紀錄 0 筆 —— 錢在收，但沒進系統。
+--  ☢️ 為什麼要現在做：上線兩天，購課紀錄 0 筆 —— 錢在收，但沒進系統。
 --     19 位客人剩 0 堂、8 位剩 1～2 堂，第一個 0 堂的人來上課，帳就會變負。
 --
 --  ☢️ 這是第二個「能動到錢」的入口（第一個是 check_in）。
@@ -30,7 +30,7 @@ create table if not exists public.products (
   is_active   boolean     not null default true,
   sort_order  integer     not null default 0
 );
-comment on table public.products is '課程方案。價格會變，所以每一筆課購都要自己存下當時的金額。';
+comment on table public.products is '課程方案。價格會變，所以每一筆購課都要自己存下當時的金額。';
 
 insert into public.products (code, product, label, credits, price, sort_order) values
   ('GT-1',  'GT', '單堂',       1,   400, 1),
@@ -65,7 +65,7 @@ comment on column public.credit_ledger.paid_at is
 create index if not exists credit_ledger_unpaid
   on public.credit_ledger (created_at) where pay_method = 'transfer' and paid_at is null;
 
--- ── ③ 課購 ───────────────────────────────────────────────────
+-- ── ③ 購課 ───────────────────────────────────────────────────
 create or replace function public.add_purchase(
   p_customer uuid, p_code text, p_method text, p_note text default null)
 returns jsonb
@@ -73,7 +73,7 @@ language plpgsql security definer set search_path = public as $$
 declare v_p record; v_c record; v_id uuid; v_bal integer;
 begin
   if not public.is_staff() then
-    raise exception '只有員工可以課購';
+    raise exception '只有員工可以購課';
   end if;
   if p_method not in ('cash','transfer') then
     return jsonb_build_object('ok', false, 'why', 'bad_method');
@@ -130,7 +130,7 @@ begin
     return jsonb_build_object('ok', true, 'already', true, 'name', v_l.name);
   end if;
 
-  -- ☢️ 只寫 paid_at。不碰 delta —— 堂數在課購當下就已經給了。
+  -- ☢️ 只寫 paid_at。不碰 delta —— 堂數在購課當下就已經給了。
   update public.credit_ledger set paid_at = now() where id = p_ledger;
   return jsonb_build_object('ok', true, 'name', v_l.name, 'amount', v_l.amount);
 end $$;
@@ -138,7 +138,7 @@ end $$;
 revoke all on function public.confirm_payment(uuid) from public;
 grant execute on function public.confirm_payment(uuid) to authenticated;
 
--- ── ⑤ 課購按錯 → 沖銷（不是刪除）──────────────────────────────
+-- ── ⑤ 購課按錯 → 沖銷（不是刪除）──────────────────────────────
 --  ☢️ 帳本只增不減。刪掉一筆的話，事後沒有人能回答「這裡本來有什麼」。
 --     沖銷是補一筆相反的，兩筆都留著。
 create or replace function public.void_purchase(p_ledger uuid, p_why text default null)
@@ -210,15 +210,15 @@ where public.is_staff()
   --    搬遷進來的舊資料 paid_at 也是 null，但那不是「待入帳」，
   --    只是「我們不知道」。只看 paid_at 的話清單會多出 76 筆假的。
   and l.pay_method = 'transfer' and l.paid_at is null
-  -- ☢️ 已經沖銷的要排除。2026-08-17 實測抓到的：課購按錯 → 沖銷之後，
+  -- ☢️ 已經沖銷的要排除。2026-08-17 實測抓到的：購課按錯 → 沖銷之後，
   --    那筆匯款【還留在待入帳清單裡】，教練會去追一筆已經取消的錢。
   and not exists (select 1 from public.credit_ledger x
                   where x.reason = 'adjust' and x.note like '沖銷 ' || l.id::text || '%');
 
-comment on view public.staff_unpaid is '匯款但還沒確認入帳的課購。純讀。';
+comment on view public.staff_unpaid is '匯款但還沒確認入帳的購課。純讀。';
 grant select on public.staff_unpaid to authenticated;
 
--- ── ⑦ 最近的課購（給 Jerec 看，也是沖銷的入口）──────────────
+-- ── ⑦ 最近的購課（給 Jerec 看，也是沖銷的入口）──────────────
 --  ☢️ 用 drop + create，不是 create or replace ——
 --     replace 不能把新欄位插到中間，只能加在最後。
 drop view if exists public.staff_recent_purchases;

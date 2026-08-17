@@ -41,6 +41,17 @@
     --warn:#B4661F; --warn-bg:#FBEFE2; --warn-line:#EBC4A0;
     --err:#A4211A; --err-bg:#FBE9E7; --err-line:#F3C9C5;
   }
+
+  /* ══ 箭頭 ═══════════════════════════════════════════════
+     ☢️ 2026-08-17 Jerec 反應：箭頭太小太細，看起來像圖片上的雜訊。
+     原本是「›」這個字元 —— 細、又受字型擺布。改成用兩條邊框畫的 V 形，
+     粗細自己說了算，放大也不會糊。
+     ☢️ 顏色不要用 var(--faint) —— 它對白底只有 2.47:1，圖形最低要 3:1。
+     ═══════════════════════════════════════════════════════ */
+  .ar{display:inline-block;flex:0 0 auto;width:9px;height:9px;
+    border-right:2.6px solid currentColor;border-top:2.6px solid currentColor;
+    border-radius:1.5px;transform:rotate(45deg);
+    font-size:0;line-height:0;vertical-align:middle;margin:0 3px 1px 5px}
   html,body{min-height:100%}
   body{background:var(--bg);color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
@@ -119,7 +130,7 @@
   var SAFE = '<div class="safe">這個動作<b>不會扣你的堂數</b>，也不會改變出席紀錄。<br>' +
              '它只是留下「你本人當時在現場」的紀錄，<br>取代以前在紙上簽名那一步。</div>';
 
-  var BACK = '<a class="btn alt" href="GT-booking.html?tab=m">看我的預約　›</a>';
+  var BACK = '<a class="btn alt" href="GT-booking.html?tab=m">看我的預約<span class="ar"></span></a>';
 
   // ☢️ 憑證不能從網址以外的地方拿。沒有 t 就是沒有掃到碼。
   var token = (function () {
@@ -151,7 +162,7 @@
       if (st === 'unbound') {
         paint('s-warn', '●', '你還沒綁定手機',
               '先綁定才知道你是哪一位學員。綁完再掃一次就好。',
-              '<a class="btn" href="GT-booking.html">去綁定手機　›</a>');
+              '<a class="btn" href="GT-booking.html">去綁定手機<span class="ar"></span></a>');
         return;
       }
       if (st === 'error') {
@@ -185,7 +196,7 @@
           } else if (d.why === 'not_bound') {
             paint('s-warn', '●', '你還沒綁定手機',
                   '先綁定才知道你是哪一位學員。',
-                  '<a class="btn" href="GT-booking.html">去綁定手機　›</a>');
+                  '<a class="btn" href="GT-booking.html">去綁定手機<span class="ar"></span></a>');
           } else if (d.why === 'no_booking') {
             paint('s-warn', '?', '你沒有報名這一堂',
                   '可能是掃到別堂課的碼，或是還沒報名。請告訴教練。', BACK);

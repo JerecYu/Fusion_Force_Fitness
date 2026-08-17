@@ -20,7 +20,7 @@
      Jerec 2026-08-17 的決定（原話）：「舊系統……不只新增客人還直接可選
      購買方案，這會有『先上車，但不一定會補票』的問題，所以我選 1
      不碰堂數，只建人」。
-     建出來的客人固定 0 堂，堂數走課購流程（C 第二期）。
+     建出來的客人固定 0 堂，堂數走購課流程（C 第二期）。
      ☢️ 這同時守住第 39 步：動到錢的入口只有一個。
 
   三塊：
@@ -44,13 +44,29 @@
     font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
     line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:44px}
 
-  .top{background:var(--ink);color:#fff;padding:13px 15px;display:flex;align-items:center;gap:10px}
+  .top{background:var(--ink);color:#fff;padding:13px 13px;display:flex;align-items:center;gap:6px}
   .who{font-size:16px;font-weight:800;letter-spacing:.03em}
   .sub{font-size:11px;color:#A9C6D4;margin-top:1px}
   .sp{flex:1}
+  /* ══ 箭頭 ═══════════════════════════════════════════════
+     ☢️ 2026-08-17 Jerec 反應：箭頭太小太細，看起來像圖片上的雜訊。
+     原本是「›」這個字元 —— 細、又受字型擺布。改成用兩條邊框畫的 V 形，
+     粗細自己說了算，放大也不會糊。
+     ☢️ 顏色不要用 var(--faint) —— 它對白底只有 2.47:1，圖形最低要 3:1。
+     ═══════════════════════════════════════════════════════ */
+  .ar{display:inline-block;flex:0 0 auto;width:9px;height:9px;
+    border-right:2.6px solid currentColor;border-top:2.6px solid currentColor;
+    border-radius:1.5px;transform:rotate(45deg);
+    font-size:0;line-height:0;vertical-align:middle;margin:0 3px 1px 5px}
+
   .iconbtn{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:9px;
-    padding:9px 12px;font-family:inherit;font-size:12.5px;font-weight:700;
-    text-decoration:none;display:inline-block}
+    padding:9px 10px;font-family:inherit;font-size:12.5px;font-weight:700;white-space:nowrap;
+    text-decoration:none;display:inline-flex;align-items:center;flex:0 0 auto;
+    /* ☢️ line-height 要寫死。<button> 的預設是 normal、<a> 會繼承 body 的 1.65 ——
+       兩種標籤混在同一列時，高度差 2px，看起來就是「有一顆沒對齊」。 */
+    line-height:1.5}
+  /* 窄機（360px）三顆鍵擠在一起時，名字先讓位 */
+  .who,.sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
   .wrap{max-width:520px;margin:0 auto;padding:14px 14px 0}
   .sec{margin:22px 0 9px;font-size:11px;font-weight:800;letter-spacing:.18em;color:var(--faint)}
@@ -95,6 +111,10 @@
   .res{margin-top:10px;font-size:12.5px;line-height:1.7;padding:10px 12px;border-radius:10px}
   .res.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line)}
   .res.bad{background:var(--err-bg);color:var(--err);border:1px solid var(--err-line)}
+  /* 建完客人 → 十之八九下一步就是幫他購課，直接給一顆鍵，不要叫人自己往上捲 */
+  .gobuy{margin-top:8px;width:100%;background:var(--ink);color:#fff;border:0;border-radius:10px;
+    padding:10px;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center}
 
   /* ── 查客人 ── */
   .hit{width:100%;display:flex;align-items:center;gap:9px;background:#fff;
@@ -109,6 +129,40 @@
   .hit .bd.y{background:var(--ok-bg);color:var(--ok)}
   .hit .bd.n{background:var(--warn-bg);color:#7C420E}
 
+  /* ══ 提醒條 ═══════════════════════════════════════════════
+     ☢️ 2026-08-17 Jerec：「購課區似乎藏的太深，介面似乎不太直覺」。
+        原本順序是 待入帳 → 綁不上的人 → 新增客人 → 最近的購課 → 查客人／購課，
+        購課落在 2600px 以下 —— 櫃檯【最常做】的事被排在最後一個。
+        改成購課放最上面。但警示不能因此被埋掉，所以用這一條頂在最上面：
+        一行講完還有幾件事，按下去直接捲到那一區。 */
+  .alerts{display:flex;align-items:center;gap:9px;
+    background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:12px;
+    padding:9px 11px;margin:2px 0 12px;font-size:12.5px;font-weight:700;color:#7C420E}
+  .alerts span{flex:1;min-width:0}
+  .algo{flex:0 0 auto;background:#7C420E;color:#fff;border:0;border-radius:8px;
+    padding:6px 10px;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;
+    display:inline-flex;align-items:center}
+
+  /* ══ 主要動作區：購課 ═════════════════════════════════════ */
+  .lead{background:var(--surface);border:1.5px solid var(--blue);border-radius:16px;
+    padding:14px;margin-bottom:10px;box-shadow:0 6px 18px -12px rgba(46,134,171,.75)}
+  .lead h2{font-size:15.5px;font-weight:800;letter-spacing:.03em}
+  .lead .lh{font-size:11.5px;color:var(--dim);margin:3px 0 10px;line-height:1.6}
+  /* ☢️ 輸入框不能小於 16px —— iOS 會自動把整頁放大，教練會以為畫面壞了 */
+  .lead input{font-size:16px;padding:13px}
+
+  /* ══ 摺疊區塊 ═════════════════════════════════════════════ */
+  details.fold{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    margin-bottom:9px}
+  details.fold > summary{list-style:none;cursor:pointer;padding:13px 14px;
+    font-size:13.5px;font-weight:800;display:flex;align-items:center;gap:8px}
+  details.fold > summary::-webkit-details-marker{display:none}
+  details.fold > summary .cap{font-size:11px;font-weight:600;color:var(--dim);
+    margin-left:auto;text-align:right}
+  details.fold > summary .ar{color:var(--blue);transform:rotate(135deg);margin-bottom:4px}
+  details.fold[open] > summary .ar{transform:rotate(-45deg);margin-bottom:0}
+  .foldb{padding:0 14px 14px}
+
   /* ══ 待入帳 ═══════════════════════════════════════════════ */
   .up{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
   .up:last-of-type{border-bottom:0}
@@ -119,21 +173,27 @@
   .upb{flex:0 0 auto;background:var(--ok);color:#fff;border:0;border-radius:9px;
     padding:8px 13px;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
 
-  /* ══ 課購 ═════════════════════════════════════════════════ */
+  /* ══ 購課 ═════════════════════════════════════════════════ */
   .hitwrap{margin-bottom:7px}
   .hit{margin-bottom:0}
   .hitbuy{flex:0 0 auto;background:var(--ink);color:#fff;border:0;border-radius:9px;
     padding:7px 11px;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer}
   .buywrap{border:1px solid var(--line);border-top:0;border-radius:0 0 11px 11px;
     background:var(--surface2);padding:10px}
-  .buy{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-  .buyb{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 8px;
-    font-family:inherit;text-align:left;cursor:pointer;color:var(--ink)}
-  .buyb b{display:block;font-size:13px;font-weight:800}
-  .buyb i{display:block;font-style:normal;font-size:11px;color:var(--dim);margin-top:2px}
+  /* ☢️ 原本是 2 欄 4 顆，方案名寫兩次、付款方式縮在小字第二行 ——
+     一眼掃過去四顆長得幾乎一樣，要讀完小字才知道差別在哪。
+     改成【列＝方案、欄＝付款方式】，欄頭寫一次就好，按哪一顆一目瞭然。 */
+  .buy{display:grid;grid-template-columns:auto 1fr 1fr;gap:7px;align-items:stretch}
+  .bhd{font-size:11.5px;font-weight:800;color:var(--dim);text-align:center;align-self:end;
+    letter-spacing:.06em}
+  .brl{display:flex;flex-direction:column;justify-content:center;padding-right:2px}
+  .brl b{font-size:13px;font-weight:800;line-height:1.35}
+  .brl i{font-style:normal;font-size:10.5px;color:var(--dim)}
+  .buyb{background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 6px;
+    font-family:inherit;text-align:center;cursor:pointer;color:var(--ink);
+    font-size:13px;font-weight:800;letter-spacing:.02em}
   /* 選中的那一顆要一眼看得出來 —— 這是動到錢的地方 */
   .buyb.on{background:var(--ink);border-color:var(--ink);color:#fff}
-  .buyb.on i{color:var(--teal)}
   .buyc{grid-column:1 / -1;margin-top:3px}
   .buysum{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px;
     font-size:12.5px;line-height:1.7;color:var(--ink2)}
@@ -141,13 +201,18 @@
   .buygo{width:100%;margin-top:7px;background:var(--ok);color:#fff;border:0;border-radius:10px;
     padding:11px;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
   .buygo:disabled{opacity:.55}
-  /* ══ 最近的課購 ＋ 沖銷（只有 owner 看得到）═══════════════ */
+  /* ══ 最近的購課 ＋ 沖銷（只有 owner 看得到）═══════════════ */
   /* ☢️「什麼時候該用」要在按鈕旁邊，不是在手冊裡。 */
   .whenuse{background:var(--surface2);border-radius:11px;padding:11px 12px;margin-bottom:11px;
     font-size:11.5px;line-height:1.75;color:var(--ink2)}
   /* ☢️ 只有【直接放在 .whenuse 底下】的粗體才獨佔一行（那兩個小標題）。
      原本寫成 .whenuse b，連句子中間的粗體也被迫換行 ——
      最後那句「沖銷是在說『這件事根本沒發生過』」的引號被拆成三行。 */
+  .whenuse > summary{list-style:none;cursor:pointer;font-size:12px;font-weight:800;
+    color:#7C420E;display:flex;align-items:center}
+  .whenuse > summary::-webkit-details-marker{display:none}
+  .whenuse[open] > summary{margin-bottom:8px;padding-bottom:7px;
+    border-bottom:1px dashed var(--line)}
   .whenuse > b{display:block;font-size:12px;font-weight:800;margin-bottom:2px}
   .whenuse > b.no{margin-top:9px;color:#7E1A15}
   .whenuse ul{margin:0 0 0 16px;padding:0}
@@ -222,8 +287,13 @@
     <div class="sub" id="whoSub">辨識中…</div>
   </div>
   <div class="sp"></div>
+  <!-- ☢️ 順序是有意義的：導覽鍵在左、重新整理固定在最右。
+       checkin.html 的 [← 課表][重新整理] 也是這個順序 ——
+       兩頁同樣兩顆鍵左右相反的話，人會按錯。 -->
+  <a class="iconbtn" href="https://jerecyu.github.io/Fusion_Force_Fitness/"
+     target="_blank" rel="noopener">官網</a>
+  <a class="iconbtn" href="checkin.html">點名核銷<span class="ar"></span></a>
   <button type="button" class="iconbtn" id="reload">重新整理</button>
-  <a class="iconbtn" href="checkin.html" style="margin-left:7px">點名核銷 ›</a>
 </div>
 
 <div class="wrap">
@@ -241,9 +311,13 @@
   'use strict';
 
   var DB = null, ME = null;
+  // ☢️ 重畫（render）會把 <details> 打回預設的收合狀態 ——
+  //    建完客人剛好會重畫一次，成功訊息就跟著被收進去看不見了。
+  //    這個變數負責讓它記得剛剛是開著的。
+  var NEWOPEN = false;
   var SIGNUPS = [];
   var UNPAID = [], PRODUCTS = [];
-  var RECENT = [];          // 最近的課購（只有 owner 看得到，也是沖銷的入口）
+  var RECENT = [];          // 最近的購課（只有 owner 看得到，也是沖銷的入口）
   var HITS = [];
 
   var elGate = document.getElementById('gate');
@@ -268,6 +342,9 @@
     document.body.appendChild(d);
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){ d.remove(); }, bad ? 4200 : 2200);
+  }
+  function money(n) {
+    return String(n == null ? '' : n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
   function tw(iso) {
     if (!iso) return '';
@@ -305,7 +382,7 @@
              '確定是新客人 → 按下面建檔，然後請他<b>再綁一次</b>。';
       act  = '<button type="button" class="sg-act" data-new="1" ' +
              'data-n="' + esc(s.typed_name) + '" data-p="' + esc(s.typed_phone) + '">' +
-             '用這筆資料去建客人 ›</button>';
+             '用這筆資料去建客人<span class="ar"></span></button>';
     } else if (why === 'name_mismatch') {
       body = '<b>手機對得上，姓名對不上。</b><br>' +
              '名單上登記的是「<b>' + esc(s.registered_name) + '</b>」。<br>' +
@@ -329,7 +406,7 @@
   }
 
   function loadPurchaseBits() {
-    // ☢️ 這兩個讀不到不該擋住整個後台 —— 綁定診斷跟課購是兩件事。
+    // ☢️ 這兩個讀不到不該擋住整個後台 —— 綁定診斷跟購課是兩件事。
     return Promise.all([
       DB.from('products').select('code,label,credits,price,sort_order')
         .eq('product','GT').eq('is_active', true).order('sort_order')
@@ -371,7 +448,7 @@
            '按「錢到了」＝確認入帳，不會改動堂數。</div></div>';
   }
 
-  // 最近的課購。☢️ 只有 owner 看得到 —— 這一塊是沖銷的入口。
+  // 最近的購課。☢️ 只有 owner 看得到 —— 這一塊是沖銷的入口。
   function recentBlock() {
     if (!ME || ME.role !== 'owner') return '';
     var rows = RECENT.map(function (x) {
@@ -397,8 +474,10 @@
     // ☢️ Jerec 的第 4 點：使用時機要寫在按鈕【旁邊】，不是寫在手冊裡。
     //    沖銷最大的風險不是被亂按，是【被用在不該用的地方】——
     //    尤其是拿來當退費，那會讓帳上看起來退了、錢其實還在店裡。
-    return '<div class="sec">最近的課購</div><div class="card">' +
-      '<div class="whenuse">' +
+    // ☢️ 說明本身沒有變短，但它現在收起來 —— 展開一次讀完就好，
+    //    不用每次進後台都先捲過一整頁的注意事項才看得到紀錄。
+    return '<div class="sec">最近的購課</div><div class="card">' +
+      '<details class="whenuse"><summary>什麼時候該用沖銷？（點開）</summary>' +
         '<b>沖銷用在這三種狀況：</b>' +
         '<ul><li>按錯人（幫 A 買成 B）</li>' +
             '<li>按錯方案（單堂按成買 10 送 2）</li>' +
@@ -409,36 +488,54 @@
             '<li><b>匯款一直沒進來</b> —— 那是「待入帳」的事，先去確認，不要直接抹掉。</li></ul>' +
         '<span class="mini">共同點：沖銷是在說「<b>這件事根本沒發生過</b>」。' +
         '只要事情真的發生過，就不該用它。</span>' +
-      '</div>' +
-      (RECENT.length ? rows : '<div class="empty">還沒有任何課購紀錄</div>') +
+      '</details>' +
+      (RECENT.length ? rows : '<div class="empty">還沒有任何購課紀錄</div>') +
     '</div>';
   }
 
-  // 幫某一位客人課購。☢️ 兩段式：先選方案＋付款方式，再確定。
+  // 幫某一位客人購課。☢️ 兩段式：先選方案＋付款方式，再確定。
   //    一鍵直接入帳太快了 —— 這是動到錢的地方，跟點名不一樣。
   function buyPanel(c) {
     if (!PRODUCTS.length) return '<div class="hint">讀不到方案，重新整理看看。</div>';
     return '<div class="buy" data-for="' + esc(c.id) + '">' +
+      '<span></span><span class="bhd">現金</span><span class="bhd">匯款</span>' +
       PRODUCTS.map(function (p) {
-        return ['cash','transfer'].map(function (m) {
-          return '<button type="button" class="buyb" data-buy="' + esc(c.id) + '" ' +
-            'data-code="' + esc(p.code) + '" data-m="' + m + '" ' +
-            'data-label="' + esc(p.label) + '" data-price="' + p.price + '" ' +
-            'data-credits="' + p.credits + '">' +
-            '<b>' + esc(p.label) + '</b><i>' + (m === 'cash' ? '現金' : '匯款') +
-            '　NT$' + p.price + '</i></button>';
-        }).join('');
+        return '<div class="brl"><b>' + esc(p.label) + '</b><i>＋' + p.credits + ' 堂</i></div>' +
+          ['cash','transfer'].map(function (m) {
+            return '<button type="button" class="buyb" data-buy="' + esc(c.id) + '" ' +
+              'data-code="' + esc(p.code) + '" data-m="' + m + '" ' +
+              'data-label="' + esc(p.label) + '" data-price="' + p.price + '" ' +
+              'data-credits="' + p.credits + '">NT$' + money(p.price) + '</button>';
+          }).join('');
       }).join('') +
       '<div class="buyc" hidden></div></div>';
   }
 
-  /* ══ 畫面 ══════════════════════════════════════════════════ */
-  function render() {
-    elGate.hidden = true; elMain.hidden = false;
+  /* ══ 畫面 ══════════════════════════════════════════════════
+     ☢️ 2026-08-17 Jerec：「購課區似乎藏的太深，介面似乎不太直覺」。
+        舊順序：待入帳 → 綁不上的人 → 新增客人 → 最近的購課 → 查客人／購課。
+        購課在整頁最底下，量出來要捲 2600px 才看得到 ——
+        而那是櫃檯【每天都在做】的事，其他幾塊是偶爾才處理一次的。
 
-    var html = '<div id="unpaidBox">' + unpaidBlock() + '</div>';
-    html += '<div class="sec' + (SIGNUPS.length ? ' hot' : '') + '">' +
-            (SIGNUPS.length ? '⚠️ 綁不上的人（' + SIGNUPS.length + '）' : '綁不上的人') + '</div>';
+        新順序：提醒條 → 購課 → 新增客人（收合）→ 待入帳 → 綁不上的人 → 最近的購課。
+        ☢️ 警示往下移不能等於看不見 —— 所以最上面那條提醒條照樣講出
+           「還有幾件事」，按下去直接捲過去。
+     ═══════════════════════════════════════════════════════════ */
+
+  // 一行講完還剩幾件事。沒事就整條不出現。
+  function alertBar() {
+    var bits = [];
+    if (UNPAID.length)  bits.push('💰 ' + UNPAID.length + ' 筆匯款待入帳');
+    if (SIGNUPS.length) bits.push('⚠️ ' + SIGNUPS.length + ' 人綁不上');
+    if (!bits.length) return '';
+    return '<div class="alerts"><span>' + bits.join('　·　') + '</span>' +
+      '<button type="button" class="algo" data-go="' +
+      (UNPAID.length ? 'unpaidBox' : 'stuckBox') + '">去處理<span class="ar"></span></button></div>';
+  }
+
+  function stuckBlock() {
+    var html = '<div class="sec' + (SIGNUPS.length ? ' hot' : '') + '">' +
+      (SIGNUPS.length ? '⚠️ 綁不上的人（' + SIGNUPS.length + '）' : '綁不上的人') + '</div>';
     html += SIGNUPS.length
       ? SIGNUPS.map(sgCard).join('')
       : '<div class="card"><div class="empty">目前沒有人卡住 ✓</div></div>';
@@ -449,10 +546,13 @@
       html += '<div class="hint" style="margin:-2px 3px 0">☢️ 這份清單是<b>打開頁面當下</b>的。' +
               '其他教練同時在處理的話，按上面的<b>重新整理</b>才會看到最新的。</div>';
     }
+    return html;
+  }
 
-    html +=
-      '<div class="sec">新增客人</div>' +
-      '<div class="card">' +
+  function newCustomerFold() {
+    return '<details class="fold" id="newFold"' + (NEWOPEN ? ' open' : '') + '>' +
+      '<summary>新增客人<span class="cap">名單上沒有的人</span><span class="ar"></span></summary>' +
+      '<div class="foldb">' +
         '<label for="nName">姓名</label>' +
         '<input id="nName" type="text" placeholder="例：王小明" autocomplete="off">' +
         '<div class="hint">☢️ 登記<b>短的</b>就好。比對規則是「客人打的要<b>包含</b>登記姓名」' +
@@ -463,25 +563,56 @@
         '<div class="hint">要跟他綁定時打的<b>完全一樣</b>。</div>' +
         '<button type="button" class="btn" id="nGo">建立客人</button>' +
         '<div class="hint" style="margin-top:9px">☢️ 建出來是 <b>0 堂</b>。' +
-          '有買方案的話，建完之後到下面<b>查客人 → 課購</b>加堂數。</div>' +
+          '有買方案的話，建完會直接給你一顆「去幫他購課」。</div>' +
         '<div id="nRes"></div>' +
-      '</div>' +
+      '</div></details>';
+  }
 
-      '<div id="recentBox">' + recentBlock() + '</div>' +
-      '<div class="sec">查客人</div>' +
-      '<div class="card">' +
-        '<input id="q" type="search" placeholder="打姓名，或手機後三碼" autocomplete="off">' +
-        '<div class="hint">看得到剩幾堂、綁定了沒。</div>' +
+  function render() {
+    elGate.hidden = true; elMain.hidden = false;
+
+    var html = alertBar();
+
+    // ① 購課 —— 櫃檯最常做的事，放最上面、框起來
+    html +=
+      '<div class="lead">' +
+        '<h2>幫學員購課</h2>' +
+        '<div class="lh">打<b>姓名</b>，或<b>手機後三碼</b>　→　按右邊的<b>購課</b>' +
+        '<br>也看得到他剩幾堂、綁定了沒。</div>' +
+        '<input id="q" type="search" placeholder="例：王小明　或　040" autocomplete="off">' +
         '<div id="hits" style="margin-top:10px"></div>' +
       '</div>';
+
+    // ② 新增客人 —— 收起來，要用才展開
+    html += newCustomerFold();
+
+    // ③④⑤ 偶爾才處理一次的三塊
+    html += '<div id="unpaidBox">' + unpaidBlock() + '</div>';
+    html += '<div id="stuckBox">' + stuckBlock() + '</div>';
+    html += '<div id="recentBox">' + recentBlock() + '</div>';
 
     elMain.innerHTML = html;
     wire();
   }
 
   function wire() {
+    // 摺疊區記住開闔 —— 重畫之後才不會把剛剛的成功訊息收進去
+    var fold = document.getElementById('newFold');
+    if (fold) fold.addEventListener('toggle', function () { NEWOPEN = fold.open; });
+
+    // 提醒條的「去處理」：捲到對應那一區
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-go]'), function (b) {
+      b.onclick = function () {
+        var t = document.getElementById(b.getAttribute('data-go'));
+        if (t) t.scrollIntoView({ behavior:'smooth', block:'start' });
+      };
+    });
+
     Array.prototype.forEach.call(elMain.querySelectorAll('[data-new]'), function (b) {
       b.onclick = function () {
+        // ☢️ 新增客人現在是收合的。先打開再填，不然填了看不到。
+        var f = document.getElementById('newFold');
+        if (f) { f.open = true; NEWOPEN = true; }
         document.getElementById('nName').value  = b.getAttribute('data-n');
         document.getElementById('nPhone').value = b.getAttribute('data-p');
         document.getElementById('nName').scrollIntoView({ behavior:'smooth', block:'center' });
@@ -495,6 +626,7 @@
     document.getElementById('nGo').onclick = createOne;
     wirePaid(elMain);
     wireVoid(elMain);
+    wireGoBuy(elMain);
 
     var rl = document.getElementById('reload');
     if (rl) rl.onclick = function () {
@@ -517,7 +649,7 @@
   }
 
   // ☢️ 沖銷是兩段：先填原因（必填），再確定。
-  //    這裡【故意】比課購還多一道 —— 課購是往前記一件剛發生的事，
+  //    這裡【故意】比購課還多一道 —— 購課是往前記一件剛發生的事，
   //    沖銷是往回改一件已經記進帳的事。
   function wireVoid(root) {
     Array.prototype.forEach.call(root.querySelectorAll('[data-void]'), function (b) {
@@ -562,7 +694,7 @@
         var d = r.data || {};
         if (!d.ok) {
           var m = { need_reason:'一定要填原因。', not_found:'找不到這一筆。',
-                    not_purchase:'這一筆不是課購，不能沖銷。',
+                    not_purchase:'這一筆不是購課，不能沖銷。',
                     already_voided:'這一筆已經沖銷過了。' }[d.why] || d.why;
           res.innerHTML = '<div class="res bad">' + esc(m) + '</div>';
           go.disabled = false; go.textContent = '確定沖銷';
@@ -640,7 +772,7 @@
         var id = b.getAttribute('data-open');
         var w = document.getElementById('buy-' + id);
         if (!w) return;
-        if (!w.hidden) { w.hidden = true; b.textContent = '課購 ›'; return; }
+        if (!w.hidden) { w.hidden = true; b.innerHTML = '購課<span class="ar"></span>'; return; }
         var c = HITS.filter(function (x) { return x.id === id; })[0];
         w.innerHTML = buyPanel(c);
         w.hidden = false;
@@ -664,7 +796,7 @@
         //    點名按錯只是堂數，這裡按錯是【錢和堂數一起錯】。
         box.innerHTML =
           '<div class="buysum">' + esc(b.getAttribute('data-label')) + '　·　' + m +
-            '　·　<b>NT$' + b.getAttribute('data-price') + '</b>　→　加 <b>' +
+            '　·　<b>NT$' + money(b.getAttribute('data-price')) + '</b>　→　加 <b>' +
             b.getAttribute('data-credits') + ' 堂</b>' +
             (b.getAttribute('data-m') === 'transfer'
               ? '<br><span class="warn2">☢️ 匯款：堂數現在就給，會進「待入帳」清單，錢到了要回來按確認。</span>'
@@ -762,14 +894,19 @@
         var d = r.data || {};
         if (d.ok) {
           res.innerHTML = '<div class="res ok">已建立：<b>' + esc(d.name) + '</b>（' + esc(d.phone_tail) + '）' +
-            '<br>☢️ 目前 <b>0 堂</b>。請他<b>用自己的手機</b>再綁定一次。</div>';
+            '<br>☢️ 目前 <b>0 堂</b>。請他<b>用自己的手機</b>再綁定一次。</div>' +
+            // 十之八九下一步就是幫他購課 —— 不要叫人自己往上捲、再打一次名字
+            '<button type="button" class="gobuy" data-buyname="' + esc(d.name) + '">' +
+            '去幫他購課<span class="ar"></span></button>';
           document.getElementById('nName').value = '';
           document.getElementById('nPhone').value = '';
           // 建完把留言簿重讀一次 —— 那個人應該還在（要等他真的綁成功才會消失）
           return loadSignups().then(function () {
             var keep = document.getElementById('nRes').innerHTML;
+            NEWOPEN = true;                 // ☢️ 重畫前先鎖住「展開」，否則成功訊息會被收進去
             render();
             document.getElementById('nRes').innerHTML = keep;
+            wireGoBuy(document.getElementById('nRes'));
           });
         }
         var m = { bad_phone:'手機格式不對，要是 09 開頭的 10 碼。',
@@ -796,6 +933,20 @@
       });
   }
 
+  // 建完客人之後那顆捷徑：把名字填進上面的搜尋框並捲過去
+  function wireGoBuy(root) {
+    if (!root) return;
+    Array.prototype.forEach.call(root.querySelectorAll('[data-buyname]'), function (b) {
+      b.onclick = function () {
+        var q = document.getElementById('q');
+        if (!q) return;
+        q.value = b.getAttribute('data-buyname');
+        q.scrollIntoView({ behavior:'smooth', block:'center' });
+        search(q.value, document.getElementById('hits'));
+      };
+    });
+  }
+
   /* ══ 封存堂數等候區 ═══════════════════════════════════════════
      ☢️ 這一塊存在的理由：孤兒之所以出現，就是因為當初有人把
         「資料不齊的人」放在系統【外面】的資料夾，交接時忘了。
@@ -814,7 +965,7 @@
               'data-n="' + g.credits + '">轉給 ' + esc(c.name) + '（' + esc(c.phone_tail) + '）</button>';
           }).join('')
         : '<div class="lgnote">這個人系統裡還沒有 —— ' +
-          '請先用上面的<b>新增客人</b>建檔（要手機），建完再回來這裡按轉入。</div>';
+          '請先用下面的<b>新增客人</b>建檔（要手機），建完再回來這裡按轉入。</div>';
       return '<div class="lg">' +
         '<div class="lgh">封存區　<b>' + esc(g.name) + '</b>　<span>' + g.credits + ' 堂</span></div>' +
         '<div class="lgm">' + esc(g.source || '舊表') +
@@ -894,7 +1045,7 @@
             '<span class="bd ' + (c.bound ? 'y">已綁定' : 'n">未綁定') + '</span>' +
             '<span class="bal' + (b <= 0 ? ' low' : '') + '">剩 ' + b + ' 堂</span>' +
             (c.is_active === false ? '' :
-              '<button type="button" class="hitbuy" data-open="' + esc(c.id) + '">課購 ›</button>') +
+              '<button type="button" class="hitbuy" data-open="' + esc(c.id) + '">購課<span class="ar"></span></button>') +
           '</div>' +
           '<div class="buywrap" id="buy-' + esc(c.id) + '" hidden></div>' +
         '</div>';
@@ -941,7 +1092,7 @@
                 '<div class="g1">你的帳號還沒開通</div>' +
                 '<div class="g2">按下面拿到你的登入代號，傳給 Jerec 就可以開通。</div>' +
                 '<a class="btn" style="max-width:280px;margin:16px auto 0;display:block;' +
-                'text-align:center;text-decoration:none" href="staff.html">拿我的登入代號 ›</a>';
+                'text-align:center;text-decoration:none" href="staff.html">拿我的登入代號<span class="ar"></span></a>';
               elGate.hidden = false; elMain.hidden = true;
               return;
             }

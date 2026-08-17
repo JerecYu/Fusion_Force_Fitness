@@ -36,6 +36,17 @@
     --warn:#B4661F; --warn-bg:#FBEFE2; --warn-line:#EBC4A0;
     --err:#A4211A; --err-bg:#FBE9E7; --err-line:#F3C9C5;
   }
+
+  /* ══ 箭頭 ═══════════════════════════════════════════════
+     ☢️ 2026-08-17 Jerec 反應：箭頭太小太細，看起來像圖片上的雜訊。
+     原本是「›」這個字元 —— 細、又受字型擺布。改成用兩條邊框畫的 V 形，
+     粗細自己說了算，放大也不會糊。
+     ☢️ 顏色不要用 var(--faint) —— 它對白底只有 2.47:1，圖形最低要 3:1。
+     ═══════════════════════════════════════════════════════ */
+  .ar{display:inline-block;flex:0 0 auto;width:9px;height:9px;
+    border-right:2.6px solid currentColor;border-top:2.6px solid currentColor;
+    border-radius:1.5px;transform:rotate(45deg);
+    font-size:0;line-height:0;vertical-align:middle;margin:0 3px 1px 5px}
   body{background:var(--bg);color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
     line-height:1.65;padding:24px 16px 56px;
@@ -125,8 +136,8 @@
 
     <!-- 已開通才會出現 -->
     <div id="go" hidden>
-      <a class="btn go" href="checkin.html">進入點名核銷 ›</a>
-      <a class="btn go" href="staff-tools.html" style="margin-top:9px">教練後台（新增客人・綁定問題）›</a>
+      <a class="btn go" href="checkin.html">進入點名核銷<span class="ar"></span></a>
+      <a class="btn go" href="staff-tools.html" style="margin-top:9px">教練後台（新增客人・綁定問題）<span class="ar"></span></a>
       <div class="note">
         建議把這一頁<b>加到手機主畫面</b>或釘選在 LINE 的聊天室，
         下課前開一下就好。

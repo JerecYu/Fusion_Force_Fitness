@@ -290,7 +290,7 @@
     const emptyCredit = recs.filter(r => r.rawCredit === '');
     if (emptyCredit.length) warn.push({
       t:'剩餘堂數空白', c:emptyCredit.length,
-      why:'空白會當成 <b>0 堂</b>處理。剩 0 堂還是可以預約（到現場再課購），所以不影響使用 —— 只要確認這些人真的是 0。',
+      why:'空白會當成 <b>0 堂</b>處理。剩 0 堂還是可以預約（到現場再購課），所以不影響使用 —— 只要確認這些人真的是 0。',
       items: emptyCredit.map(r => ({ row:r.excelRow, v:'（空白）', n:r.name }))
     });
     const nameMap = {};

@@ -21,7 +21,7 @@
 
    partial index 的兩個條件都是必要的：
      reason = 'class'      更正用的 adjust 筆數不限，才有辦法改回來
-     booking_id is not null 舊資料和課購筆數沒有 booking_id，不能被綁住
+     booking_id is not null 舊資料和購課筆數沒有 booking_id，不能被綁住
    ────────────────────────────────────────────────────────────────── */
 
 create unique index if not exists credit_ledger_class_once
