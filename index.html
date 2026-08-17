@@ -136,6 +136,24 @@ a{color:inherit}
 .nav.open .nav-toggle span:nth-child(2){opacity:0}
 .nav.open .nav-toggle span:nth-child(3){transform:translateY(-7.5px) rotate(-45deg)}
 
+/* ══ 手機把整體字級縮下來 ═══════════════════════════════════
+   ☢️ 2026-08-18 Jerec：「手機版版面過於放大，字句跳行或太接近螢幕邊緣，
+      但電腦版看就非常理想」。
+      量出來的原因：手機上 body 是 20.4px、h1 是 34.6px ——
+      那是筆電的字級搬到 390px 的螢幕上，一行只塞得下 19 個字。
+      為什麼會這樣：字級寫成 clamp(最小值, vw, 最大值)，而手機寬度太窄，
+      vw 那一項永遠比最小值小，所以【永遠取最小值】—— 手機等於沒有縮小。
+
+   ☢️ 這裡【故意不去改那些 clamp 的最小值】。
+      1280px 的筆電同樣落在「取最小值」的區間，改最小值會連他滿意的
+      電腦版一起變小。改根字級只在 media query 裡生效，電腦版一個像素都不動。
+   ☢️ 這一招成立的前提：整份檔案裡 rem 只拿來寫字級，沒有拿來寫尺寸或間距
+      （查過了）。所以縮的是字，按鈕大小、間距、圓角全部不動。
+   ☢️ 用 % 不用 px：使用者自己在瀏覽器把預設字級調大的話，這樣才會跟著放大。
+   分兩階，避免在斷點上字級忽然跳一大格。 */
+@media (max-width:860px){ html{font-size:91%} }
+@media (max-width:620px){ html{font-size:82%} }
+
 @media (max-width:1050px){
   .nav-toggle{display:flex}
   .nav-links{position:fixed;top:var(--nav-h);left:0;right:0;flex-direction:column;
@@ -577,7 +595,15 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   font-size:1.37rem;color:var(--blue);overflow:hidden}
 .coach-mini .av img{width:100%;height:100%;object-fit:cover;display:block}
 #home-coaches{grid-template-columns:repeat(3,1fr)}
-@media (max-width:680px){#home-coaches{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:680px){
+  #home-coaches{grid-template-columns:repeat(2,1fr)}
+  /* ☢️ 2026-08-18 Jerec：「人物介紹的邊框被擠到螢幕右邊」。
+     原因是頭像寫死 150px。手機兩欄的時候，一欄扣掉卡片內距只剩約 134px，
+     150px 的圓塞不進去就把整張卡撐出畫面外。
+     改成「最多 150px，但不能超過容器」，並用 aspect-ratio 維持正圓。 */
+  .coach-mini .av{width:min(150px,84%);height:auto;aspect-ratio:1}
+  .coach-mini{padding:16px 12px}
+}
 .coach-mini h3{font-size:1.274rem;font-weight:700;letter-spacing:.04em}
 .coach-mini .zh{font-size:1.211rem;color:var(--faint);margin-top:3px}
 .coach-mini .sk{font-size:1.224rem;color:var(--dim);margin-top:11px;line-height:1.72}
@@ -956,6 +982,49 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   background:var(--teal);transition:background .2s ease}
 .faq details[open] summary::before{background:var(--blue)}
 .faq p{color:var(--dim);font-size:1.168rem;line-height:1.8;padding:0 0 17px 21px}
+/* ══════════ 手機專用覆寫 ══════════════════════════════════════
+   ☢️ 這一段【一定要放在樣式表最後面】。
+      media query 本身【不會】提高特異度 —— .tb table 在兩邊都是 (0,1,1)，
+      平手就看誰寫在後面。第一版我把它寫在檔案前段，結果 min-width:520px
+      照樣贏，手機的表格還是被切掉，看起來像沒生效。
+   ☢️ 這裡只放「手機才要不一樣」的規則。電腦版一個像素都不動。
+   ═══════════════════════════════════════════════════════════ */
+/* 表格太寬時的提示。桌機用不到 —— 那邊本來就塞得下。 */
+.xtip{display:none}
+
+@media (max-width:620px){
+  /* ☢️ 有些表格【真的】塞不下（教練場租 7 欄、首頁課表 7 天）。
+     硬擠只會把字縮到看不清楚，所以那兩張維持左右捲動 ——
+     但一定要講出來，不然使用者只會看到「價格被切掉」。 */
+  .xtip{display:block;font-size:1.05rem;color:var(--dim);letter-spacing:.04em;
+    margin:0 2px 6px;text-align:right}
+
+  /* 價目表被切掉的真正原因：.tb table 寫死 min-width:520px。
+     390px 的手機扣掉留白只剩約 354px —— 桌子比房間大，只好左右拉。
+     ☢️ 但「要左右拉才看得到價格」等於價格藏起來了。改成縮到剛好，
+        內距一起收窄；overflow-x 留著當保險，真的塞不下還是拉得動。 */
+  .tb table{min-width:0}
+  .tb th,.tb td{padding:11px 4px}
+  /* 360px 的窄機再收一格 —— 差的就是最後那十幾個像素 */
+  @media (max-width:400px){ .tb td{font-size:1.03rem} .tb th{font-size:1.04rem} }
+  /* ☢️ 第一欄是列名（時段／費用／人數），不能讓它拆成「時／段」直排 ——
+     那看起來像壞掉。給它 nowrap，它就會先跟別欄搶到最低寬度。
+     ☢️ 但 nowrap 是跟別人「搶」寬度 —— 光加這一條，5 欄的表就被推出去了。
+        所以同時把字距歸零、金額字級再收一點，把搶走的寬度還回去。 */
+  .tb th:first-child,.tb td:first-child{padding-left:11px;white-space:nowrap}
+  .tb th{letter-spacing:0;font-size:1.1rem}
+  .tb td{font-size:1.1rem}
+  .tb td.mute,.tb td:first-child{font-size:1.08rem}
+
+  /* 課程比較表欄位多，同樣處理 */
+  .cmp table{min-width:0}
+  .cmp th,.cmp td{padding:11px 6px}
+
+  /* ☢️ 價目表上面那排跳頁連結原本是橫向捲動，手機上第 3 顆之後都在畫面外，
+     而且沒有任何「還有更多」的提示 —— 看起來就是只有三個分類。改成換行。 */
+  .jump{flex-wrap:wrap;overflow-x:visible}
+  .jump a{padding:8px 13px}
+}
 </style>
 </head>
 <body>
@@ -1567,9 +1636,10 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
           <p>於本網站、官方 LINE 或團課群組完成預約，我們會回覆確認。</p></div>
         <div class="st" data-n="2"><h3>現場繳費或匯款</h3>
           <p>首次上課時於櫃檯以現金繳費，或事先匯款後提供帳號後五碼核對。匯款帳戶請向櫃檯或官方 LINE 索取。</p></div>
-        <div class="st" data-n="3"><h3>加入團課群組</h3>
-          <p>第一次課程結束後加入約課群組，了解後續的約課規範與請假方式。</p></div>
-        <div class="st" data-n="4"><h3>查詢扣課紀錄</h3>
+        <!-- ☢️ 2026-08-18 刪掉舊系統的「加入團課群組」（原本的第 3 步）。
+             ☢️ 刪一步之後，後面每一步的 data-n 都要往前遞補 ——
+                那個號碼是 CSS 用 content:attr(data-n) 畫出來的，不會自己重算。 -->
+        <div class="st" data-n="3"><h3>查詢扣課紀錄</h3>
           <p>購買堂數方案後，每次上課依序扣課；個人扣課紀錄可於團課群組查閱。</p></div></div>
       <div class="note note-warn" style="margin-top:20px">
         <b>目前暫無線上支付與信用卡刷卡服務。</b><br>
@@ -2333,7 +2403,33 @@ function goRoute(name, keepScroll) {
   if (!keepScroll) window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
-window.addEventListener('hashchange', function () { goRoute(currentRoute()); });
+window.addEventListener('hashchange', function () { goRoute(currentRoute()); markScrollers(); });
+
+/* ── 表格塞不下就講出來 ────────────────────────────────────
+   ☢️ 純 CSS 沒辦法知道「這張表有沒有超出去」，只能量。
+      量完才決定要不要加提示 —— 塞得下的表不會多出一行沒用的字。 */
+function markScrollers() {
+  FF.each(document.querySelectorAll('.tb,.cmp,.tt'), function (el) {
+    var over = (el.scrollWidth - el.clientWidth) > 4;
+    var prev = el.previousElementSibling;
+    var has  = prev && prev.classList && prev.classList.contains('xtip');
+    if (over && !has) {
+      var d = document.createElement('div');
+      d.className = 'xtip';
+      d.textContent = '← 左右滑動看完整表格 →';
+      el.parentNode.insertBefore(d, el);
+    } else if (!over && has) {
+      prev.remove();
+    }
+  });
+}
+window.addEventListener('load', markScrollers);
+(function () {
+  var t;
+  window.addEventListener('resize', function () {
+    clearTimeout(t); t = setTimeout(markScrollers, 200);
+  });
+})();
 
 /* ═══════════════════════════════════════════════════════════
    導覽列
