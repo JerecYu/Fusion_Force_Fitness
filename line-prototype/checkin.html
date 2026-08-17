@@ -98,9 +98,32 @@
     font-family:inherit;border-radius:3px;cursor:pointer;
     background:var(--surface2);color:var(--dim);border:1px solid var(--line)}
   .b:active{transform:translateY(1px)}
-  .b.pick-on{background:var(--ok);color:#fff;border-color:var(--ok)}
-  .b.pick-off{background:var(--warn);color:#fff;border-color:var(--warn)}
+  /* ☢️ 2026-08-17 教練回報：核銷完按鈕還是綠的、還按得下去，
+     分不出「這是按鈕」還是「這是已完成的狀態」。
+     改法：選中的那一顆變成【狀態】—— 打勾、變實心、按不下去（沒有按壓動畫、
+     不吃點擊）；另一顆變成【改成…】，讀起來就是「要改才按這個」。 */
+  .b.pick-on{background:var(--ok);color:#fff;border-color:var(--ok);
+    cursor:default;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+  .b.pick-off{background:var(--warn);color:#fff;border-color:var(--warn);
+    cursor:default;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+  .b.pick-on:active,.b.pick-off:active{transform:none}
+  /* 另一顆降級成次要動作 */
+  .b.alt{background:transparent;color:var(--dim);border-style:dashed;font-weight:700;font-size:14px}
   .b:disabled{opacity:.5;cursor:default}
+
+  /* ── 帶朋友來（點名時才出現） ─────────────────────────────
+     ☢️ 只在「已記出席」或已經填過人數時顯示。
+        課前名單保持乾淨 —— 客人訂課時本來就不知道朋友會不會來。 */
+  .gst{display:flex;align-items:center;gap:8px;margin-top:9px;
+    padding:7px 9px;border:1px dashed var(--line);border-radius:3px;background:var(--surface2)}
+  .gst .lb{font-size:12px;color:var(--dim);font-weight:700;flex:1}
+  .gst button{width:34px;height:34px;font-size:17px;font-weight:800;font-family:inherit;
+    border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:3px;cursor:pointer}
+  .gst button:disabled{opacity:.35;cursor:default}
+  .gst .n{min-width:44px;text-align:center;font-size:15px;font-weight:800;
+    font-variant-numeric:tabular-nums}
+  .gst.has{border-color:var(--blue);border-style:solid;background:#fff}
+  .gst.has .lb{color:var(--blue)}
 
   /* ── 加人 ── */
   .add{background:var(--surface);border:1px dashed var(--line);border-radius:3px;
@@ -235,7 +258,7 @@
 
   function loadRoster(sid) {
     return DB.from('staff_roster')
-      .select('booking_id,session_id,booking_status,checked_at,checked_by_name,customer_id,customer_name,phone_tail,paid_by_customer_id,payer_name,balance')
+      .select('booking_id,session_id,booking_status,checked_at,checked_by_name,customer_id,customer_name,phone_tail,paid_by_customer_id,payer_name,balance,guest_count')
       .eq('session_id', sid)
       .order('customer_name', { ascending: true })
       .then(function (r) {
@@ -373,12 +396,46 @@
         (mine ? '' : '<span class="payer">由 ' + esc(p.payer_name || '他人') + ' 付</span>') +
       '</div>' +
       (meta ? '<div class="meta">' + meta + '</div>' : '') +
-      '<div class="btns">' +
-        '<button type="button" class="b act' + (st === 'attended' ? ' pick-on'  : '') +
-          '" data-b="' + esc(p.booking_id) + '" data-v="1"' + (lock ? ' disabled' : '') + '>出席</button>' +
-        '<button type="button" class="b act' + (st === 'absent'   ? ' pick-off' : '') +
-          '" data-b="' + esc(p.booking_id) + '" data-v="0"' + (lock ? ' disabled' : '') + '>缺席</button>' +
-      '</div>' +
+      btns(p, st, lock) +
+      guests(p, st, lock) +
+    '</div>';
+  }
+
+  // ☢️ 選中的那一顆是【狀態】不是按鈕：打勾、實心、不吃點擊。
+  //    另一顆是【改成…】，一看就知道要改才按。都沒選就是兩顆對等的動作。
+  function btns(p, st, lock) {
+    var id = esc(p.booking_id), d = lock ? ' disabled' : '';
+    if (st === 'attended') {
+      return '<div class="btns">' +
+        '<button type="button" class="b pick-on" tabindex="-1">✓　已出席</button>' +
+        '<button type="button" class="b act alt" data-b="' + id + '" data-v="0"' + d +
+          '>改成缺席</button></div>';
+    }
+    if (st === 'absent') {
+      return '<div class="btns">' +
+        '<button type="button" class="b act alt" data-b="' + id + '" data-v="1"' + d +
+          '>改成出席</button>' +
+        '<button type="button" class="b pick-off" tabindex="-1">✓　已缺席</button></div>';
+    }
+    return '<div class="btns">' +
+      '<button type="button" class="b act" data-b="' + id + '" data-v="1"' + d + '>出席</button>' +
+      '<button type="button" class="b act" data-b="' + id + '" data-v="0"' + d + '>缺席</button>' +
+    '</div>';
+  }
+
+  // 帶朋友來。只在點名之後（或已經填過）才出現 —— 課前名單保持乾淨。
+  function guests(p, st, lock) {
+    var n = Number(p.guest_count || 0);
+    if (st !== 'attended' && n === 0) return '';
+    var id = esc(p.booking_id);
+    return '<div class="gst' + (n > 0 ? ' has' : '') + '">' +
+      '<span class="lb">' + (n > 0 ? '另外帶了 ' + n + ' 位（一起扣 ' + (1 + n) + ' 堂）'
+                                   : '有帶朋友來嗎？') + '</span>' +
+      '<button type="button" data-g="' + id + '" data-n="' + (n - 1) + '"' +
+        (lock || n <= 0 ? ' disabled' : '') + '>−</button>' +
+      '<span class="n">' + n + ' 位</span>' +
+      '<button type="button" data-g="' + id + '" data-n="' + (n + 1) + '"' +
+        (lock || n >= 5 ? ' disabled' : '') + '>＋</button>' +
     '</div>';
   }
 
@@ -386,6 +443,11 @@
     Array.prototype.forEach.call(elRoster.querySelectorAll('.b.act'), function (b) {
       b.onclick = function () {
         mark(b.getAttribute('data-b'), b.getAttribute('data-v') === '1');
+      };
+    });
+    Array.prototype.forEach.call(elRoster.querySelectorAll('[data-g]'), function (b) {
+      b.onclick = function () {
+        setGuests(b.getAttribute('data-g'), Number(b.getAttribute('data-n')));
       };
     });
     if (dead) return;
@@ -402,6 +464,32 @@
   }
 
   /* ══ 點名 ══════════════════════════════════════════════════════ */
+  // 改「帶了幾位」。☢️ 跟 mark() 走同一套流程：鎖住 → 呼叫 → 重讀名單 → 重畫。
+  //    重讀是必要的 —— set_guests 會順手重跑 check_in()，餘額會變。
+  function setGuests(bookingId, n) {
+    if (busy[bookingId]) return;
+    if (n < 0 || n > 5) return;
+    busy[bookingId] = true;
+
+    var card = elRoster.querySelector('.p[data-b="' + bookingId + '"]');
+    if (card) Array.prototype.forEach.call(card.querySelectorAll('button'),
+      function (b) { b.disabled = true; });
+
+    DB.rpc('set_guests', { p_booking: bookingId, p_n: n })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        return loadRoster(CUR.session_id).then(function () {
+          return refreshOneSession(CUR.session_id);
+        });
+      })
+      .then(function () { busy[bookingId] = false; renderRoster(); })
+      .catch(function (e) {
+        busy[bookingId] = false;
+        toast(String(e.message || e), true);
+        renderRoster();
+      });
+  }
+
   function mark(bookingId, present) {
     if (busy[bookingId]) return;
     busy[bookingId] = true;
