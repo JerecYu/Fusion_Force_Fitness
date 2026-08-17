@@ -591,7 +591,7 @@
     const [b, c] = await Promise.all([
       window.fffDB.from('my_bookings')
         .select('id,session_id,status,session_date,start_time,duration_min,' +
-                'title,level,coach_name,can_cancel,starts_at')
+                'title,level,coach_name,can_cancel,starts_at,charged_delta')
         .order('starts_at', { ascending: false }).limit(200),
       window.fffDB.from('my_credits').select('product,balance')
     ]);
@@ -899,7 +899,7 @@
   function mbRow(b, past){
     const bits = dateBits(b.session_date);
     const right = past
-      ? '<span class="mb-s">' + esc(MB_STAT[b.status] || b.status) + '</span>'
+      ? '<span class="mb-s">' + esc(pastLabel(b)) + '</span>'
       : (b.can_cancel
           ? '<button class="mb-x" data-cancel-id="' + esc(b.id) + '">取消</button>'
           : '<button class="mb-x" disabled>不可取消</button>');
@@ -914,6 +914,20 @@
   }
 
   const MB_STAT = { attended:'已上課', absent:'缺席', cancelled:'已取消', booked:'已過期' };
+
+  // 新舊系統的分界。這一天 17:00 之前的紀錄都是搬過來的。
+  const CUTOVER = '2026-08-16';
+
+  // ☢️ 「已上課」不能只看 status。
+  //    舊系統缺席不扣課，但報名狀態不會回頭改 —— 搬過來之後有 7 筆
+  //    寫著「已上課」卻從來沒扣過堂數。客人看到會以為被亂扣錢。
+  //    ☢️ 真正的答案在 charged_delta：那一筆預約實際扣了幾堂。
+  //       0 就是沒扣，不管 status 寫什麼。
+  function pastLabel(b){
+    const paid = Number(b.charged_delta || 0) < 0;
+    if (b.status === 'attended') return paid ? '已上課' : '未扣課';
+    return MB_STAT[b.status] || b.status;
+  }
 
   function renderMine(){
     const el = document.getElementById('myList');
@@ -945,7 +959,24 @@
       : '<div class="bal-note">還沒有預約。到「課表」選一堂吧。</div>';
 
     if (past.length){
-      html += '<div class="mb-h">最近的紀錄</div>' + past.map(b => mbRow(b, true)).join('');
+      html += '<div class="mb-h">最近的紀錄</div>';
+
+      // ☢️ 2026-08-16：有客人問「這堂我沒上，為什麼寫已上課？」
+      //    舊系統的【報名紀錄】和【扣課紀錄】本來就是兩份對不起來的資料 ——
+      //    缺席不扣課，但報名紀錄不會回頭改狀態。搬過來之後就變成
+      //    「畫面說已上課、帳上沒扣錢」。帳是對的，畫面在說謊。
+      //    ☢️ 在把 credit_ledger.booking_id 補回去之前，先誠實講出來，
+      //       比讓客人以為被亂扣錢好。
+      if (past.some(b => String(b.session_date) <= CUTOVER)){
+        html += '<div class="bal-note" style="margin-top:0">' +
+                '標成「<b>未扣課</b>」的，是<b>沒有扣到你堂數</b>的紀錄 —— ' +
+                CUTOVER.slice(5).replace('-','/') + ' 以前從舊系統轉過來的報名，' +
+                '當天沒到也不會回頭改狀態。<br>' +
+                '<b>你的堂數是準的。</b>如果跟你記的不一樣，直接告訴我們，我們有完整的異動紀錄可以查。' +
+                '</div>';
+      }
+
+      html += past.map(b => mbRow(b, true)).join('');
     }
 
     el.innerHTML = html;
