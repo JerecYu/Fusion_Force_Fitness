@@ -15,6 +15,12 @@
 --       下面是 2026-08-17 抄下來的原定義，【一個欄位都沒改、沒少】，
 --       只在最後加兩欄。前端是照欄位名取的，少一欄就少一塊畫面。
 create or replace view public.staff_roster
+-- ☢️☢️ 2026-08-17：下面這一行 with (security_invoker = true) 是【錯的】，
+--        它讓 staff_roster 在線上整張讀不到（permission denied for table class_sessions）。
+--        這幾張檢視表【必須是 definer】—— 牆是 where 裡的 my_customer_id()／is_staff()，
+--        不是底層資料表的權限，而 authenticated 對 class_sessions 故意沒有 SELECT。
+--        ☢️ 要重跑這一支的話，跑完一定要接著跑 db/25-fix-view-security.sql。
+--        原因寫在 25 那一支的開頭。
   with (security_invoker = true) as
 select b.id                              as booking_id,
        b.session_id,

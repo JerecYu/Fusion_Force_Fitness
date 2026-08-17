@@ -21,6 +21,12 @@
 --    要嘛放寬 staff_sessions 的範圍（會讓教練的課表變得很長），
 --    要嘛另開一張只放逾期的。選後者。
 create or replace view public.overdue_checkins
+-- ☢️☢️ 2026-08-17：下面這一行 with (security_invoker = true) 是【錯的】，
+--        它讓 overdue_checkins 在線上整張讀不到（permission denied for table class_sessions）。
+--        這幾張檢視表【必須是 definer】—— 牆是 where 裡的 my_customer_id()／is_staff()，
+--        不是底層資料表的權限，而 authenticated 對 class_sessions 故意沒有 SELECT。
+--        ☢️ 要重跑這一支的話，跑完一定要接著跑 db/25-fix-view-security.sql。
+--        原因寫在 25 那一支的開頭。
   with (security_invoker = true) as
 select
   s.id                                                          as session_id,

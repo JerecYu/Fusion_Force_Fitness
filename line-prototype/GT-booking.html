@@ -502,6 +502,7 @@
 
   let meId       = null;   // 我自己的 customers.id（綁定後才有）
   let myBookings = [];     // 我的預約（來自 my_bookings 檢視表）
+  let myError = null;      // ☢️ 讀不到的時候要講出來，不能假裝沒有預約
   let myCredits  = null;   // 我的 GT 課卡餘額（來自 my_credits）
   let fullOK     = null;   // 額滿的課按第二次才算數，記在這裡
   const MAX_TABS     = 14;         // 最多列出幾個有課的日子
@@ -594,13 +595,16 @@
     //    maybeSingle() 直接報錯 → meId 是 null → 按鈕能按卻訂不了課。
     //    ☢️ 千萬不要用 .limit(1) 來「修」這個問題 —— 那會讓員工拿到
     //       【某一個隨機客人】的 id，然後用他的課卡訂課、扣他的堂數。
+    myError = null;
     const u = await window.fffDB.auth.getUser();
     const uid = u && u.data && u.data.user ? u.data.user.id : null;
     if (!uid){ console.error('[GT-booking] 拿不到登入身分'); return; }
 
     const me = await window.fffDB.from('customers')
                      .select('id').eq('auth_user_id', uid).maybeSingle();
-    if (me.error){ console.error('[GT-booking] 讀不到自己：', me.error.message); return; }
+    // ☢️ 這裡原本也是安靜地 return —— 同一種毛病，一併修掉。
+    if (me.error){ myError = me.error.message;
+      console.error('[GT-booking] 讀不到自己：', me.error.message); return; }
     meId = me.data ? me.data.id : null;
     if (!meId) return;
 
@@ -612,9 +616,14 @@
         .order('starts_at', { ascending: false }).limit(200),
       window.fffDB.from('my_credits').select('product,balance')
     ]);
-    if (b.error) console.error('[GT-booking] 讀我的預約失敗：', b.error.message);
+    // ☢️ 2026-08-17 的教訓：這裡原本只 console.error，畫面上 myBookings
+    //    留在空陣列 —— 結果「查詢失敗」跟「你沒有任何預約」【長得一模一樣】。
+    //    my_bookings 因為一行權限設定壞掉，從 8/16 晚上一路沒人發現，
+    //    直到教練在另一頁踩到同一個原因才浮出來。
+    //    ☢️ 讀不到就要在畫面上說（規則 14）。安靜的空白是最貴的錯誤。
+    if (b.error) { myError = b.error.message; console.error('[GT-booking] 讀我的預約失敗：', b.error.message); }
     else myBookings = b.data || [];
-    if (c.error) console.error('[GT-booking] 讀課卡餘額失敗：', c.error.message);
+    if (c.error) { myError = myError || c.error.message; console.error('[GT-booking] 讀課卡餘額失敗：', c.error.message); }
     else myCredits = (c.data || []).find(x => x.product === 'GT') || { product:'GT', balance:0 };
   }
 
@@ -963,6 +972,15 @@
       el.innerHTML = '<div class="empty"><div class="h">還沒綁定</div>' +
         '「我的預約」要先在 LINE 裡完成身分綁定才看得到。<br>' +
         '在那之前，系統無法確認你是誰，也就不能顯示屬於你的資料。</div>';
+      return;
+    }
+
+    if (myError){
+      el.innerHTML = '<div class="empty"><div class="h">讀不到你的預約</div>' +
+        '這是系統的問題，不是你的資料不見了。<br>' +
+        '請把下面這行告訴我們，我們查得到原因。<br>' +
+        '<code style="display:block;margin-top:8px;font-size:.68rem;opacity:.75;' +
+        'word-break:break-all">' + esc(myError) + '</code></div>';
       return;
     }
 

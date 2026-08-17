@@ -37,6 +37,12 @@ from m where l.id = m.lid;
 -- my_bookings 加上 charged_delta：這一筆預約【實際】扣了幾堂。
 -- 0 = 沒扣過，不管 status 寫什麼。前端就是靠這一欄講實話。
 create or replace view public.my_bookings
+-- ☢️☢️ 2026-08-17：下面這一行 with (security_invoker = true) 是【錯的】，
+--        它讓 my_bookings 在線上整張讀不到（permission denied for table class_sessions）。
+--        這幾張檢視表【必須是 definer】—— 牆是 where 裡的 my_customer_id()／is_staff()，
+--        不是底層資料表的權限，而 authenticated 對 class_sessions 故意沒有 SELECT。
+--        ☢️ 要重跑這一支的話，跑完一定要接著跑 db/25-fix-view-security.sql。
+--        原因寫在 25 那一支的開頭。
   with (security_invoker = true) as
 select b.id, b.session_id, b.status, b.booked_at, b.cancelled_at,
        s.session_date, s.start_time, s.duration_min, s.title, s.level,
