@@ -109,6 +109,38 @@
   .hit .bd.y{background:var(--ok-bg);color:var(--ok)}
   .hit .bd.n{background:var(--warn-bg);color:#7C420E}
 
+  /* ══ 待入帳 ═══════════════════════════════════════════════ */
+  .up{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .up:last-of-type{border-bottom:0}
+  .upl{flex:1;min-width:0}
+  .upl b{font-size:14px;font-weight:800}
+  .upl span{font-size:11.5px;color:var(--faint);letter-spacing:.06em;margin-left:5px}
+  .upl i{display:block;font-style:normal;font-size:11px;color:var(--dim);margin-top:2px}
+  .upb{flex:0 0 auto;background:var(--ok);color:#fff;border:0;border-radius:9px;
+    padding:8px 13px;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
+
+  /* ══ 課購 ═════════════════════════════════════════════════ */
+  .hitwrap{margin-bottom:7px}
+  .hit{margin-bottom:0}
+  .hitbuy{flex:0 0 auto;background:var(--ink);color:#fff;border:0;border-radius:9px;
+    padding:7px 11px;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer}
+  .buywrap{border:1px solid var(--line);border-top:0;border-radius:0 0 11px 11px;
+    background:var(--surface2);padding:10px}
+  .buy{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .buyb{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 8px;
+    font-family:inherit;text-align:left;cursor:pointer;color:var(--ink)}
+  .buyb b{display:block;font-size:13px;font-weight:800}
+  .buyb i{display:block;font-style:normal;font-size:11px;color:var(--dim);margin-top:2px}
+  /* 選中的那一顆要一眼看得出來 —— 這是動到錢的地方 */
+  .buyb.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .buyb.on i{color:var(--teal)}
+  .buyc{grid-column:1 / -1;margin-top:3px}
+  .buysum{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px;
+    font-size:12.5px;line-height:1.7;color:var(--ink2)}
+  .warn2{color:#7C420E;font-size:11.5px}
+  .buygo{width:100%;margin-top:7px;background:var(--ok);color:#fff;border:0;border-radius:10px;
+    padding:11px;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+  .buygo:disabled{opacity:.55}
   .gate{text-align:center;padding:60px 20px;color:var(--dim)}
   .gate .g1{font-size:17px;font-weight:800;color:var(--ink)}
   .gate.err .g1{color:var(--err)}
@@ -148,6 +180,8 @@
 
   var DB = null, ME = null;
   var SIGNUPS = [];
+  var UNPAID = [], PRODUCTS = [];
+  var HITS = [];
 
   var elGate = document.getElementById('gate');
   var elMain = document.getElementById('main');
@@ -231,11 +265,64 @@
     '</div>';
   }
 
+  function loadPurchaseBits() {
+    // ☢️ 這兩個讀不到不該擋住整個後台 —— 綁定診斷跟課購是兩件事。
+    return Promise.all([
+      DB.from('products').select('code,label,credits,price,sort_order')
+        .eq('product','GT').eq('is_active', true).order('sort_order')
+        .then(function (r) { PRODUCTS = (!r.error && r.data) ? r.data : []; },
+              function () { PRODUCTS = []; }),
+      DB.from('staff_unpaid')
+        .select('ledger_id,created_at,customer_name,phone_tail,credits,amount,created_by_name,waited_days')
+        .order('created_at', { ascending: true })
+        .then(function (r) { UNPAID = (!r.error && r.data) ? r.data : []; },
+              function () { UNPAID = []; })
+    ]);
+  }
+
+  // 待入帳。☢️ 只有匯款、而且還沒確認的才會進來 ——
+  //    搬遷進來的舊資料 paid_at 也是 null，但那是「不知道」不是「還沒收」。
+  function unpaidBlock() {
+    if (!UNPAID.length) return '';
+    var rows = UNPAID.map(function (u) {
+      var d = Number(u.waited_days || 0);
+      return '<div class="up">' +
+        '<div class="upl"><b>' + esc(u.customer_name) + '</b> <span>' + esc(u.phone_tail) + '</span>' +
+          '<i>' + u.credits + ' 堂　·　NT$' + (u.amount == null ? '—' : u.amount) +
+          '　·　' + esc(u.created_by_name || '') + ' 入的' +
+          (d > 0 ? '　·　等 ' + d + ' 天' : '') + '</i></div>' +
+        '<button type="button" class="upb" data-paid="' + esc(u.ledger_id) + '">錢到了</button>' +
+      '</div>';
+    }).join('');
+    return '<div class="sec hot">💰 匯款待入帳（' + UNPAID.length + '）</div>' +
+           '<div class="card">' + rows +
+           '<div class="hint" style="margin-top:8px">☢️ 這些人的<b>堂數已經給了</b>，只差錢還沒確認進帳戶。' +
+           '按「錢到了」＝確認入帳，不會改動堂數。</div></div>';
+  }
+
+  // 幫某一位客人課購。☢️ 兩段式：先選方案＋付款方式，再確定。
+  //    一鍵直接入帳太快了 —— 這是動到錢的地方，跟點名不一樣。
+  function buyPanel(c) {
+    if (!PRODUCTS.length) return '<div class="hint">讀不到方案，重新整理看看。</div>';
+    return '<div class="buy" data-for="' + esc(c.id) + '">' +
+      PRODUCTS.map(function (p) {
+        return ['cash','transfer'].map(function (m) {
+          return '<button type="button" class="buyb" data-buy="' + esc(c.id) + '" ' +
+            'data-code="' + esc(p.code) + '" data-m="' + m + '" ' +
+            'data-label="' + esc(p.label) + '" data-price="' + p.price + '" ' +
+            'data-credits="' + p.credits + '">' +
+            '<b>' + esc(p.label) + '</b><i>' + (m === 'cash' ? '現金' : '匯款') +
+            '　NT$' + p.price + '</i></button>';
+        }).join('');
+      }).join('') +
+      '<div class="buyc" hidden></div></div>';
+  }
+
   /* ══ 畫面 ══════════════════════════════════════════════════ */
   function render() {
     elGate.hidden = true; elMain.hidden = false;
 
-    var html = '';
+    var html = '<div id="unpaidBox">' + unpaidBlock() + '</div>';
     html += '<div class="sec' + (SIGNUPS.length ? ' hot' : '') + '">' +
             (SIGNUPS.length ? '⚠️ 綁不上的人（' + SIGNUPS.length + '）' : '綁不上的人') + '</div>';
     html += SIGNUPS.length
@@ -262,7 +349,7 @@
         '<div class="hint">要跟他綁定時打的<b>完全一樣</b>。</div>' +
         '<button type="button" class="btn" id="nGo">建立客人</button>' +
         '<div class="hint" style="margin-top:9px">☢️ 建出來是 <b>0 堂</b>。' +
-          '堂數不從這裡進 —— 有買方案的話，另外告訴 Jerec。</div>' +
+          '有買方案的話，建完之後到下面<b>查客人 → 課購</b>加堂數。</div>' +
         '<div id="nRes"></div>' +
       '</div>' +
 
@@ -291,11 +378,14 @@
     });
 
     document.getElementById('nGo').onclick = createOne;
+    wirePaid(elMain);
+
     var rl = document.getElementById('reload');
     if (rl) rl.onclick = function () {
       if (!DB) return;
       rl.disabled = true;
-      loadSignups().then(function () { render(); toast('已更新'); },
+      Promise.all([loadSignups(), loadPurchaseBits()])
+        .then(function () { render(); toast('已更新'); },
                          function (e) { toast(String(e.message || e), true); })
                    .then(function () { var r2 = document.getElementById('reload');
                                        if (r2) r2.disabled = false; });
@@ -308,6 +398,121 @@
       if (!v) { hits.innerHTML = ''; return; }
       t = setTimeout(function () { search(v, hits); }, 260);
     };
+  }
+
+  function wireHits(box) {
+    Array.prototype.forEach.call(box.querySelectorAll('[data-open]'), function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-open');
+        var w = document.getElementById('buy-' + id);
+        if (!w) return;
+        if (!w.hidden) { w.hidden = true; b.textContent = '課購 ›'; return; }
+        var c = HITS.filter(function (x) { return x.id === id; })[0];
+        w.innerHTML = buyPanel(c);
+        w.hidden = false;
+        b.textContent = '收起';
+        wireBuy(w);
+      };
+    });
+  }
+
+  function wireBuy(w) {
+    Array.prototype.forEach.call(w.querySelectorAll('[data-buy]'), function (b) {
+      b.onclick = function () {
+        var box = w.querySelector('.buyc');
+        Array.prototype.forEach.call(w.querySelectorAll('.buyb'), function (x) {
+          x.classList.remove('on');
+        });
+        b.classList.add('on');
+        var m = b.getAttribute('data-m') === 'cash' ? '現金' : '匯款';
+        box.hidden = false;
+        // ☢️ 一定要再確定一次。這是動到錢的地方 ——
+        //    點名按錯只是堂數，這裡按錯是【錢和堂數一起錯】。
+        box.innerHTML =
+          '<div class="buysum">' + esc(b.getAttribute('data-label')) + '　·　' + m +
+            '　·　<b>NT$' + b.getAttribute('data-price') + '</b>　→　加 <b>' +
+            b.getAttribute('data-credits') + ' 堂</b>' +
+            (b.getAttribute('data-m') === 'transfer'
+              ? '<br><span class="warn2">☢️ 匯款：堂數現在就給，會進「待入帳」清單，錢到了要回來按確認。</span>'
+              : '') +
+          '</div>' +
+          '<button type="button" class="buygo">確定，入帳</button>';
+        box.querySelector('.buygo').onclick = function () {
+          doBuy(b.getAttribute('data-buy'), b.getAttribute('data-code'),
+                b.getAttribute('data-m'), box);
+        };
+      };
+    });
+  }
+
+  function doBuy(customerId, code, method, box) {
+    var go = box.querySelector('.buygo');
+    if (!go || go.disabled) return;
+    go.disabled = true; go.textContent = '入帳中…';
+    DB.rpc('add_purchase', { p_customer: customerId, p_code: code, p_method: method })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        var d = r.data || {};
+        if (!d.ok) {
+          var m = { bad_method:'付款方式不對。', bad_product:'找不到這個方案。',
+                    no_customer:'找不到這位客人。', inactive:'這位客人已停用。' }[d.why] || d.why;
+          box.innerHTML = '<div class="res bad">' + esc(m) + '</div>';
+          return;
+        }
+        box.innerHTML = '<div class="res ok">' +
+          esc(d.name) + '　＋' + d.credits + ' 堂　·　NT$' + d.price +
+          '<br>現在剩 <b>' + d.balance + ' 堂</b>' +
+          (d.pending ? '<br>☢️ 已列入<b>待入帳</b>，錢到了記得回來確認。' : '') +
+          '</div>';
+        toast(d.name + '　＋' + d.credits + ' 堂　·　現在剩 ' + d.balance + ' 堂');
+
+        // ☢️ 不要整頁重畫。第一版就是這樣，結果剛按完的那句「＋1 堂、現在剩 7 堂」
+        //    連同搜尋結果一起被洗掉 —— 教練會不確定自己到底有沒有按成功。
+        //    只更新兩塊：這一列的餘額、上面的待入帳清單。
+        var row = document.querySelector('#buy-' + customerId);
+        var hit = row && row.previousElementSibling;
+        var balEl = hit && hit.querySelector('.bal');
+        if (balEl) {
+          balEl.textContent = '剩 ' + d.balance + ' 堂';
+          balEl.classList.toggle('low', Number(d.balance) <= 0);
+        }
+        HITS.forEach(function (x) { if (x.id === customerId) x.balance = d.balance; });
+
+        if (!d.pending) return;                       // 現金：待入帳沒變，不用重讀
+        return loadPurchaseBits().then(function () {
+          var box = document.getElementById('unpaidBox');
+          if (box) { box.innerHTML = unpaidBlock(); wirePaid(box); }
+        });
+      })
+      .catch(function (e) {
+        box.innerHTML = '<div class="res bad">' + esc(String(e.message || e)) + '</div>';
+      });
+  }
+
+  function wirePaid(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-paid]'), function (b) {
+      b.onclick = function () { markPaid(b.getAttribute('data-paid'), b); };
+    });
+  }
+
+  function markPaid(ledgerId, btn) {
+    if (btn.disabled) return;
+    btn.disabled = true; btn.textContent = '確認中…';
+    DB.rpc('confirm_payment', { p_ledger: ledgerId })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        var d = r.data || {};
+        if (!d.ok) throw new Error(d.why || '沒有成功');
+        toast(d.name + '　已確認入帳');
+        return loadPurchaseBits().then(function () {
+          var box = document.getElementById('unpaidBox');
+          if (box) { box.innerHTML = unpaidBlock(); wirePaid(box); }
+        });
+      })
+      .catch(function (e) {
+        btn.disabled = false; btn.textContent = '錢到了';
+        toast(String(e.message || e), true);
+      });
   }
 
   function createOne() {
@@ -366,15 +571,22 @@
       if (r.error) { box.innerHTML = '<div class="res bad">查不動：' + esc(r.error.message) + '</div>'; return; }
       var rows = r.data || [];
       if (!rows.length) { box.innerHTML = '<div class="empty">沒有符合的人</div>'; return; }
+      HITS = rows;
       box.innerHTML = rows.map(function (c) {
         var b = Number(c.balance);
-        return '<div class="hit">' +
-          '<span class="hn">' + esc(c.name) + (c.is_active === false ? '（已停用）' : '') + '</span>' +
-          '<span class="tl">' + esc(c.phone_tail) + '</span>' +
-          '<span class="bd ' + (c.bound ? 'y">已綁定' : 'n">未綁定') + '</span>' +
-          '<span class="bal' + (b <= 0 ? ' low' : '') + '">剩 ' + b + ' 堂</span>' +
+        return '<div class="hitwrap">' +
+          '<div class="hit">' +
+            '<span class="hn">' + esc(c.name) + (c.is_active === false ? '（已停用）' : '') + '</span>' +
+            '<span class="tl">' + esc(c.phone_tail) + '</span>' +
+            '<span class="bd ' + (c.bound ? 'y">已綁定' : 'n">未綁定') + '</span>' +
+            '<span class="bal' + (b <= 0 ? ' low' : '') + '">剩 ' + b + ' 堂</span>' +
+            (c.is_active === false ? '' :
+              '<button type="button" class="hitbuy" data-open="' + esc(c.id) + '">課購 ›</button>') +
+          '</div>' +
+          '<div class="buywrap" id="buy-' + esc(c.id) + '" hidden></div>' +
         '</div>';
       }).join('');
+      wireHits(box);
     });
   }
 
@@ -426,9 +638,11 @@
             elWho.textContent = ME.display_name;
             elSub.textContent = '教練後台';
             gate('', '讀取中…', '');
-            return loadSignups().then(render, function (e) {
-              gate('err', '讀不到留言簿', String(e.message || e));
-            });
+            return loadSignups()
+              .then(loadPurchaseBits)
+              .then(render, function (e) {
+                gate('err', '讀不到留言簿', String(e.message || e));
+              });
           });
       }).catch(function (e) {
         gate('err', '出事了', String(e.message || e));
