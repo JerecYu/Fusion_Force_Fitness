@@ -62,7 +62,18 @@
           「要從 LINE 裡面開」—— 對第 ③ 種是錯的，而第 ③ 種正是【桌機】。
 
           ☢️ 所以這不是「新功能」，是把一條本來就通、只是沒有入口的路打開。 */
-    canLogin: false
+    canLogin: false,
+
+    /* ☢️ 2026-08-18（第 60 步）canLogout —— 只有【在 LINE App 外面】才是 true。
+          起因：桌機能用之後，教練會在自己的電腦上登入。憑證會留在那台
+          電腦的瀏覽器裡，而這幾頁按得到錢（購課、沖銷）——
+          共用電腦上，下一個開瀏覽器的人就是教練。
+
+          ☢️ 在 LINE App 裡【故意不給登出】。那邊是自動登入的：
+             按了登出 → 重新載入 → 又自動登入回來，畫面什麼都沒變。
+             一顆按了沒反應的按鈕，比沒有這顆更糟 ——
+             教練會以為自己登出了，但其實沒有。 */
+    canLogout: false
   };
 
   // 給頁面呼叫的登入。回傳 false 代表現在按也沒用（上面的 ①②）。
@@ -72,6 +83,36 @@
     if (!AUTH.canLogin || !window.liff || !window.liff.login) return false;
     try { window.liff.login({ redirectUri: location.href }); return true; }
     catch (e) { return false; }
+  };
+
+  /* 登出。回傳一個 Promise，做完會自己重新載入。
+     ☢️ 一定要【兩張票都退】，而且順序是先 Supabase 再 LINE：
+        · Supabase 的 session 才是資料庫認的那一張（auth.uid()）。
+          只呼叫 liff.logout()、不退這一張的話，LINE 那邊登出了，
+          但這台電腦【還是查得到客人資料】—— 看起來安全，其實沒有。
+        · liff.logout() 是清掉 LINE 留在這個瀏覽器的登入狀態，
+          不清的話下一個人一開頁面又自動變成同一位教練。
+     ☢️ 任何一步失敗都不能中止 —— 退一半也比完全沒退好，
+        所以兩個都包在 catch 裡，最後一定會走到 reload。
+     ☢️ 最後用 replace 不用 reload：把這一頁從上一頁的歷史紀錄裡換掉，
+        免得下一個人按「上一頁」又回到有資料的畫面。 */
+  AUTH.logout = function () {
+    var done = function () {
+      try { sessionStorage.removeItem(RELOGIN_KEY); } catch (e) {}
+      location.replace(location.pathname);
+    };
+    var bye = function () {
+      try {
+        if (window.liff && window.liff.logout && window.liff.isLoggedIn()) window.liff.logout();
+      } catch (e) {}
+      done();
+    };
+    try {
+      if (window.fffDB && window.fffDB.auth && window.fffDB.auth.signOut) {
+        return window.fffDB.auth.signOut().then(bye, bye);
+      }
+    } catch (e) {}
+    bye();
   };
 
   // ☢️ ready 必須在這裡就存在，不能等 DOMContentLoaded 才建立。
@@ -202,6 +243,11 @@
           offerLogin();
           return 'stop';
         }
+        // ☢️ 登入了 —— 但只有【在 LINE App 外面】才給登出（理由見上面 canLogout）。
+        //    isInClient() 舊版 SDK 可能沒有，取不到就當作「在 App 裡」，
+        //    寧可少一顆按鈕，也不要給一顆按了沒用的。
+        try { AUTH.canLogout = (window.liff.isInClient && !window.liff.isInClient()); }
+        catch (e) { AUTH.canLogout = false; }
         return null;
       })
 

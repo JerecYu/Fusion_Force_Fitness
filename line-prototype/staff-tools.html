@@ -307,6 +307,19 @@
     font-size:13px;font-weight:600;max-width:88%;text-align:center;z-index:50}
   .toast.bad{background:var(--err)}
 
+  /* ☢️☢️ 2026-08-18 這一行【本來沒有】，而它是必要的。
+     HTML 的 hidden 屬性靠瀏覽器預設的 [hidden]{display:none} 生效，
+     但那是【最低優先權】—— 任何一條 class 規則都壓得過它。
+     .iconbtn 寫了 display:inline-flex，所以
+     <a class="iconbtn" hidden> 【照樣看得見】。
+     ☢️ 今天差一點就出事：新加的「對帳」入口是這樣藏的 ——
+        沒有這一行的話，【每一位教練都會看到那顆按鈕】。
+        （資料還是拿不到，資料庫那一關擋著；但按鈕本身不該出現。）
+     ☢️ 它不會報錯、不會壞掉，只是「藏起來的東西沒藏住」——
+        只有真的打開頁面看才會發現。checkin/staff/report 三頁本來就有這一行，
+        唯獨這一頁漏了。 */
+  [hidden]{display:none !important}
+
   /* ══ 桌機 ══════════════════════════════════════════════════════
      ☢️ 2026-08-18 Jerec：「留白很多，字體很小，右上角的連結按鈕太遠」。
         理由和做法跟 checkin.html 完全一樣，兩邊要一起改 ——
@@ -339,7 +352,11 @@
   <a class="iconbtn" href="https://jerecyu.github.io/Fusion_Force_Fitness/"
      target="_blank" rel="noopener">官網</a>
   <a class="iconbtn" href="checkin.html">點名核銷<span class="ar"></span></a>
+  <!-- 只有 can_finance（負責人／VC）才會現身 -->
+  <a class="iconbtn" id="rptLink" href="report.html" hidden>對帳<span class="ar"></span></a>
   <button type="button" class="iconbtn" id="reload">重新整理</button>
+  <!-- ☢️ 只在瀏覽器裡出現。在 LINE App 裡按了會自動登入回來，等於沒作用。 -->
+  <button type="button" class="iconbtn" id="logout" hidden>登出</button>
 </div>
 
 <div class="wrap">
@@ -841,6 +858,27 @@
                                        if (r2) r2.disabled = false; });
     };
 
+    // 登出：只在瀏覽器裡露出來。☢️ 要按兩下 —— 它就在「重新整理」旁邊，
+    //       誤按的代價是整個被丟出去，而教練可能正在幫學員購課。
+    var lo = document.getElementById('logout');
+    if (lo && window.FFF_AUTH.canLogout) {
+      lo.hidden = false;
+      lo.onclick = function () {
+        if (lo.getAttribute('data-armed') !== '1') {
+          lo.setAttribute('data-armed', '1');
+          lo.textContent = '確定登出？';
+          setTimeout(function () {
+            if (lo.getAttribute('data-armed') === '1') {
+              lo.removeAttribute('data-armed'); lo.textContent = '登出';
+            }
+          }, 4000);
+          return;
+        }
+        lo.textContent = '登出中…'; lo.disabled = true;
+        window.FFF_AUTH.logout();
+      };
+    }
+
     var q = document.getElementById('q'), hits = document.getElementById('hits'), t;
     q.oninput = function () {
       clearTimeout(t);
@@ -1317,7 +1355,7 @@
           gate('err', '拿不到登入身分', (u.error && u.error.message) || 'no_user'); return;
         }
         return DB.from('employees')
-          .select('id,display_name,role,is_active')
+          .select('id,display_name,role,is_active,can_finance')
           .eq('auth_user_id', u.data.user.id)
           .then(function (r) {
             if (r.error) throw new Error(r.error.message);
@@ -1341,6 +1379,11 @@
             }
             elWho.textContent = ME.display_name;
             elSub.textContent = '教練後台';
+            // ☢️ 藏起來只是不要讓人白按 —— 真正的牆在資料庫的 is_finance()。
+            if (ME.can_finance) {
+              var rl = document.getElementById('rptLink');
+              if (rl) rl.hidden = false;
+            }
             gate('', '讀取中…', '');
             return loadSignups()
               .then(loadPurchaseBits)

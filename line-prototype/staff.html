@@ -90,6 +90,9 @@
     background:var(--ink);color:#fff;border:none;border-radius:3px;cursor:pointer}
   .btn:active{background:var(--ink2)}
   .btn.done{background:var(--ok)}
+  /* 登出：低調一點 —— 它是「用完收工」，不是主要動作 */
+  .btn.ghost{background:none;color:var(--dim);border:1px solid var(--line);margin-top:22px}
+  .btn.ghost:active{background:var(--surface2)}
   a.btn{display:block;text-align:center;text-decoration:none;margin-top:18px}
   a.btn.go{background:var(--ok)}
   .note{font-size:13px;color:var(--dim);margin-top:14px}
@@ -146,9 +149,20 @@
     <div id="go" hidden>
       <a class="btn go" href="checkin.html">進入點名核銷<span class="ar"></span></a>
       <a class="btn go" href="staff-tools.html" style="margin-top:9px">教練後台（新增客人・綁定問題）<span class="ar"></span></a>
+      <!-- 只有財務（負責人／VC）看得到 -->
+      <a class="btn go" id="rptLink" href="report.html" style="margin-top:9px" hidden>對帳報表（下載 Excel）<span class="ar"></span></a>
       <div class="note">
         建議把這一頁<b>加到手機主畫面</b>或釘選在 LINE 的聊天室，
         下課前開一下就好。
+      </div>
+    </div>
+
+    <!-- ☢️ 只有在瀏覽器裡才會出現（在 LINE App 裡按了也沒用，見 liff-auth.js） -->
+    <div id="outbox" hidden>
+      <button type="button" class="btn ghost" id="logout">登出這台電腦</button>
+      <div class="note">
+        用完<b>公用電腦</b>請按這個。不按的話憑證會留在這台電腦上，
+        下一個開這個網址的人就是你。
       </div>
     </div>
 
@@ -197,6 +211,20 @@
   var uidEl = document.getElementById('uid');
   var btn   = document.getElementById('copy');
   var go    = document.getElementById('go');
+  var outb  = document.getElementById('outbox');
+  var outbtn= document.getElementById('logout');
+  var rptLk = document.getElementById('rptLink');
+
+  // 登出：只有在瀏覽器裡才會出現（在 LINE App 裡按了也沒用）
+  function offerLogout() {
+    if (!window.FFF_AUTH.canLogout) return;
+    outb.hidden = false;
+    outbtn.onclick = function () {
+      outbtn.textContent = '登出中…';
+      outbtn.disabled = true;
+      window.FFF_AUTH.logout();
+    };
+  }
 
   var ROLE = { owner:'負責人', coach:'教練', staff:'櫃檯', admin:'管理' };
 
@@ -216,7 +244,7 @@
   function lookup(uid) {
     return window.fffDB
       .from('employees')
-      .select('display_name, role, is_active')
+      .select('display_name, role, is_active, can_finance')
       .eq('auth_user_id', uid)
       .then(function (res) {
         if (res.error) throw new Error(res.error.message || 'query_failed');
@@ -302,19 +330,28 @@
         var uid = res.data.user.id;
 
         lookup(uid).then(function (me) {
+          // ☢️ 登出要放在【每一條路】的最後，包括「還沒開通」和「已停用」——
+          //    在公用電腦上，那兩種人一樣需要把自己的憑證清掉。
           if (!me) {
             show('s-warn', '●', '還沒開通', '你的 LINE 認出來了，但還沒對到員工名單');
             fillCode(uid);
+            offerLogout();
             return;
           }
           if (me.is_active === false) {
             show('s-err', '✕', me.display_name + '　已停用', '如果這是誤設，請找 Jerec');
+            offerLogout();
             return;
           }
           show('s-ok', '✓', me.display_name, '這支手機以後就認得你了');
           role.textContent = ROLE[me.role] || me.role;
           role.hidden = false;
           go.hidden = false;
+          // ☢️ 這裡藏起來只是【不要讓人白按】。真正的牆在資料庫 ——
+          //    can_finance 不是 true 的人，就算自己打網址進 report.html
+          //    也一筆資料都拿不到。前端藏東西從來不算防護。
+          if (me.can_finance) rptLk.hidden = false;
+          offerLogout();
         }, function (e) {
           // 查詢真的壞掉，不能假裝成「還沒開通」
           show('s-err', '✕', '查不到員工名單', String(e && e.message || e));

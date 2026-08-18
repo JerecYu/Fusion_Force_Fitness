@@ -308,6 +308,8 @@
   <div class="sp"></div>
   <button type="button" class="iconbtn" id="back" hidden>← 課表</button>
   <button type="button" class="iconbtn" id="reload">重新整理</button>
+  <!-- ☢️ 只在瀏覽器裡出現。在 LINE App 裡按了會自動登入回來，等於沒作用。 -->
+  <button type="button" class="iconbtn" id="logout" hidden>登出</button>
 </div>
 
 <div class="wrap">
@@ -1583,6 +1585,32 @@
     }
   };
   document.getElementById('back').onclick = function () { renderList(); };
+
+  // 登出：只在瀏覽器裡露出來（LINE App 裡按了會自動登入回來，等於沒作用）
+  (function () {
+    var lo = document.getElementById('logout');
+    if (!lo || !window.FFF_AUTH || !window.FFF_AUTH.ready) return;
+    window.FFF_AUTH.ready.then(function () {
+      if (!window.FFF_AUTH.canLogout) return;
+      lo.hidden = false;
+      lo.onclick = function () {
+        // ☢️ 一定要再問一次。這顆就在「重新整理」旁邊，
+        //    教練現場點名點到一半誤按，會整個被丟出去。
+        if (lo.getAttribute('data-armed') !== '1') {
+          lo.setAttribute('data-armed', '1');
+          lo.textContent = '確定登出？';
+          setTimeout(function () {
+            if (lo.getAttribute('data-armed') === '1') {
+              lo.removeAttribute('data-armed'); lo.textContent = '登出';
+            }
+          }, 4000);
+          return;
+        }
+        lo.textContent = '登出中…'; lo.disabled = true;
+        window.FFF_AUTH.logout();
+      };
+    });
+  })();
   document.getElementById('qrClose').onclick = closeQR;
   // ☢️ 蓋板打開時按手機的返回鍵，應該是關蓋板，不是離開頁面
   document.getElementById('qrOv').onclick = function (e) {
