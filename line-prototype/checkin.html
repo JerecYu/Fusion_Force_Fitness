@@ -929,7 +929,7 @@
       '</div>';
 
     html += ROSTER.filter(function (p) { return p.booking_status !== 'cancelled'; })
-                  .map(function (p) { return person(p, lock); }).join('');
+                  .map(function (p) { return person(p, lock, dead); }).join('');
 
     if (!ROSTER.filter(function (p) { return p.booking_status !== 'cancelled'; }).length) {
       html += '<div class="empty">這堂課還沒有人報名</div>';
@@ -975,7 +975,7 @@
     return ok.length + ' / ' + live.length;
   }
 
-  function person(p, lock) {
+  function person(p, lock, dead) {
     var st  = p.booking_status;
     var cls = st === 'attended' ? 'on' : st === 'absent' ? 'off' : '';
     var bal = Number(p.balance);
@@ -998,7 +998,7 @@
       btns(p, st, lock) +
       guests(p, st, lock) +
       confirmRow(p, lock) +
-      removeRow(p, st, lock) +
+      removeRow(p, st, dead) +
     '</div>';
   }
 
@@ -1014,8 +1014,15 @@
         正確順序是先按「改成缺席」把堂數退回去，那顆才會冒出來。
         （資料庫那一支也會再擋一次，這裡只是不要讓人白按。）
      ═══════════════════════════════════════════════════════════ */
-  function removeRow(p, st, lock) {
-    if (lock) return '';
+  function removeRow(p, st, dead) {
+    // ☢️ 2026-08-18 這裡第一版寫成 if (lock) return ''，整顆鍵在最需要的時候消失。
+    //    lock = dead || soon。而 soon 是「課還沒到、點不了名」——
+    //    那正是【現場加人】會發生的時候（上面的橫幅自己就寫著
+    //    「現在可以先把臨時要來的人加進名單」）。加得進去卻拿不掉，等於沒做。
+    //    ☢️ 我是照抄 confirmRow 的 if (lock)，沒問「這個 lock 在擋什麼」。
+    //       lock 的意思是【點不了名】，不是【名單不能改】—— 兩件事。
+    //    只有整堂課已取消（dead）才不給動，那種要找 Jerec 改課次狀態。
+    if (dead) return '';
     if (st === 'attended') return '';        // 扣過堂數的不給拿，先改成缺席
     return '<div class="rm" data-rm="' + esc(p.booking_id) + '" ' +
            'data-nm="' + esc(p.customer_name) + '">' +
