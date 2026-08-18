@@ -782,7 +782,7 @@
       //        —— 教練會以為沒成功，然後一直按
       //    ☢️ 沒有人發現，是因為它【不會報錯】，而且到目前為止一次確認都還沒發生過
       //       （資料庫裡 confirmed_at 有值的預約：0 筆）。
-      .select('booking_id,session_id,booking_status,checked_at,checked_by_name,customer_id,customer_name,phone_tail,paid_by_customer_id,payer_name,balance,guest_count,confirmed_at,confirmed_by')
+      .select('booking_id,session_id,booking_status,checked_at,checked_by_name,customer_id,customer_name,phone_tail,paid_by_customer_id,payer_name,balance,attendee_count,confirmed_at,confirmed_by')
       .eq('session_id', sid)
       .order('customer_name', { ascending: true })
       .then(function (r) {
@@ -1054,7 +1054,7 @@
       '</div>' +
       (meta ? '<div class="meta">' + meta + '</div>' : '') +
       btns(p, st, lock) +
-      guests(p, st, lock) +
+      attendees(p, st, lock) +
       confirmRow(p, lock) +
       removeRow(p, st, dead) +
     '</div>';
@@ -1125,7 +1125,7 @@
   //       兩條路都能改堂數 —— 那正好違反第 39 步「動到錢的入口只有一個」。
   function btns(p, st, lock) {
     var id = esc(p.booking_id), d = lock ? ' disabled' : '';
-    var n  = 1 + Number(p.guest_count || 0);   // 帶朋友來的話，一次動的是好幾堂
+    var n  = Math.max(1, Number(p.attendee_count || 1));  // 這一筆幾個人，就動幾堂
     if (st === 'attended') {
       return '<div class="btns">' +
         '<button type="button" class="b pick-on" tabindex="-1">✓　已出席</button>' +
@@ -1144,19 +1144,27 @@
     '</div>';
   }
 
-  // 帶朋友來。只在點名之後（或已經填過）才出現 —— 課前名單保持乾淨。
-  function guests(p, st, lock) {
-    var n = Number(p.guest_count || 0);
-    if (st !== 'attended' && n === 0) return '';
+  /* 這一筆共幾人上課。
+     ☢️ 2026-08-18（第 64 步）從「另外帶了 N 位」改成「共 N 人」。
+        舊的算法是【本人 ＋ N】，它假設本人一定會來。
+        吳佳芳幫兩個兒子報名、自己不上課的時候，教練得填「帶 1 位」
+        才扣得對（2 堂）—— 於是紀錄上寫著「她來了 ＋ 帶 1 人」，而那是假的。
+        ☢️ 要靠心算才填得對的欄位遲早會填錯，而錯的是錢。
+        現在填的就是【現場實際幾個人】：三人都來填 3，只有兩個兒子填 2。
+
+     ☢️ 這一格【課前就要看得到】（舊版只在點名後才出現）。
+        現場加人、幫家人報名都是課前的動作 —— 課前看不到就沒得填。 */
+  function attendees(p, st, lock) {
+    var n = Math.max(1, Number(p.attendee_count || 1));
     var id = esc(p.booking_id);
-    return '<div class="gst' + (n > 0 ? ' has' : '') + '">' +
-      '<span class="lb">' + (n > 0 ? '另外帶了 ' + n + ' 位（一起扣 ' + (1 + n) + ' 堂）'
-                                   : '有帶朋友來嗎？') + '</span>' +
+    return '<div class="gst' + (n > 1 ? ' has' : '') + '">' +
+      '<span class="lb">' + (n > 1 ? '這一筆共 ' + n + ' 人上課（扣 ' + n + ' 堂）'
+                                   : '這一筆幾個人上課？') + '</span>' +
       '<button type="button" data-g="' + id + '" data-n="' + (n - 1) + '"' +
-        (lock || n <= 0 ? ' disabled' : '') + '>−</button>' +
-      '<span class="n">' + n + ' 位</span>' +
+        (lock || n <= 1 ? ' disabled' : '') + '>−</button>' +
+      '<span class="n">' + n + ' 人</span>' +
       '<button type="button" data-g="' + id + '" data-n="' + (n + 1) + '"' +
-        (lock || n >= 5 ? ' disabled' : '') + '>＋</button>' +
+        (lock || n >= 6 ? ' disabled' : '') + '>＋</button>' +
     '</div>';
   }
 
@@ -1168,7 +1176,7 @@
     });
     Array.prototype.forEach.call(elRoster.querySelectorAll('[data-g]'), function (b) {
       b.onclick = function () {
-        setGuests(b.getAttribute('data-g'), Number(b.getAttribute('data-n')));
+        setAttendees(b.getAttribute('data-g'), Number(b.getAttribute('data-n')));
       };
     });
     Array.prototype.forEach.call(elRoster.querySelectorAll('[data-cf]'), function (b) {
@@ -1349,18 +1357,18 @@
   }
 
   /* ══ 點名 ══════════════════════════════════════════════════════ */
-  // 改「帶了幾位」。☢️ 跟 mark() 走同一套流程：鎖住 → 呼叫 → 重讀名單 → 重畫。
-  //    重讀是必要的 —— set_guests 會順手重跑 check_in()，餘額會變。
-  function setGuests(bookingId, n) {
+  // 改「這一筆共幾人」。☢️ 跟 mark() 走同一套流程：鎖住 → 呼叫 → 重讀名單 → 重畫。
+  //    重讀是必要的 —— set_attendees 會順手重跑 check_in()，餘額會變。
+  function setAttendees(bookingId, n) {
     if (busy[bookingId]) return;
-    if (n < 0 || n > 5) return;
+    if (n < 1 || n > 6) return;
     busy[bookingId] = true;
 
     var card = elRoster.querySelector('.p[data-b="' + bookingId + '"]');
     if (card) Array.prototype.forEach.call(card.querySelectorAll('button'),
       function (b) { b.disabled = true; });
 
-    DB.rpc('set_guests', { p_booking: bookingId, p_n: n })
+    DB.rpc('set_attendees', { p_booking: bookingId, p_n: n })
       .then(function (r) {
         if (r.error) throw new Error(r.error.message);
         return loadRoster(CUR.session_id).then(function () {

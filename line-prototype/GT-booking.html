@@ -120,6 +120,20 @@
   .x{width:32px;height:32px;border-radius:50%;background:var(--surface-2);border:none;cursor:pointer;
     color:var(--dim);font-size:.92rem;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 
+  /* 同學名單 */
+  .mt{display:flex;align-items:center;gap:9px;padding:10px 2px;
+    border-top:1px solid var(--line);font-size:.86rem}
+  .mt:first-child{border-top:0}
+  .mt .av{width:28px;height:28px;border-radius:50%;background:var(--surface-2);
+    color:var(--dim);font-size:.78rem;font-weight:800;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center}
+  .mt.me .av{background:var(--blue);color:#fff}
+  .mt .nm{font-weight:700;letter-spacing:.04em}
+  .mt .tg{margin-left:auto;font-size:.68rem;font-weight:700;color:var(--dim);
+    background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+  .mt-more{font-size:.72rem;color:var(--blue);font-weight:700;cursor:pointer;
+    background:none;border:0;padding:6px 0 0;font-family:inherit}
+
   .foot{text-align:center;color:var(--faint);font-size:.67rem;line-height:1.9;margin-top:30px}
   .foot a{color:var(--dim);text-decoration:none}
 
@@ -476,6 +490,25 @@
   </div>
 </div>
 
+<!-- ☢️ 第 65 步：同一堂課還有誰（姓名遮蔽）。
+     客人要求「報名時也想知道還有誰報這堂」。只顯示遮過的姓名，
+     沒有手機、沒有堂數、沒有任何其他資料。
+     ☢️ 而且只有【自己也報了這一堂】的人叫得動 —— 那道門在資料庫，
+        不在這一頁（session_mates 會直接丟例外）。 -->
+<div class="ov" id="ovMates">
+  <div class="sheet">
+    <h3>這堂還有誰</h3>
+    <p class="sub" id="mtSub" style="margin-bottom:18px"></p>
+    <div id="mtList"></div>
+    <div class="note" style="margin-top:16px">
+      姓名只顯示頭尾，中間會遮起來。看不到任何人的手機或堂數。
+    </div>
+    <div class="macts" style="margin-top:18px">
+      <button class="btn btn-1" id="mtClose">知道了</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"><span class="dot"></span><span id="tText"></span></div>
 
 <!-- 先載入 Supabase 工廠，再載入我們的設定檔（裡面會建立 window.fffDB） -->
@@ -731,6 +764,9 @@
       toast('已為你保留位置');
       await Promise.all([load(), loadMine()]);
       render();
+      // ☢️ 放在 render() 之後：重畫會把蓋板的 class 洗掉。
+      //    也【不要 await】—— 名單讀不到不該影響「已經報名成功」這件事。
+      showMates(sessionId);
     }catch(e){
       btn.disabled = false; btn.textContent = old;
       const m = (e && e.message) || String(e);
@@ -867,7 +903,8 @@
               '</button>';
       } else if (booked.has(r.session_id)){
         btn = '<button class="btn btn-2" data-cancel-s="' + esc(r.session_id) +
-              '">已預約　·　取消</button>';
+              '">已預約　·　取消</button>' +
+              '<button class="mt-more" data-mates="' + esc(r.session_id) + '">看看這堂還有誰 ›</button>';
       } else if (!LIVE){
         btn = '<button class="btn btn-1" disabled>線上訂課尚未開放</button>';
       } else if (!isBound()){
@@ -932,6 +969,55 @@
       if (!bk.can_cancel){ toast('已經超過取消時間了（課前一小時內不能取消）', true); return; }
       doCancel(bk.id, b);
     });
+
+    el.querySelectorAll('[data-mates]').forEach(b =>
+      b.onclick = () => showMates(b.dataset.mates));
+  }
+
+  /* ══ 這堂還有誰（第 65 步） ═══════════════════════════════════
+     ☢️ 這一頁只負責【顯示】。誰看得到、看得到什麼，全部由資料庫的
+        session_mates() 決定 —— 它會擋掉「沒綁定」和「沒報這一堂」的人。
+        前端不做任何判斷：判斷寫在兩個地方，遲早會不一致，
+        而不一致的那一次就是外洩。 */
+  const ovMates = document.getElementById('ovMates');
+  const mtSub   = document.getElementById('mtSub');
+  const mtList  = document.getElementById('mtList');
+  document.getElementById('mtClose').onclick = () => ovMates.classList.remove('show');
+  ovMates.onclick = (e) => { if (e.target === ovMates) ovMates.classList.remove('show'); };
+
+  async function showMates(sessionId){
+    // ☢️ 課表資料在 all 裡（不是 rows），日期物件的欄位是 wd（不是 w）。
+    const r = all.find(x => x.session_id === sessionId);
+    mtSub.textContent = r
+      ? (dateBits(r.session_date).md + '（' + dateBits(r.session_date).wd + '）　' +
+         hhmm(r.start_time) + '　' + r.title)
+      : '';
+    mtList.innerHTML = '<div class="mt"><span class="nm" style="color:var(--dim)">讀取中…</span></div>';
+    ovMates.classList.add('show');
+    try{
+      const { data, error } = await window.fffDB.rpc('session_mates', { p_session: sessionId });
+      if (error) throw error;
+      const list = data || [];
+      if (!list.length){
+        mtList.innerHTML = '<div class="mt"><span class="nm" style="color:var(--dim)">目前只有你</span></div>';
+        return;
+      }
+      // 人數合計要算 attendee_count，不是列數 —— 一筆可能代表好幾個人
+      const total = list.reduce((a, x) => a + Math.max(1, Number(x.n || 1)), 0);
+      mtSub.textContent = (mtSub.textContent ? mtSub.textContent + '　·　' : '') + '共 ' + total + ' 人';
+      mtList.innerHTML = list.map(x => {
+        const n = Math.max(1, Number(x.n || 1));
+        return '<div class="mt' + (x.is_me ? ' me' : '') + '">' +
+          '<span class="av">' + esc((x.masked_name || '?').slice(0, 1)) + '</span>' +
+          '<span class="nm">' + esc(x.masked_name) + '</span>' +
+          (n > 1 ? '<span class="tg">' + n + ' 人</span>' : '') +
+          (x.is_me ? '<span class="tg">你</span>' : '') +
+        '</div>';
+      }).join('');
+    }catch(e){
+      mtList.innerHTML = '<div class="mt"><span class="nm" style="color:var(--dim)">' +
+        esc((e && e.message) || '讀不到名單') + '</span></div>';
+    }
   }
 
   /* ── 我的預約 ─────────────────────────────────────────────── */
