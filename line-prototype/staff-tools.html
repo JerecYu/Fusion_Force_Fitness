@@ -94,6 +94,21 @@
   .sg-why b{font-weight:800}
   .sg-act{margin-top:9px;width:100%;background:var(--ink);color:#fff;border:0;border-radius:10px;
     padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  /* 一鍵通知。☢️ 用外框鍵不是實心鍵 —— 同一張卡上「建客人」才是主要動作，
+     兩顆都做成實心的話，教練會不知道該按哪一顆。 */
+  .sg-tell{margin-top:8px;width:100%;background:#fff;color:var(--ink2);
+    border:1.5px solid var(--line);border-radius:10px;padding:9px;
+    font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center}
+  .sg-tell .ar{color:var(--blue)}
+  .tellbox{margin-top:8px}
+  .tellt{background:var(--surface2);border-radius:10px;padding:10px 11px;
+    font-size:12px;line-height:1.8;color:var(--ink2);white-space:normal}
+  .tella{display:flex;gap:7px;margin-top:7px}
+  .tellb{flex:1;text-align:center;background:var(--ink);color:#fff;border:0;border-radius:9px;
+    padding:10px 8px;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer;
+    text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+  .tellb.cp{background:#fff;color:var(--ink2);border:1.5px solid var(--line)}
 
   /* ── 表單 ── */
   label{display:block;font-size:11.5px;font-weight:700;color:var(--ink2);margin:9px 0 4px;
@@ -360,6 +375,23 @@
   function money(n) {
     return String(n == null ? '' : n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
+  // 複製到剪貼簿。☢️ 一定要有退路 —— LINE 的內建瀏覽器在某些 Android 版本上
+  //    沒有 navigator.clipboard，只寫新 API 的話會整顆鍵沒反應、而且不報錯。
+  function copyTo(btn, text, okText) {
+    var done = function () { btn.textContent = okText || '已複製 ✓'; };
+    function legacy() {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); }
+      catch (e) { btn.textContent = '複製不了，長按文字選取'; }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, legacy);
+    } else { legacy(); }
+  }
+
   function tw(iso) {
     if (!iso) return '';
     var d = new Date(iso), p = function (n) { return n < 10 ? '0' + n : String(n); };
@@ -426,7 +458,84 @@
         '<span class="sg-t">試 ' + s.tries + ' 次　·　' + tw(s.updated_at) + '</span>' +
       '</div>' +
       '<div class="sg-why">' + body + '</div>' + act +
+      '<button type="button" class="sg-tell" data-tell="' + esc(s.line_user_id) + '">' +
+        '通知他<span class="ar"></span></button>' +
+      '<div class="tellbox" hidden></div>' +
     '</div>';
+  }
+
+  /* ══ 一鍵通知 ═══════════════════════════════════════════════
+     ☢️ 2026-08-18 Jerec 要的：卡片上直接按一下就能通知客人。
+        原本教練得自己想「這個人卡在哪、要跟他說什麼」，再切到別的 App 打字。
+
+     ☢️ 為什麼是簡訊不是 LINE：
+        · 我們手上有的是他【打錯或打對的手機】，不是可以主動發訊的管道。
+        · 用 LINE 官方帳號推播要走 Messaging API，每一則都吃月額度 ——
+          而 8/16 量到 2,217/3,000，推估 8/22 見底。拿來做客服通知會更快燒完。
+        · 簡訊是手機自己開，不經過我們的伺服器，也不佔任何額度。
+     ☢️ 「複製」是退路：LINE 內建瀏覽器在某些機型上不讓 sms: 開出去，
+        那時候至少文字還在剪貼簿裡，貼到哪都行。
+     ═══════════════════════════════════════════════════════════ */
+  var SHOP = '諧動空間 Fusion Force';
+  var SHOP_TEL = '(02) 2356-9462';
+
+  function noticeText(s) {
+    if (s.why === 'retry') {
+      return '您好，這裡是' + SHOP + '。\n' +
+             '您的資料我們已經確認好了，麻煩您再打開 LINE 綁定一次就完成了。\n' +
+             '造成不便，很不好意思。';
+    }
+    if (s.why === 'no_phone') {
+      // ☢️ 這支手機【不在名單裡】—— 有可能根本不是我們的客人，也可能是他打錯一個數字。
+      //    所以這一則【絕對不能】出現任何其他客人的姓名或資料。
+      return '您好，這裡是' + SHOP + '。\n' +
+             '我們收到您的預約系統綁定申請，但系統查不到這支手機號碼。\n' +
+             '方便告訴我們您當初在櫃檯登記時留的手機嗎？或直接回覆這則訊息，我們幫您處理。';
+    }
+    if (s.why === 'name_mismatch') {
+      var ok = [s.registered_name];
+      if (s.registered_nickname) ok.push(s.registered_nickname);
+      return '您好，這裡是' + SHOP + '。\n' +
+             '綁定時的「姓名」欄，麻煩您打「' + ok.join('」或「') + '」，再送出一次就會過。\n' +
+             '手機號碼不用改。';
+    }
+    if (s.why === 'taken') {
+      return '您好，這裡是' + SHOP + '。\n' +
+             '您的資料目前綁在另一個 LINE 帳號上。為了避免別人看到您的紀錄，我們不會自動換掉 ——\n' +
+             '麻煩您回覆這則訊息，或來電 ' + SHOP_TEL + '，我們協助您處理。';
+    }
+    return '您好，這裡是' + SHOP + '。\n' +
+           '您的帳號目前是停用狀態，麻煩您回覆這則訊息或來電 ' + SHOP_TEL + '，我們確認一下。';
+  }
+
+  function wireNotify(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-tell]'), function (b) {
+      b.onclick = function () {
+        var card = b.parentNode, box = card.querySelector('.tellbox');
+        if (!box.hidden) { box.hidden = true; b.innerHTML = '通知他<span class="ar"></span>'; return; }
+
+        var s = SIGNUPS.filter(function (x) {
+          return String(x.line_user_id) === b.getAttribute('data-tell');
+        })[0];
+        if (!s) return;
+
+        var t = noticeText(s);
+        // ☢️ 手機號碼是客人自己打的，可能有橫線或空白 —— sms: 前面要清乾淨
+        var tel = String(s.typed_phone || '').replace(/\D/g, '');
+        box.innerHTML =
+          '<div class="tellt">' + esc(t).replace(/\n/g, '<br>') + '</div>' +
+          '<div class="tella">' +
+            (tel ? '<a class="tellb go" href="sms:' + esc(tel) + '?body=' +
+                   encodeURIComponent(t) + '">傳簡訊給 ' + esc(tel) + '</a>' : '') +
+            '<button type="button" class="tellb cp">複製訊息</button>' +
+          '</div>';
+        box.hidden = false;
+        b.textContent = '收起';
+        box.querySelector('.cp').onclick = function () {
+          copyTo(box.querySelector('.cp'), t, '已複製 ✓');
+        };
+      };
+    });
   }
 
   function loadPurchaseBits() {
@@ -557,6 +666,28 @@
       (UNPAID.length ? 'unpaidBox' : 'stuckBox') + '">去處理<span class="ar"></span></button></div>';
   }
 
+  // ☢️ 2026-08-18 Jerec：「提醒條不是即時的，要按重新整理」。
+  //    原因：購課／確認入帳／沖銷做完之後，只重畫了「待入帳」那一塊，
+  //    最上面那條提醒條沒人動它，所以數字還停在打開頁面當下。
+  //    ☢️ 不能整頁重畫 —— 那會把剛剛的成功訊息一起洗掉（犯過四次了）。
+  //       所以包一層固定的 #alertBox，只換它的內容。
+  function refreshAlerts() {
+    var box = document.getElementById('alertBox');
+    if (!box) return;
+    box.innerHTML = alertBar();
+    wireGo(box);
+  }
+
+  // 「去處理」：捲到對應那一區
+  function wireGo(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-go]'), function (b) {
+      b.onclick = function () {
+        var t = document.getElementById(b.getAttribute('data-go'));
+        if (t) t.scrollIntoView({ behavior:'smooth', block:'start' });
+      };
+    });
+  }
+
   function stuckBlock() {
     var html = '<div class="sec' + (SIGNUPS.length ? ' hot' : '') + '">' +
       (SIGNUPS.length ? '⚠️ 綁不上的人（' + SIGNUPS.length + '）' : '綁不上的人') + '</div>';
@@ -600,7 +731,7 @@
   function render() {
     elGate.hidden = true; elMain.hidden = false;
 
-    var html = alertBar();
+    var html = '<div id="alertBox">' + alertBar() + '</div>';
 
     // ① 購課 —— 櫃檯最常做的事，放最上面、框起來
     html +=
@@ -629,13 +760,8 @@
     var fold = document.getElementById('newFold');
     if (fold) fold.addEventListener('toggle', function () { NEWOPEN = fold.open; });
 
-    // 提醒條的「去處理」：捲到對應那一區
-    Array.prototype.forEach.call(elMain.querySelectorAll('[data-go]'), function (b) {
-      b.onclick = function () {
-        var t = document.getElementById(b.getAttribute('data-go'));
-        if (t) t.scrollIntoView({ behavior:'smooth', block:'start' });
-      };
-    });
+    wireGo(elMain);
+    wireNotify(elMain);
 
     Array.prototype.forEach.call(elMain.querySelectorAll('[data-new]'), function (b) {
       b.onclick = function () {
@@ -746,19 +872,7 @@
           '　→ 現在剩 ' + d.balance + ' 堂</code>' +
           '<button type="button" class="cpb">複製</button></div>';
         res.querySelector('.cpb').onclick = function () {
-          var t = res.querySelector('.cp').textContent, b2 = res.querySelector('.cpb');
-          var done = function () { b2.textContent = '已複製 ✓'; };
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(t).then(done, legacy);
-          } else { legacy(); }
-          function legacy() {
-            // 桌機／舊 WebView 的退路
-            var ta = document.createElement('textarea');
-            ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
-            document.body.appendChild(ta); ta.select();
-            try { document.execCommand('copy'); done(); } catch (e2) { b2.textContent = '複製不了，長按上面選取'; }
-            document.body.removeChild(ta);
-          }
+          copyTo(res.querySelector('.cpb'), res.querySelector('.cp').textContent);
         };
 
         // ☢️ 就地把那一列改成「已沖銷」，不要重畫整塊 —— 重畫會把上面那段洗掉。
@@ -787,6 +901,7 @@
         return loadPurchaseBits().then(function () {
           var ub = document.getElementById('unpaidBox');
           if (ub) { ub.innerHTML = unpaidBlock(); wirePaid(ub); }
+          refreshAlerts();
         });
       })
       .catch(function (e) {
@@ -877,6 +992,7 @@
         return loadPurchaseBits().then(function () {
           var box = document.getElementById('unpaidBox');
           if (box) { box.innerHTML = unpaidBlock(); wirePaid(box); }
+          refreshAlerts();          // ☢️ 提醒條要跟著動，不然要等到下次重新整理才看得到
         });
       })
       .catch(function (e) {
@@ -902,6 +1018,7 @@
         return loadPurchaseBits().then(function () {
           var box = document.getElementById('unpaidBox');
           if (box) { box.innerHTML = unpaidBlock(); wirePaid(box); }
+          refreshAlerts();
         });
       })
       .catch(function (e) {
