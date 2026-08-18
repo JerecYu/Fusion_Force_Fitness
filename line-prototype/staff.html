@@ -151,6 +151,14 @@
       <a class="btn go" href="staff-tools.html" style="margin-top:9px">教練後台（新增客人・綁定問題）<span class="ar"></span></a>
       <!-- 只有財務（負責人／VC）看得到 -->
       <a class="btn go" id="rptLink" href="report.html" style="margin-top:9px" hidden>對帳報表（下載 Excel）<span class="ar"></span></a>
+      <!-- ☢️ 圖文選單上那一格寫著「傳訊息給櫃檯 ★ STAFF 入口」。
+           職員按下去會來到這一頁 —— 所以這一頁必須也給得出「傳訊息」那條路，
+           否則圖上那行字對職員來說就是騙人的。
+           網頁沒有權限代替使用者發訊息（我們刻意沒要 chat_message.write，
+           那個權限會讓 LIFF 視窗縮不到底下），能做的是把視窗關掉，
+           人就回到聊天室，直接打字。 -->
+      <button type="button" class="btn ghost" id="toChat" hidden
+              style="margin-top:14px">回聊天室傳訊息給櫃檯</button>
       <div class="note">
         建議把這一頁<b>加到手機主畫面</b>或釘選在 LINE 的聊天室，
         下課前開一下就好。
@@ -212,6 +220,7 @@
   var btn   = document.getElementById('copy');
   var go    = document.getElementById('go');
   var outb  = document.getElementById('outbox');
+  var toChat= document.getElementById('toChat');
   var outbtn= document.getElementById('logout');
   var rptLk = document.getElementById('rptLink');
 
@@ -380,6 +389,16 @@
           //    can_finance 不是 true 的人，就算自己打網址進 report.html
           //    也一筆資料都拿不到。前端藏東西從來不算防護。
           if (me.can_finance) rptLk.hidden = false;
+          // 只在 LINE App 裡才有「關掉回聊天室」這回事
+          try {
+            if (window.liff && window.liff.isInClient && window.liff.isInClient()) {
+              toChat.hidden = false;
+              toChat.onclick = function () {
+                try { window.liff.closeWindow(); }
+                catch (e) { toChat.textContent = '關不起來，請按右上角的 ✕'; }
+              };
+            }
+          } catch (e) {}
           offerLogout();
         }, function (e) {
           // 查詢真的壞掉，不能假裝成「還沒開通」
