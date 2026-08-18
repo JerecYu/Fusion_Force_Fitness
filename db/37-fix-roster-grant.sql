@@ -1,0 +1,57 @@
+-- ═══════════════════════════════════════════════════════════════════
+-- 37 — 補回 staff_roster 的 SELECT 權限（第 64 步的善後）
+--
+-- 專案：FFF 預約系統（fff-platform）· 2026-08-19 凌晨
+--
+-- ☢️☢️ 出了什麼事
+--   第 64 步為了把 guest_count 改名成 attendee_count，
+--   staff_roster 用了 drop + create（create or replace view 不能改欄位名稱）。
+--   ☢️ 而 drop view 會把這張檢視表的 GRANT 一起帶走。
+--   重建之後 authenticated 沒有 SELECT —— 教練一打開點名頁就是
+--   「讀不到名單 · permission denied for view staff_roster」。
+--   整個點名功能當場停擺，直到 Jerec 回報。
+--
+-- ☢️☢️ 為什麼我的驗證沒抓到
+--   我驗了檢視表的【內容】（欄位對不對、數字對不對），
+--   但沒驗它的【權限】。而且更關鍵的是：
+--   我用來測試的連線是 service_role —— 它【繞過所有 GRANT】。
+--   所以在我這邊怎麼查都是好的，在教練的手機上是壞的。
+--
+--   ☢️ 「用一個繞過權限的身分去驗權限」不是疏忽，是方法本身錯了。
+--      以後驗證權限一定要【真的換角色】：
+--
+--        perform set_config('request.jwt.claims', …, true);  -- 換 auth.uid()
+--        set local role authenticated;                       -- ★ 換資料庫角色
+--        select … ;                                          -- 這時 GRANT 才會生效
+--        reset role;
+--
+--      只做第一行是不夠的：那只換了「我是誰」，沒換「我能不能」。
+--
+-- ☢️ 通則：drop view 之後一定要重新 grant。
+--    create or replace view 會保留權限，drop + create 不會。
+--    這個專案只有在「改欄位名稱／插欄位到中間」時才需要 drop —— 
+--    也就是說，每一次踩到那個限制，就會同時踩到這一個。
+-- ═══════════════════════════════════════════════════════════════════
+
+grant select on public.staff_roster to authenticated;
+
+
+-- ── 盤點：前端會用到的每一張檢視表都要有 authenticated 的 SELECT ──
+-- 2026-08-19 全部跑過一次，11 張都有 ✓
+--   staff_sessions / staff_roster / overdue_checkins / staff_signups /
+--   staff_recent_purchases / staff_unpaid / staff_customers / staff_legacy /
+--   public_schedule / my_bookings / my_credits
+--
+-- ── 以及每一支前端會呼叫的函式都要有 EXECUTE ──
+-- 14 支全部跑過一次 ✓
+--   check_in / confirm_by_staff / set_attendees / add_walkin / remove_booking /
+--   add_purchase / confirm_payment / void_purchase / create_customer /
+--   claim_legacy / issue_checkin_token / confirm_attendance /
+--   finance_report / session_mates
+--
+-- ── 另外確認所有 staff 檢視表都還是 definer（不是 security_invoker）──
+-- ☢️ pg_get_viewdef() 看不到這個設定，要看 pg_class.reloptions。
+--    是 invoker 的話，is_staff() 會用呼叫者的身分去查 employees，
+--    而客人查不到 employees → 永遠 false → 教練也被擋在外面。
+-- staff_roster / staff_sessions / staff_customers / public_schedule /
+-- gt_payout_sessions → reloptions 都是空的，就是 definer ✓
