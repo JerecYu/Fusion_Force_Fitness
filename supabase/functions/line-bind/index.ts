@@ -2,7 +2,7 @@
 // line-bind — 把 LINE 身分綁到一位客人身上
 //
 // 專案：FFF 預約系統（fff-platform）
-// 對應路線圖第 32 步 · 2026-08-11
+// 對應路線圖第 32 步 · 2026-08-11（第 54 步 2026-08-18 加暱稱）
 //
 // 第 31 步回答的是「你是哪個 LINE 使用者」。
 // 這一支回答的是「那個 LINE 使用者是我們名單上的哪一位客人」。
@@ -70,7 +70,7 @@ function normName(v: string): string {
 //    ☢️ 但登記姓名太短時不能用包含比對：只有一個字（例如「王」）的話，
 //       任何含「王」的名字都會通過。所以要求登記姓名至少 2 個字。
 //       （2026-08-17 查過：最短的登記姓名是 2 個字，沒有 1 個字的。）
-function nameMatches(registered: string, typed: string): boolean {
+function oneNameMatches(registered: string, typed: string): boolean {
   const a = normName(registered), b = normName(typed)
   if (!a || !b) return false
   if (a === b) return true
@@ -79,6 +79,28 @@ function nameMatches(registered: string, typed: string): boolean {
   //    對稱寫法（誰包含誰都算）測出來太鬆 —— 那等於「猜對姓 ＋ 一個字」就能過。
   //    今天兩個真實案例都是「多寫」，沒有人是「少寫」。
   return a.length >= 2 && b.includes(a)
+}
+
+// ☢️ 2026-08-18（第 54 步）：姓名或暱稱，對上【任一個】就算過。
+//
+//    起因是盤點出來的數字：93 位客人裡有 18 位的登記姓名【完全沒有中文字】
+//    （純英文名或綽號），佔五分之一。這些人照自己的中文名去綁，一定卡住。
+//
+//    ☢️ Jerec 本來想把暱稱也設成必填、綁定時一起比對，理由是「資訊越多信心越高」。
+//       那句話在【找人】的時候成立，在【驗證】的時候是反的 ——
+//       每多一個「必須對得上」的欄位，就多一個對不上的機會。
+//       而且暱稱是自由填的：櫃檯記「小虎」、客人打「虎哥」，一樣卡。
+//       所以這裡做的是多一條【可以】對得上的路，不是多一道關卡。
+//
+//    ☢️ 手機那一關【不放寬】，還是要完全一致。
+//    ☢️ 暱稱少於 2 個字時自動失效（oneNameMatches 裡的 a.length >= 2）——
+//       否則登記暱稱「明」的話，任何含「明」的名字都會通過。
+//
+//    ☢️ 這一支要跟資料庫的 name_matches(registered, nickname, typed) 完全一致。
+//       不一致的話教練後台會說「這樣打會過」，實際上卻不會過 —— 比沒有更糟。
+//       2026-08-18 用 26 個案例逐一比對過，兩邊結果完全相同。
+function nameMatches(registered: string, nickname: string | null, typed: string): boolean {
+  return oneNameMatches(registered, typed) || oneNameMatches(nickname ?? '', typed)
 }
 
 // 留言簿：同一個 LINE 帳號只留一筆，重試就把次數加一。
@@ -144,16 +166,16 @@ Deno.serve(async (req) => {
       return json({ ok: false, reason: 'line_already_used', boundName: mine.name })
     }
 
-    // ── ④ 找人：手機和姓名都要對 ──────────────────────────
+    // ── ④ 找人：手機要完全一致，姓名或暱稱對上任一個 ──────────
     const { data: cust } = await admin
       .from('customers')
-      .select('id, name, line_user_id, auth_user_id, is_active')
+      .select('id, name, nickname, line_user_id, auth_user_id, is_active')
       .eq('phone', phone)
       .maybeSingle()
 
     // ☢️ 手機查無、和姓名對不上，一律回同一個 reason。
     //    如果分開講，這支就變成「輸入手機就能查出這個人叫什麼名字」的工具。
-    if (!cust || !nameMatches(cust.name, name)) {
+    if (!cust || !nameMatches(cust.name, cust.nickname, name)) {
       await leaveNote(lineUserId, name, phone)
       return json({ ok: false, reason: 'not_found' })
     }

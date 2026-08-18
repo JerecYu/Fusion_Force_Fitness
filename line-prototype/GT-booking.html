@@ -442,8 +442,14 @@
     <div class="bd-f">
       <label for="bdName">姓名</label>
       <input type="text" id="bdName" autocomplete="name" placeholder="例：王小明">
-      <div class="bd-hint2">填<b>你在櫃檯登記的那個名字</b>。
-        後面多加英文名沒關係（例如「王小明 Mike」），但不能少字。</div>
+      <!-- ☢️ 2026-08-18（第 54 步）這段【整個換掉】了。
+           舊的只講「櫃檯登記的那個名字」，但櫃檯現在登記的是「中文全名 ＋ 暱稱」兩欄，
+           而比對放寬成「對上任一個就過」。這裡不講，客人就不知道打英文名也可以。
+           ☢️ 這一段和教練後台「新增客人」的提示必須講同一件事 —— 兩邊不一致，
+              就會出現「櫃檯登記短名、客人照提示打全名」而永遠對不上的情況。 -->
+      <div class="bd-hint2">填<b>你在櫃檯登記的名字</b> ——
+        <b>中文全名</b>，或我們平常叫你的<b>英文名／綽號</b>，兩個都可以。<br>
+        後面多加沒關係（例如「王小明 Mike」），但不能少字。</div>
     </div>
     <div class="bd-m" id="bdMsg" hidden></div>
     <button type="button" class="bd-go" id="bdGo">綁定</button>

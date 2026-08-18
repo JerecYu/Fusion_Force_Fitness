@@ -73,7 +73,8 @@
     say('stop',
       '<b>' + esc(name) + '，我們的名單裡還沒有你的資料。</b><br>' +
       '你填的資料我們已經收到了，上班後會與你聯絡。<br>' +
-      '<span class="bd-hint">如果你本來就是會員：請確認手機和姓名都跟在櫃檯登記的一樣。</span>' +
+      '<span class="bd-hint">如果你本來就是會員：手機要跟櫃檯登記的<b>完全一樣</b>；'+
+      '姓名打<b>中文全名</b>或我們平常叫你的<b>英文名／綽號</b>都可以。</span>' +
       '<a class="bd-oa" href="' + esc(oaLink(name, phone)) + '">用 LINE 告訴我們</a>' +
       '<span class="bd-hint">或來電 <a href="' + TEL_HREF + '">' + TEL + '</a>　·　' + HOURS + '</span>');
   }

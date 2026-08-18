@@ -25,7 +25,7 @@
 
   三塊：
     ① 綁不上的人 —— 卡在哪，以及下一步該做什麼
-    ② 新增客人   —— 姓名 ＋ 手機
+    ② 新增客人   —— 姓名 ＋ 暱稱 ＋ 手機
     ③ 查客人     —— 剩幾堂、綁定了沒
   ═══════════════════════════════════════════════════════════════════
 -->
@@ -104,6 +104,8 @@
   input::placeholder{color:#526E7E}
   input:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,134,171,.13)}
   .hint{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.6}
+  /* 必填標記。☢️ 用文字不用只用顏色 —— 色盲的人看不出紅色代表什麼。 */
+  .req{font-style:normal;font-size:10.5px;font-weight:700;color:var(--err);letter-spacing:.04em}
   .hint b{color:var(--ink2)}
   .btn{margin-top:13px;width:100%;background:var(--ink);color:#fff;border:0;border-radius:11px;
     padding:13px;font-family:inherit;font-size:14px;font-weight:800;letter-spacing:.04em;cursor:pointer}
@@ -117,15 +119,27 @@
     display:inline-flex;align-items:center;justify-content:center}
 
   /* ── 查客人 ── */
+  /* ☢️ 2026-08-18 加了暱稱之後，原本擠在同一行的五個東西（姓名／暱稱／尾碼／
+     綁定狀態／剩幾堂／購課鍵）在 390px 的手機上開始各自折行 ——
+     「已綁定」被拆成「已綁／定」，看起來就是壞掉。改成上下兩行：
+       第一行：姓名（暱稱）
+       第二行：尾碼 · 綁定狀態 · 剩幾堂
+     購課鍵永遠靠右、永遠在垂直中間。 */
   .hit{width:100%;display:flex;align-items:center;gap:9px;background:#fff;
     border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:7px;
     font-family:inherit;text-align:left}
-  .hit .hn{font-size:14px;font-weight:700}
-  .hit .tl{font-size:11.5px;color:var(--faint);letter-spacing:.06em}
-  .hit .bal{margin-left:auto;font-size:12px;font-weight:700;background:var(--surface2);
-    color:var(--ink2);border-radius:999px;padding:3px 9px}
+  .hit .hl{flex:1;min-width:0}
+  .hit .hn{display:block;font-size:14px;font-weight:700}
+  /* 暱稱：同名的兩個人靠這個分辨。☢️ 用 var(--dim)，對白底 4.86:1，不能再淡。 */
+  .hit .nk{font-style:normal;font-weight:500;font-size:12px;color:var(--dim);margin-left:5px}
+  .hit .nk::before{content:'（'}
+  .hit .nk::after{content:'）'}
+  .hit .hm{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px}
+  .hit .tl{font-size:11.5px;color:var(--faint);letter-spacing:.06em;white-space:nowrap}
+  .hit .bal{font-size:12px;font-weight:700;background:var(--surface2);
+    color:var(--ink2);border-radius:999px;padding:3px 9px;white-space:nowrap}
   .hit .bal.low{background:var(--err-bg);color:var(--err)}
-  .hit .bd{font-size:11px;padding:2px 7px;border-radius:999px}
+  .hit .bd{font-size:11px;padding:2px 7px;border-radius:999px;white-space:nowrap}
   .hit .bd.y{background:var(--ok-bg);color:var(--ok)}
   .hit .bd.n{background:var(--warn-bg);color:#7C420E}
 
@@ -358,7 +372,8 @@
      ═══════════════════════════════════════════════════════════ */
   function loadSignups() {
     return DB.from('staff_signups')
-      .select('line_user_id,typed_name,typed_phone,tries,updated_at,registered_name,why')
+      .select('line_user_id,typed_name,typed_phone,tries,updated_at,' +
+              'registered_name,registered_nickname,why')
       .order('updated_at', { ascending: false })
       .then(function (r) {
         if (r.error) throw new Error(r.error.message);
@@ -374,7 +389,9 @@
       //    原本這種情況會掉進 name_mismatch，畫面就會說
       //    「請他改打『林正明』」，而他打的就是林正明 —— 自相矛盾。
       body = '<b>資料都對得上了，就差他再送一次。</b><br>' +
-             '名單上是「<b>' + esc(s.registered_name) + '</b>」，手機也對。<br>' +
+             '名單上是「<b>' + esc(s.registered_name) + '</b>」' +
+             (s.registered_nickname ? '（暱稱「' + esc(s.registered_nickname) + '」）' : '') +
+             '，手機也對。<br>' +
              '請他<b>用自己的手機重新綁定一次</b>，這張卡就會自動消失。';
     } else if (why === 'no_phone') {
       body = '<b>這支手機不在名單裡。</b><br>' +
@@ -384,10 +401,17 @@
              'data-n="' + esc(s.typed_name) + '" data-p="' + esc(s.typed_phone) + '">' +
              '用這筆資料去建客人<span class="ar"></span></button>';
     } else if (why === 'name_mismatch') {
+      // ☢️ 2026-08-18：比對放寬成「姓名或暱稱對上任一個就過」之後，
+      //    這段話一定要跟著把【兩個】名字都講出來。只講登記姓名的話，
+      //    教練會去叫客人改打 A，而其實打 B 也會過 —— 白繞一圈。
+      var ok = [s.registered_name];
+      if (s.registered_nickname) ok.push(s.registered_nickname);
       body = '<b>手機對得上，姓名對不上。</b><br>' +
-             '名單上登記的是「<b>' + esc(s.registered_name) + '</b>」。<br>' +
-             '☢️ 客人打的姓名要<b>包含</b>登記姓名 —— 多寫沒關係，少寫不行。<br>' +
-             '請他改打「' + esc(s.registered_name) + '」再送一次就會過。';
+             '名單上是「<b>' + esc(s.registered_name) + '</b>」' +
+             (s.registered_nickname ? '，暱稱「<b>' + esc(s.registered_nickname) + '</b>」' : '') +
+             '。<br>' +
+             '☢️ 客人打的姓名要<b>包含</b>其中一個 —— 多寫沒關係，少寫不行。<br>' +
+             '請他改打「' + esc(ok.join('」或「')) + '」再送一次就會過。';
     } else if (why === 'taken') {
       body = '<b>這筆客人已經被另一支 LINE 綁走了。</b><br>' +
              '可能是他換手機、或家人幫他綁過。<b>這個要找 Jerec 處理</b>，' +
@@ -553,12 +577,17 @@
     return '<details class="fold" id="newFold"' + (NEWOPEN ? ' open' : '') + '>' +
       '<summary>新增客人<span class="cap">名單上沒有的人</span><span class="ar"></span></summary>' +
       '<div class="foldb">' +
-        '<label for="nName">姓名</label>' +
-        '<input id="nName" type="text" placeholder="例：王小明" autocomplete="off">' +
-        '<div class="hint">☢️ 登記<b>短的</b>就好。比對規則是「客人打的要<b>包含</b>登記姓名」' +
-          '—— 登記「王小明」，他打「王小明 Ming」也會過；登記「王小明 Ming」，' +
-          '他打「王小明」就過不了。</div>' +
-        '<label for="nPhone">手機</label>' +
+        '<label for="nName">姓名　<i class="req">*必填</i></label>' +
+        '<input id="nName" type="text" placeholder="請輸入中文完整姓名，例如：王曉明" autocomplete="off">' +
+        // ☢️ 2026-08-18 這段提示【整個換掉】了。
+        //    舊的寫「登記短的就好」，那是配合舊規則（客人打的要包含登記姓名）。
+        //    現在姓名或暱稱對上任一個就過，而且客人端的提示是「請輸入中文完整姓名」——
+        //    兩邊必須講同一件事，否則櫃檯登記短名、客人照提示打全名，還是對不上。
+        '<div class="hint">登記<b>完整中文姓名</b>。他習慣被叫的英文名或綽號填到下面的<b>暱稱</b>，' +
+          '客人綁定時<b>打哪一個都會過</b>。</div>' +
+        '<label for="nNick">暱稱　<i class="req">*必填</i></label>' +
+        '<input id="nNick" type="text" placeholder="例：曉明、Ming" autocomplete="off">' +
+        '<label for="nPhone">手機　<i class="req">*必填</i></label>' +
         '<input id="nPhone" type="tel" inputmode="numeric" placeholder="0912345678" autocomplete="off">' +
         '<div class="hint">要跟他綁定時打的<b>完全一樣</b>。</div>' +
         '<button type="button" class="btn" id="nGo">建立客人</button>' +
@@ -884,11 +913,28 @@
   function createOne() {
     var bn = document.getElementById('nGo'), res = document.getElementById('nRes');
     var name = document.getElementById('nName').value.trim();
+    var nick = document.getElementById('nNick').value.trim();
     var phone = document.getElementById('nPhone').value.trim();
     res.innerHTML = '';
+
+    // ☢️ 三欄都必填，而且要在按下去【之前】就講清楚缺哪一個。
+    //    等資料庫回「bad_name」再顯示，教練已經多等了一個來回。
+    var miss = null;
+    if (!name)  miss = ['nName',  '請填姓名（完整中文姓名）。'];
+    else if (!nick)  miss = ['nNick',  '請填暱稱 —— 他習慣被叫的那個稱呼。'];
+    else if (!phone) miss = ['nPhone', '請填手機。'];
+    if (miss) {
+      res.innerHTML = '<div class="res bad">' + miss[1] + '</div>';
+      document.getElementById(miss[0]).focus();
+      return;
+    }
+
     bn.disabled = true; bn.textContent = '建立中…';
 
-    DB.rpc('create_customer', { p_name: name, p_phone: phone })
+    // ☢️ 必填擋在表單這一層，資料庫那一欄【允許空白】——
+    //    既有 93 位客人一個暱稱都沒有，資料庫設 NOT NULL 會直接失敗；
+    //    而且 Jerec 已經決定「既有已綁定的無需追討」，那它實務上就不是必填。
+    DB.rpc('create_customer', { p_name: name, p_phone: phone, p_nickname: nick })
       .then(function (r) {
         if (r.error) throw new Error(r.error.message);
         var d = r.data || {};
@@ -899,6 +945,7 @@
             '<button type="button" class="gobuy" data-buyname="' + esc(d.name) + '">' +
             '去幫他購課<span class="ar"></span></button>';
           document.getElementById('nName').value = '';
+          document.getElementById('nNick').value = '';
           document.getElementById('nPhone').value = '';
           // 建完把留言簿重讀一次 —— 那個人應該還在（要等他真的綁成功才會消失）
           return loadSignups().then(function () {
@@ -1014,8 +1061,28 @@
 
   function search(v, box) {
     var digits = /^\d+$/.test(v);
-    var qy = DB.from('staff_customers').select('id,name,phone_tail,balance,bound,is_active').limit(10);
-    qy = digits ? qy.like('phone', '%' + v) : qy.ilike('name', '%' + v + '%');
+    var COLS = 'id,name,nickname,phone_tail,balance,bound,is_active';
+
+    // ☢️ 姓名和暱稱各查一次再合併，【不用】PostgREST 的 or() ——
+    //    or() 是把條件塞進網址的字串，客人名字裡只要有逗號或括號就會把它拆壞。
+    //    兩次查詢多一個來回，但沒有「某些名字會查不動」這種難查的坑。
+    var qy = digits
+      ? DB.from('staff_customers').select(COLS).limit(10).like('phone', '%' + v)
+      : Promise.all([
+          DB.from('staff_customers').select(COLS).limit(10).ilike('name', '%' + v + '%'),
+          DB.from('staff_customers').select(COLS).limit(10).ilike('nickname', '%' + v + '%')
+        ]).then(function (rs) {
+          var bad = rs.filter(function (r) { return r.error; })[0];
+          if (bad) return { error: bad.error, data: null };
+          var seen = {}, out = [];
+          rs.forEach(function (r) {
+            (r.data || []).forEach(function (c) {
+              if (seen[c.id]) return;
+              seen[c.id] = 1; out.push(c);
+            });
+          });
+          return { error: null, data: out.slice(0, 10) };
+        });
 
     // ☢️ 封存區只有名字，沒有手機 —— 所以只在「用名字查」的時候才查它。
     var lq = digits
@@ -1040,10 +1107,16 @@
         var b = Number(c.balance);
         return '<div class="hitwrap">' +
           '<div class="hit">' +
-            '<span class="hn">' + esc(c.name) + (c.is_active === false ? '（已停用）' : '') + '</span>' +
-            '<span class="tl">' + esc(c.phone_tail) + '</span>' +
-            '<span class="bd ' + (c.bound ? 'y">已綁定' : 'n">未綁定') + '</span>' +
-            '<span class="bal' + (b <= 0 ? ' low' : '') + '">剩 ' + b + ' 堂</span>' +
+            '<span class="hl">' +
+              '<span class="hn">' + esc(c.name) +
+                (c.nickname ? '<i class="nk">' + esc(c.nickname) + '</i>' : '') +
+                (c.is_active === false ? '（已停用）' : '') + '</span>' +
+              '<span class="hm">' +
+                '<span class="tl">' + esc(c.phone_tail) + '</span>' +
+                '<span class="bd ' + (c.bound ? 'y">已綁定' : 'n">未綁定') + '</span>' +
+                '<span class="bal' + (b <= 0 ? ' low' : '') + '">剩 ' + b + ' 堂</span>' +
+              '</span>' +
+            '</span>' +
             (c.is_active === false ? '' :
               '<button type="button" class="hitbuy" data-open="' + esc(c.id) + '">購課<span class="ar"></span></button>') +
           '</div>' +
