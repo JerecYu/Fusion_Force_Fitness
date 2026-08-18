@@ -306,6 +306,23 @@
     background:var(--ink);color:#fff;padding:11px 17px;border-radius:11px;
     font-size:13px;font-weight:600;max-width:88%;text-align:center;z-index:50}
   .toast.bad{background:var(--err)}
+
+  /* ══ 桌機 ══════════════════════════════════════════════════════
+     ☢️ 2026-08-18 Jerec：「留白很多，字體很小，右上角的連結按鈕太遠」。
+        理由和做法跟 checkin.html 完全一樣，兩邊要一起改 ——
+        只改一邊的話，教練在兩頁之間切換會看到字忽大忽小。
+        （完整說明寫在 checkin.html 的同一段）
+
+     ☢️ 這一頁的頂欄有三顆（官網／點名核銷／重新整理），是最明顯的那個 ——
+        內容在正中央，鍵在最右邊，中間隔著一整片空白。
+     ══════════════════════════════════════════════════════════════ */
+  @media (min-width:1000px){
+    :root{--col:600px}
+    .top,.wrap{zoom:1.22}
+    .wrap{max-width:var(--col)}
+    /* ☢️ 要再加 14px —— .wrap 自己有 padding:…14px，卡片的邊在那之後。 */
+    .top{padding-inline:max(13px, calc((100% - var(--col)) / 2 + 14px))}
+  }
 </style>
 </head>
 <body>

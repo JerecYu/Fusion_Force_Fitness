@@ -103,6 +103,14 @@
     background:var(--surface2);padding:1px 5px;border-radius:2px}
   .foot{font-size:11px;color:var(--faint);text-align:center;margin-top:26px;letter-spacing:.04em}
   [hidden]{display:none !important}
+
+  /* ══ 桌機 ═══════════════════════════════════════════════════
+     這一頁沒有頂欄，所以只做「整套等比例放大」那一半。
+     理由寫在 checkin.html 的同一段。
+     ═══════════════════════════════════════════════════════════ */
+  @media (min-width:1000px){
+    .wrap{zoom:1.22;max-width:560px}
+  }
 </style>
 </head>
 <body>
