@@ -234,6 +234,21 @@
   .cf.qr{color:#2F6B54;font-weight:700}
   .cf.by{color:var(--dim);font-weight:600}
   .cf.none{color:var(--faint)}
+
+  /* ☢️ 拿掉是破壞性的，但也是【很少用】的。所以做成最小聲的一列：
+     不搶「出席／缺席」的視線，但需要的時候找得到。 */
+  .rm{margin-top:6px;display:flex;justify-content:flex-end}
+  .rmb{background:none;border:0;padding:4px 2px;font-family:inherit;font-size:11.5px;
+    color:var(--faint);text-decoration:underline;cursor:pointer}
+  .rmc{margin-top:7px;background:var(--err-bg);border:1px solid var(--err-line);
+    border-radius:11px;padding:10px 11px}
+  .rmc .q{font-size:12.5px;line-height:1.7;color:#7E1A15}
+  .rmc .a{display:flex;gap:7px;margin-top:8px}
+  .rmc .a button{flex:1;border-radius:9px;padding:9px;font-family:inherit;
+    font-size:12.5px;font-weight:800;cursor:pointer}
+  .rmc .no{background:#fff;border:1px solid var(--line);color:var(--ink2)}
+  .rmc .yes{background:var(--err);border:0;color:#fff}
+  .rmc .yes:disabled{opacity:.55}
   .cfb{margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:8px;
     padding:5px 11px;font-family:inherit;font-size:11.5px;font-weight:700;color:var(--ink2);
     cursor:pointer}
@@ -983,7 +998,29 @@
       btns(p, st, lock) +
       guests(p, st, lock) +
       confirmRow(p, lock) +
+      removeRow(p, st, lock) +
     '</div>';
+  }
+
+  /* ══ 拿掉加錯的人（路線圖第 58 步）═══════════════════════════
+     ☢️ 2026-08-18 Jerec 示範「現場加人」給教練看的時候按錯人，名單上多了
+        一位根本沒報名的客人 —— 而他【拿不掉】，因為 add_walkin() 有，
+        相對的那一顆從來沒做。最後是進資料庫改的。
+        現場加人本來就是站在櫃檯、一邊講話一邊按的動作，按錯是常態不是意外。
+
+     ☢️ 已經記出席的人這裡【不出現】。他的堂數已經扣掉了，
+        直接把預約拿掉會讓那一堂課的錢永遠消失在帳上 ——
+        客人少一堂，而且事後查不出為什麼。
+        正確順序是先按「改成缺席」把堂數退回去，那顆才會冒出來。
+        （資料庫那一支也會再擋一次，這裡只是不要讓人白按。）
+     ═══════════════════════════════════════════════════════════ */
+  function removeRow(p, st, lock) {
+    if (lock) return '';
+    if (st === 'attended') return '';        // 扣過堂數的不給拿，先改成缺席
+    return '<div class="rm" data-rm="' + esc(p.booking_id) + '" ' +
+           'data-nm="' + esc(p.customer_name) + '">' +
+           '<button type="button" class="rmb">這個人不該在名單上</button>' +
+           '</div>';
   }
 
   /* ══ 到課共同確認（路線圖第 46 步）══════════════════════════
@@ -1072,6 +1109,7 @@
     Array.prototype.forEach.call(elRoster.querySelectorAll('[data-cf]'), function (b) {
       b.onclick = function () { proxyConfirm(b.getAttribute('data-cf')); };
     });
+    wireRemove(elRoster);
     var qb = document.getElementById('qrOpen');
     if (qb) qb.onclick = openQR;
     if (dead) return;
@@ -1161,6 +1199,64 @@
         document.getElementById('qrBox').innerHTML =
           '<div class="qrwait bad">' + esc(String(e.message || e)) + '</div>';
         document.getElementById('qrLeft').textContent = '';
+      });
+  }
+
+  /* ☢️ 兩段式，跟沖銷同一個道理：這是把一個人從名單上拿掉，
+     按下去別的教練就看不到他了。第一下只是「問你確定嗎」，
+     而且【要把名字唸出來】—— 今天按錯就是因為名字看成別人的。 */
+  function wireRemove(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('.rmb'), function (b) {
+      b.onclick = function () {
+        var box = b.parentNode;
+        var id = box.getAttribute('data-rm'), nm = box.getAttribute('data-nm');
+        if (box.querySelector('.rmc')) {          // 再按一次＝收起來
+          box.querySelector('.rmc').remove();
+          b.hidden = false;
+          return;
+        }
+        b.hidden = true;
+        var c = document.createElement('div');
+        c.className = 'rmc';
+        c.innerHTML =
+          '<div class="q">把「<b>' + esc(nm) + '</b>」從這堂課的名單上拿掉？<br>' +
+          '他的堂數不會變，紀錄也留著 —— 只是不再出現在這一堂的名單裡。</div>' +
+          '<div class="a"><button type="button" class="no">取消</button>' +
+          '<button type="button" class="yes">確定拿掉</button></div>';
+        box.appendChild(c);
+        c.querySelector('.no').onclick = function () { c.remove(); b.hidden = false; };
+        c.querySelector('.yes').onclick = function () { doRemove(id, nm, c, b); };
+      };
+    });
+  }
+
+  function doRemove(bookingId, name, box, backBtn) {
+    var go = box.querySelector('.yes');
+    if (!go || go.disabled) return;
+    go.disabled = true; go.textContent = '拿掉中…';
+    DB.rpc('remove_booking', { p_booking: bookingId })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        var d = r.data || {};
+        if (!d.ok) {
+          // ☢️ 每一種擋下來的理由都要講【下一步該做什麼】，
+          //    只說「不行」會讓人卡在原地又按一次。
+          var m = {
+            not_found: '找不到這一筆，可能已經被別的教練處理掉了。按「重新整理」看看。',
+            credits_moved: '這個人的堂數已經動過了 —— 要先按上面的「改成缺席」把堂數退回去，才能拿掉。',
+            too_old: '這堂課太久以前了（超過 7 天），名單不能再改。要處理請找 Jerec。'
+          }[d.why] || d.why;
+          box.querySelector('.q').innerHTML = '<b>拿不掉。</b><br>' + esc(m);
+          go.disabled = false; go.textContent = '確定拿掉';
+          return;
+        }
+        toast(name + '　已從名單上拿掉');
+        // ☢️ 只重讀這一堂的名單，不要整頁重畫。
+        return loadRoster(CUR.session_id).then(function () { renderRoster(); });
+      })
+      .catch(function (e) {
+        box.querySelector('.q').innerHTML = '<b>拿不掉。</b><br>' + esc(String(e.message || e));
+        go.disabled = false; go.textContent = '確定拿掉';
       });
   }
 
@@ -1398,6 +1494,14 @@
         gate('err', '讀不到課表', String(e.message || e));
       });
   }
+
+  // ☢️ 2026-08-18：離開一陣子再切回來，liff-auth.js 會先把登入票接回來，
+  //    接好之後呼叫這一個。做的事情就是按一下「重新整理」——
+  //    ☢️ 但【不重載頁面】，教練現場點到一半的名單不能被洗掉。
+  window.FFF_AUTH.onResume = function () {
+    var b = document.getElementById('reload');
+    if (b && ME) b.onclick();
+  };
 
   document.getElementById('reload').onclick = function () {
     if (!ME) return;

@@ -783,6 +783,13 @@
     wireVoid(elMain);
     wireGoBuy(elMain);
 
+    // ☢️ 2026-08-18：切回來的時候由 liff-auth.js 呼叫，等同按一下「重新整理」。
+    //    ☢️ 不重載頁面 —— 新增客人的表單、沖銷的原因欄可能正打到一半。
+    window.FFF_AUTH.onResume = function () {
+      var b = document.getElementById('reload');
+      if (b && DB && ME) b.onclick();
+    };
+
     var rl = document.getElementById('reload');
     if (rl) rl.onclick = function () {
       if (!DB) return;
