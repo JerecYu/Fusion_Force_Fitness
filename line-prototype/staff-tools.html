@@ -401,17 +401,19 @@
   /* ☢️ 2026-08-18（第 59 步）在瀏覽器（桌機）開、而且還沒登入時的畫面。
         跟 gate() 差在多一顆真的能按的鍵 —— 這一種狀況是【有救】的，
         只給一句「要從 LINE 裡面開」等於把有救的人擋在外面。 */
-  function gateLogin() {
-    gate('', '還沒登入', '你是在瀏覽器裡開的。按下面用 LINE 登入就好。');
+  function gateLogin(t1, t2, label) {
+    gate('', t1 || '還沒登入', t2 || '你是在瀏覽器裡開的。按下面用 LINE 登入就好。');
     var b = document.createElement('button');
     b.type = 'button';
     b.className = 'btn';
     b.style.maxWidth = '280px';
     b.style.margin = '18px auto 0';
-    b.textContent = '用 LINE 登入';
+    b.textContent = label || '用 LINE 登入';
     b.onclick = function () {
       b.textContent = '正在開啟 LINE 登入…'; b.disabled = true;
-      if (!window.FFF_AUTH.login()) b.textContent = '開不起來，請改從 LINE 裡面開';
+      // ☢️ 失敗要把按鈕放回去。卡在「正在開啟…」而且按不動，
+      //    看起來就像整頁當掉了。
+      if (!window.FFF_AUTH.login()) { b.textContent = '開不起來，請改從 LINE 裡面開'; b.disabled = false; }
     };
     elGate.appendChild(b);
     var n = document.createElement('div');
@@ -1343,9 +1345,30 @@
         if (window.FFF_AUTH.canLogin) { gateLogin(); return; }
         gate('err', '要從 LINE 裡面開', '請在 LINE 的聊天室點連結，不要複製到瀏覽器'); return;
       }
+      // ☢️ 2026-08-18：state 還停在 checking，代表 liff-auth 正要跳去 LINE 重新登入。
+      //    以前這裡沒擋 —— 程式會【直接往下走】把整個後台畫出來，
+      //    彷彿已經登入。實際上憑證是壞的，查詢會全部回空 ——
+      //    畫面看起來正常，資料卻是空的，那比一個明白的錯誤更糟。
+      if (st === 'checking') {
+        elSub.textContent = '重新登入中';
+        gate('', '正在重新登入…', '登入過期了，馬上跳到 LINE 幫你換一張');
+        return;
+      }
       if (st === 'error') {
         elSub.textContent = '辨識失敗';
-        gate('err', '辨識失敗', window.FFF_AUTH.error || ''); return;
+        // ☢️ 2026-08-18：本來這裡只丟出 FFF_AUTH.error（例如 line_verify_failed）——
+        //    一行看不懂的英文，而且沒有任何可以按的東西。
+        //    憑證過期是【按一下就能救】的，errorNote 有寫給人看的那一句。
+        if (window.FFF_AUTH.canLogin) {
+          gateLogin('登入過期了',
+                    (window.FFF_AUTH.errorNote || '按下面重新登入就好。') +
+                    '（' + (window.FFF_AUTH.error || '') + '）',
+                    '重新登入');
+          return;
+        }
+        gate('err', '辨識失敗',
+             (window.FFF_AUTH.errorNote ? window.FFF_AUTH.errorNote + '　' : '') +
+             (window.FFF_AUTH.error || '')); return;
       }
       if (!window.fffDB) { gate('err', '資料庫連線沒建立', 'no_fffDB'); return; }
       DB = window.fffDB;

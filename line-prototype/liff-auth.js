@@ -143,9 +143,16 @@
   }
 
   // note = 灰色小字，只寫給人看的補充；code = 錯誤代碼，寫給我看的
+  //
+  // ☢️ 2026-08-18 Jerec 的畫面上只出現「辨識失敗 · line_verify_failed」——
+  //    一行看不懂的英文，而且沒有任何可以按的東西。
+  //    這裡其實有寫給人看的那一句（note），但【只寫進狀態列】，
+  //    而三個教練頁面根本沒有狀態列，它們讀的是 AUTH.error（代碼）。
+  //    所以好好的一句中文被丟掉了。errorNote 就是把它交出去。
   function paint(state, note, code) {
     AUTH.state = state;
     AUTH.error = code || null;
+    AUTH.errorNote = note || null;
     if (!elBand && !grab()) return;
 
     var b = BAND[state] || BAND.error;
@@ -193,25 +200,81 @@
     elBand.appendChild(btn);
   }
 
+  /* ══ 憑證到底過期了沒 —— 自己先看一眼 ═══════════════════════
+     ☢️ 2026-08-18 Jerec 在桌機上看到「辨識失敗 · line_verify_failed」。
+        查伺服器紀錄，事實是這樣的：
+
+          18:47～18:49  五次 line-auth 全部 200（成功登入）
+          19:47～19:48  五次 401，40 秒內連續發生
+          19:58        又一次 200
+
+        ☢️ 整整【一小時】—— LINE 的身分憑證就是一小時到期，這下有數字了。
+        ☢️ 而那五次 401 是【我們自己打出去的】：憑證早就過期，
+           前端卻還是照送，等伺服器打回票才知道。他開了三個分頁，
+           每頁各送一次、再重試一次，就是五次。
+
+     所以改成：送出去之前先自己看一眼到期時間。
+     憑證是 JWT，中間那段是明文的 JSON，讀得到 exp（到期秒數）。
+
+     ☢️ 這【不是】拿來信任的 —— 憑證真假還是伺服器問 LINE 才算數。
+        這裡只是「明知過期就不要浪費一次來回」，
+        而且省下來的不只是流量，是一個看不懂的錯誤畫面。
+     ☢️ 讀不到 exp 就當作沒過期，交給伺服器判斷。
+        自己解析失敗就把人擋在門外，是拿一個小疑慮換一個大故障。
+     ═══════════════════════════════════════════════════════════ */
+  function tokenExpSec(t) {
+    try {
+      var p = String(t).split('.')[1];
+      if (!p) return 0;
+      p = p.replace(/-/g, '+').replace(/_/g, '/');
+      while (p.length % 4) p += '=';
+      var o = JSON.parse(decodeURIComponent(escape(atob(p))));
+      return Number(o && o.exp) || 0;
+    } catch (e) { return 0; }
+  }
+  function tokenFresh(t) {
+    var e = tokenExpSec(t);
+    if (!e) return true;                       // 讀不到 → 交給伺服器
+    // ☢️ 留 90 秒緩衝。剛好在到期那一秒送出去，一樣會被拒。
+    return (e * 1000 - Date.now()) > 90 * 1000;
+  }
+
   // 換一張 LINE 憑證。
   // ☢️ 一定要防迴圈：萬一換回來的還是不被接受（例如 channel 設定壞了），
   //    沒有這道保險的話會變成「開啟 → 跳轉 → 開啟 → 跳轉」，
   //    使用者連錯誤訊息都看不到，只會覺得手機壞了。
   //    sessionStorage 的值只活在這個分頁，關掉再開就重新算一次。
+  //
+  // ☢️ 2026-08-18 從「試一次」改成【兩段】：
+  //    第一次只 login()。不夠的話第二次先 logout() 再 login() ——
+  //    單純 login() 在瀏覽器裡有機會把原本那張憑證原封不動再給一次，
+  //    那樣重試等於沒重試。先登出就一定會走完整的重新驗證。
+  //
+  // ☢️ 而且【最後一定要留一條路】。原本第二次失敗就顯示
+  //    「請關掉這一頁重新打開」—— 那是把問題丟回給使用者，
+  //    而且對桌機是錯的（關掉重開，憑證還是同一張）。
+  //    現在改成把 canLogin 打開，讓頁面畫得出一顆「重新登入」。
   var RELOGIN_KEY = 'fff_relogin_once';
   function relogin(why) {
-    var tried = false;
-    try { tried = sessionStorage.getItem(RELOGIN_KEY) === '1'; } catch (e) {}
-    if (tried || !window.liff || !window.liff.login) {
-      paint('error', '身分憑證過期了，請關掉這一頁重新打開', why || 'stale_id_token');
+    var n = 0;
+    try { n = parseInt(sessionStorage.getItem(RELOGIN_KEY) || '0', 10) || 0; } catch (e) {}
+
+    if (n >= 2 || !window.liff || !window.liff.login) {
+      AUTH.canLogin = true;      // ← 讓頁面知道「這個狀況按一下就能救」
+      paint('error', '登入過期了，按「重新登入」就好', why || 'stale_id_token');
       return 'stop';
     }
-    try { sessionStorage.setItem(RELOGIN_KEY, '1'); } catch (e) {}
-    paint('checking', '憑證過期了，正在重新取得…');
+
+    try { sessionStorage.setItem(RELOGIN_KEY, String(n + 1)); } catch (e) {}
+    paint('checking', n === 0 ? '登入過期了，正在重新取得…' : '再試一次…');
     try {
+      if (n >= 1 && window.liff.logout) {
+        try { window.liff.logout(); } catch (e) {}
+      }
       window.liff.login({ redirectUri: location.href });
     } catch (e) {
-      paint('error', '無法重新取得憑證，請關掉這一頁重新打開', String(e));
+      AUTH.canLogin = true;
+      paint('error', '無法重新取得憑證，按「重新登入」再試一次', String(e));
     }
     return 'stop';       // 頁面正要跳走，後面不用再跑
   }
@@ -265,6 +328,9 @@
         if (r === 'stop') return 'stop';
         var t = window.liff.getIDToken();
         if (!t) return relogin('no_id_token');
+        // ☢️ 2026-08-18：先自己看一眼到期時間，過期就不要送出去。
+        //    這一行就是那五次 401 消失的地方。
+        if (!tokenFresh(t)) return relogin('id_token_expired');
         return t;
       })
 

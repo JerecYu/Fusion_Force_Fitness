@@ -302,6 +302,7 @@
             loginb.disabled = true;
             if (!window.FFF_AUTH.login()) {
               loginb.textContent = '開不起來，請改從 LINE 裡面開';
+              loginb.disabled = false;
             }
           };
           return;
@@ -310,8 +311,36 @@
         need.hidden = false;
         return;
       }
+      // ☢️ state 還停在 checking = liff-auth 正要跳去 LINE 重新登入。
+      //    不擋的話會往下走，把畫面畫成「已登入」的樣子。
+      if (st === 'checking') {
+        show('s-wait', '◌', '正在重新登入…', '登入過期了，馬上跳到 LINE 幫你換一張');
+        return;
+      }
       if (st === 'error') {
-        show('s-err', '✕', '辨識失敗', window.FFF_AUTH.error || '');
+        // ☢️ 2026-08-18：本來只丟出代碼（例如 line_verify_failed），
+        //    教練看到的是一行看不懂的英文、而且沒有任何可以按的東西。
+        //    憑證過期是【按一下就能救】的 —— 重複用下面那顆登入鍵。
+        if (window.FFF_AUTH.canLogin) {
+          show('s-warn', '○', '登入過期了',
+               window.FFF_AUTH.errorNote || '按下面重新登入就好');
+          canin.hidden = false;
+          canin.querySelector('.hint').innerHTML =
+            '你上次登入已經超過一小時，LINE 的憑證到期了。<b>按下面重新登入</b>就好。';
+          loginb.textContent = '重新登入';
+          loginb.onclick = function () {
+            loginb.textContent = '正在開啟 LINE 登入…';
+            loginb.disabled = true;
+            if (!window.FFF_AUTH.login()) {
+              loginb.textContent = '開不起來，請改從 LINE 裡面開';
+              loginb.disabled = false;
+            }
+          };
+          return;
+        }
+        show('s-err', '✕', '辨識失敗',
+             (window.FFF_AUTH.errorNote ? window.FFF_AUTH.errorNote + '　' : '') +
+             (window.FFF_AUTH.error || ''));
         return;
       }
 

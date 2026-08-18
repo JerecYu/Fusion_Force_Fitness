@@ -443,9 +443,38 @@
         elSub.textContent = '未登入';
         gate('err', '要先登入', '請從教練登入頁進來（staff.html）'); return;
       }
+      // ☢️ 2026-08-18：state 還停在 checking，代表 liff-auth 正要跳去 LINE 重新登入。
+      //    以前這裡沒擋 —— 程式會【直接往下走】把整個後台畫出來，
+      //    彷彿已經登入。實際上憑證是壞的，查詢會全部回空 ——
+      //    畫面看起來正常，資料卻是空的，那比一個明白的錯誤更糟。
+      if (st === 'checking') {
+        elSub.textContent = '重新登入中';
+        gate('', '正在重新登入…', '登入過期了，馬上跳到 LINE 幫你換一張');
+        return;
+      }
       if (st === 'error') {
         elSub.textContent = '辨識失敗';
-        gate('err', '辨識失敗', window.FFF_AUTH.error || ''); return;
+        // ☢️ 憑證過期是按一下就能救的，不要只丟代碼。
+        if (window.FFF_AUTH.canLogin) {
+          gate('', '登入過期了',
+               (window.FFF_AUTH.errorNote || '按下面重新登入就好。') +
+               '（' + (window.FFF_AUTH.error || '') + '）');
+          var rb = document.createElement('button');
+          rb.type = 'button'; rb.className = 'btn';
+          rb.style.cssText = 'max-width:280px;margin:18px auto 0';
+          rb.textContent = '重新登入';
+          rb.onclick = function () {
+            rb.textContent = '正在開啟 LINE 登入…'; rb.disabled = true;
+            if (!window.FFF_AUTH.login()) {
+              rb.textContent = '開不起來，請改從 LINE 裡面開'; rb.disabled = false;
+            }
+          };
+          elGate.appendChild(rb);
+          return;
+        }
+        gate('err', '辨識失敗',
+             (window.FFF_AUTH.errorNote ? window.FFF_AUTH.errorNote + '　' : '') +
+             (window.FFF_AUTH.error || '')); return;
       }
       if (!window.fffDB) { gate('err', '資料庫連線沒建立', 'no_fffDB'); return; }
       DB = window.fffDB;
