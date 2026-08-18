@@ -49,7 +49,29 @@
     //   window.FFF_AUTH.onResume = function () { ...重讀這一頁的資料... };
     // ☢️ 這裡【故意不做 location.reload()】—— 整頁重載會把教練打到一半的
     //    表單、開著的沖銷原因欄一起洗掉。只重讀資料，畫面上的輸入留著。
-    onResume: null
+    onResume: null,
+
+    /* ☢️ 2026-08-18（第 59 步）canLogin —— state === 'browsing' 有三種原因，
+          但只有一種救得回來：
+
+            ① LINE 的程式沒載進來（CDN 被擋、沒網路）  → 救不回來
+            ② liff.init() 失敗（LIFF ID 或網域設錯）    → 救不回來
+            ③ init 成功，只是【還沒登入】                → ★ 按一下就能登入
+
+          三種在畫面上長得一模一樣。沒有這個旗標的話，頁面只能一律說
+          「要從 LINE 裡面開」—— 對第 ③ 種是錯的，而第 ③ 種正是【桌機】。
+
+          ☢️ 所以這不是「新功能」，是把一條本來就通、只是沒有入口的路打開。 */
+    canLogin: false
+  };
+
+  // 給頁面呼叫的登入。回傳 false 代表現在按也沒用（上面的 ①②）。
+  // ☢️ redirectUri 要帶 location.href，否則 LINE 會把人送回 LIFF 的
+  //    Endpoint URL 首頁，教練登入完會發現自己站在別的頁面上。
+  AUTH.login = function () {
+    if (!AUTH.canLogin || !window.liff || !window.liff.login) return false;
+    try { window.liff.login({ redirectUri: location.href }); return true; }
+    catch (e) { return false; }
   };
 
   // ☢️ ready 必須在這裡就存在，不能等 DOMContentLoaded 才建立。
@@ -107,6 +129,17 @@
 
   // 「用 LINE 登入」按鈕。只在 LIFF 起得來、但人還沒登入時出現。
   // 在 LINE App 裡永遠不會看到它 —— 那邊是自動登入的。
+  //
+  // ☢️ 2026-08-18 Jerec 在桌機上打開後台，畫面停在「不是從 LINE 開的」，
+  //    沒有任何可以按的東西。查出來原因是這一行：這顆鍵掛在 #authBand 上，
+  //    而【三個教練頁面都沒有 #authBand】（只有 GT-booking.html 有）——
+  //    elBand 是 null，第一行直接 return，這顆鍵從來沒有機會出現過。
+  //
+  //    ☢️ 它不會報錯，程式碼看起來也完全正常 —— 教訓是「功能存在」和
+  //       「功能接得到畫面」是兩件事，只讀程式碼分不出來。
+  //
+  //    所以真正的登入動作搬到上面的 AUTH.login()，任何頁面都叫得到；
+  //    這一顆只是「頁面剛好有 authBand 就順便給你」的便利品。
   function offerLogin() {
     if (!elBand || elBand.querySelector('.ab-b')) return;
     var btn = document.createElement('button');
@@ -114,7 +147,7 @@
     btn.className = 'ab-b';
     btn.textContent = '用 LINE 登入';
     btn.addEventListener('click', function () {
-      try { window.liff.login(); } catch (e) { paint('error', '無法開啟 LINE 登入', String(e)); }
+      if (!AUTH.login()) paint('error', '無法開啟 LINE 登入', 'login_unavailable');
     });
     elBand.appendChild(btn);
   }
@@ -162,6 +195,9 @@
       .then(function (r) {
         if (r === 'stop') return 'stop';
         if (!window.liff.isLoggedIn()) {
+          // ☢️ 只有走到這裡才代表「按一下就能登入」。
+          //    上面兩個 paint('browsing') 是【真的沒救】，不能設這個旗標。
+          AUTH.canLogin = true;
           paint('browsing');
           offerLogin();
           return 'stop';

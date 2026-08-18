@@ -363,6 +363,29 @@
     elGate.innerHTML = '<div class="g1">' + esc(t1) + '</div><div class="g2">' + esc(t2||'') + '</div>';
     elGate.hidden = false; elMain.hidden = true;
   }
+
+  /* ☢️ 2026-08-18（第 59 步）在瀏覽器（桌機）開、而且還沒登入時的畫面。
+        跟 gate() 差在多一顆真的能按的鍵 —— 這一種狀況是【有救】的，
+        只給一句「要從 LINE 裡面開」等於把有救的人擋在外面。 */
+  function gateLogin() {
+    gate('', '還沒登入', '你是在瀏覽器裡開的。按下面用 LINE 登入就好。');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn';
+    b.style.maxWidth = '280px';
+    b.style.margin = '18px auto 0';
+    b.textContent = '用 LINE 登入';
+    b.onclick = function () {
+      b.textContent = '正在開啟 LINE 登入…'; b.disabled = true;
+      if (!window.FFF_AUTH.login()) b.textContent = '開不起來，請改從 LINE 裡面開';
+    };
+    elGate.appendChild(b);
+    var n = document.createElement('div');
+    n.className = 'g2';
+    n.style.marginTop = '10px';
+    n.textContent = '會跳到 LINE 的登入畫面，登完自動回來。可以用手機掃 QR Code。';
+    elGate.appendChild(n);
+  }
   var toastTimer;
   function toast(msg, bad) {
     var old = document.querySelector('.toast'); if (old) old.remove();
@@ -1261,6 +1284,8 @@
       var st = window.FFF_AUTH.state;
       if (st === 'browsing') {
         elSub.textContent = '未登入';
+        // ☢️ browsing 有三種原因，只有「在瀏覽器、還沒登入」這一種按一下就能救。
+        if (window.FFF_AUTH.canLogin) { gateLogin(); return; }
         gate('err', '要從 LINE 裡面開', '請在 LINE 的聊天室點連結，不要複製到瀏覽器'); return;
       }
       if (st === 'error') {

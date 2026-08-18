@@ -144,7 +144,19 @@
       </div>
     </div>
 
-    <!-- 沒在 LINE 裡開才會出現 -->
+    <!-- ☢️ 在瀏覽器（桌機）開的，而且【按一下就能登入】才會出現 -->
+    <div id="canline" hidden>
+      <div class="hint">
+        你是在<b>瀏覽器</b>裡開的。按下面用 LINE 登入，之後就跟在手機上一樣。
+      </div>
+      <button type="button" class="btn" id="dologin" style="margin-top:12px">用 LINE 登入</button>
+      <div class="note">
+        會跳到 LINE 的登入畫面，登完自動回到這一頁。<br>
+        <b>可以用手機掃 QR Code</b>，不一定要記得 LINE 的密碼。
+      </div>
+    </div>
+
+    <!-- 連登入都做不到（LINE 的程式沒載進來／初始化失敗）才會出現 -->
     <div id="needline" hidden>
       <div class="hint">
         這一頁要<b>從 LINE 裡面開</b>才認得出你是誰。<br>
@@ -172,6 +184,8 @@
   var role  = document.getElementById('role');
   var claim = document.getElementById('claim');
   var need  = document.getElementById('needline');
+  var canin = document.getElementById('canline');
+  var loginb= document.getElementById('dologin');
   var uidEl = document.getElementById('uid');
   var btn   = document.getElementById('copy');
   var go    = document.getElementById('go');
@@ -241,6 +255,21 @@
       var st = window.FFF_AUTH.state;
 
       if (st === 'browsing') {
+        // ☢️ 2026-08-18：這裡本來一律說「不是從 LINE 開的」，然後就沒有下文了。
+        //    但 browsing 有三種原因，其中一種（在瀏覽器、還沒登入）
+        //    是【按一下就好】的。桌機正是那一種 —— 卻被當成無解。
+        if (window.FFF_AUTH.canLogin) {
+          show('s-warn', '○', '還沒登入', '在瀏覽器開的，按下面登入就好');
+          canin.hidden = false;
+          loginb.onclick = function () {
+            loginb.textContent = '正在開啟 LINE 登入…';
+            loginb.disabled = true;
+            if (!window.FFF_AUTH.login()) {
+              loginb.textContent = '開不起來，請改從 LINE 裡面開';
+            }
+          };
+          return;
+        }
         show('s-warn', '○', '還沒認出你', '不是從 LINE 開的');
         need.hidden = false;
         return;
