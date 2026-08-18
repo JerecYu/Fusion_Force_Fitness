@@ -1467,7 +1467,7 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
           <div class="st" data-n="2"><h3>評估與體驗</h3>
             <p>私人課首次體驗含 FMS 功能性評估檢測，先了解你的身體狀況再開始。</p></div>
           <div class="st" data-n="3"><h3>建立聯繫</h3>
-            <p>第一次課程結束後加入約課群組，了解後續的約課規範。</p></div>
+            <p>加入官方 LINE，之後訂課、看剩幾堂、取消都在那裡。</p></div>
           <div class="st" data-n="4"><h3>付費與扣課</h3>
             <p>現場現金或匯款完成付款，購買堂數方案後每次上課依序扣課，紀錄可於群組查閱。</p></div>
         </div>
@@ -1633,14 +1633,14 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
     <div class="card card-p">
       <div class="flow">
         <div class="st" data-n="1"><h3>預約課程</h3>
-          <p>於本網站、官方 LINE 或團課群組完成預約，我們會回覆確認。</p></div>
+          <p>在官方 LINE 的選單裡完成預約，<b>送出就生效</b>，不用等我們回覆。</p></div>
         <div class="st" data-n="2"><h3>現場繳費或匯款</h3>
           <p>首次上課時於櫃檯以現金繳費，或事先匯款後提供帳號後五碼核對。匯款帳戶請向櫃檯或官方 LINE 索取。</p></div>
         <!-- ☢️ 2026-08-18 刪掉舊系統的「加入團課群組」（原本的第 3 步）。
              ☢️ 刪一步之後，後面每一步的 data-n 都要往前遞補 ——
                 那個號碼是 CSS 用 content:attr(data-n) 畫出來的，不會自己重算。 -->
         <div class="st" data-n="3"><h3>查詢扣課紀錄</h3>
-          <p>購買堂數方案後，每次上課依序扣課；個人扣課紀錄可於團課群組查閱。</p></div></div>
+          <p>購買堂數方案後，每次上課依序扣課；剩餘堂數與每一筆扣課紀錄，在官方 LINE 選單的「我的預約」隨時查得到。</p></div></div>
       <div class="note note-warn" style="margin-top:20px">
         <b>目前暫無線上支付與信用卡刷卡服務。</b><br>
         本網站僅提供費用查詢與課程預約，所有款項一律於現場現金或匯款完成。</div>
@@ -1670,8 +1670,12 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
         <span class="caret">▼</span></button>
       <div class="dd-panel" id="bk-panel" role="listbox" aria-label="課程類型"></div>
     </div>
-    <a class="btn btn-1" id="bk-go" href="#/gt" style="margin-top:15px;max-width:520px">
-      前往預約</a>
+    <a class="btn btn-1" id="bk-go" href="https://liff.line.me/2011063116-QOxXN30h/GT-booking.html"
+       target="_blank" rel="noopener" style="margin-top:15px;max-width:520px">在 LINE 裡預約</a>
+    <div class="note" style="margin-top:10px;max-width:520px">
+      預約在<b>官方 LINE</b> 裡完成 —— 那邊看得到即時名額，也查得到你還剩幾堂。
+      還沒加入的話，<a href="https://lin.ee/9tthCBh" target="_blank" rel="noopener"
+      style="color:var(--blue)">先加官方 LINE</a>。</div>
     <div class="note" style="margin-top:22px;max-width:520px">
       <b>不確定選哪一種？</b>想規律運動又有夥伴陪 → 選 <b>GT</b>；有明確目標或身體不適需要處理 → 選 <b>PT</b>；
       想和朋友家人一起包班 → 選 <b>PGT</b>。也可以先<a href="#/services" style="color:var(--blue)">看服務比較表</a>。</div>
@@ -1685,10 +1689,12 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
         <p>左右滑動上方的星期列，找到想上的那一天。卡片色條代表難度
           <span class="lvd"><i style="background:#2F6B54"></i><i style="background:#2C4E7D"></i><i style="background:#DE7A38"></i></span>
           綠色入門、深藍中階、橘色進階。第一次來建議從入門開始。</p></div>
-      <div class="st" data-n="2"><h3>確認名額後按下預約</h3>
-        <p>每堂課上限 10 人，卡片會顯示目前已預約人數。還有空位就按「立即預約」；額滿則顯示「加入候補」。</p></div>
-      <div class="st" data-n="3"><h3>留下姓名與手機，送出給我們</h3>
-        <p>填好資料後，系統會產生一則預約訊息，一鍵傳送到官方 LINE 給我們確認。你也可以在「我的預約」查看自己記錄過的課程。</p></div>
+      <div class="st" data-n="2"><h3>在官方 LINE 裡按下預約</h3>
+        <p>加入官方 LINE 後，從下方選單的「團體課預約」進去。那裡看得到<b>即時名額</b>，
+          按下去<b>送出就生效</b>，不用等我們回覆。第一次會請你留下手機號碼和姓名，之後就不用再填。</p></div>
+      <div class="st" data-n="3"><h3>課前一小時前都可以取消</h3>
+        <p>同一個地方可以取消，也看得到自己還剩幾堂。<b>課前一小時內就不能取消了</b>。
+          缺席不扣課；堂數是教練課後在現場核銷的。</p></div>
     </div>
     <div class="btn-row" style="margin-top:26px">
       <a class="btn btn-2" href="#/schedule">先看看課表</a>
@@ -1696,17 +1702,32 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   </div></div>
 </section>
 
-<!-- ══════════ GT 預約 ══════════ -->
+<!-- ══════════ GT 課表（☢️ 這一頁【不再受理預約】，見下方註解） ══════════ -->
 <section class="route" data-route="gt">
   <div class="ph"><div class="wrap">
     <div class="rule"><i></i><i></i><i></i></div>
-    <h1>預約團體課<span class="chip">GT</span></h1>
+    <h1>團體課課表<span class="chip">GT</span></h1>
     <p>每週固定時間開課，自由參加。每堂 60 分鐘、每班上限 10 人。</p>
-    <div class="tabs">
-      <button class="tab on" data-gttab="s">本週課表</button>
-      <button class="tab" data-gttab="m">我的預約 <span id="gt-count"></span></button></div>
   </div></div>
 
+  <!-- ═══════════════════════════════════════════════════════════════
+       ☢️☢️ 2026-08-18：這一區原本有一整套「預約」——「立即預約」按鈕、
+       名額圖示、「我的預約」分頁、「已記錄 · 取消」。
+       全部拆掉了，因為那是【假的】：
+
+         · 按下去只寫進客人自己瀏覽器的 localStorage，
+           店裡【一筆都收不到】。客人以為約好了，然後直接來上課。
+         · 名額圖示畫的是「你在這台裝置上的紀錄」——
+           所以每一堂對新訪客永遠是 0/10，全滿的課看起來也是空的。
+         · 步驟說明還寫著「額滿則顯示『加入候補』」——
+           那顆按鈕【從來沒有被寫出來過】。
+
+       ☢️ 真正的預約在 LINE 裡（會扣堂數、會進資料庫、教練點得到名）。
+          官網從現在起只做一件事：把人帶過去。
+       ☢️ 課表保留 —— 它是有用的招生內容，而且不會騙人。
+          但要標明是「每週固定課表」，不是「本週」：它沒有日期，
+          停課、調課、加開都反映不出來。即時的在 LINE 裡。
+       ═══════════════════════════════════════════════════════════════ -->
   <div class="sec sec-alt" style="padding-top:clamp(26px,4vw,40px)"><div class="wrap">
     <div id="gt-view-s">
       <div class="pb">
@@ -1714,17 +1735,32 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
           <div class="v">單堂 <b>NT$400</b>　·　買 10 送 2 <b>NT$4,000</b>
             <span class="sm">等於上 12 堂，平均一堂 NT$333</span></div></div>
         <a href="#/pricing">完整價目表</a></div>
+
+      <!-- ☢️ 按鈕和說明要包在同一個置中容器裡。
+           單獨給 .btn 一個 margin:0 auto 沒有用 —— 它是 inline-flex，
+           auto 邊界對非區塊元素不生效，結果是按鈕貼左、說明貼右。 -->
+      <div style="max-width:520px;margin:0 auto 22px">
+        <a class="btn btn-1" style="width:100%"
+           href="https://liff.line.me/2011063116-QOxXN30h/GT-booking.html"
+           target="_blank" rel="noopener">在 LINE 裡預約這些課<span class="ar"></span></a>
+        <div class="note" style="margin-top:10px">
+          預約、看剩幾堂、取消，全部在官方 LINE 的「團體課預約」裡。
+          那邊看得到<b>即時名額</b>，送出就生效，不用等回覆。
+        </div>
+      </div>
+
       <div class="legend" style="margin-top:0;margin-bottom:14px">
         <span class="lv beg">入門 Beginner</span><span class="lv int">中階 Intermediate</span>
         <span class="lv adv">進階 Advanced</span></div>
       <div class="days" id="gt-days"></div>
       <div class="clist" id="gt-list"></div>
     </div>
-    <div id="gt-view-m" style="display:none"><div id="gt-mylist"></div></div>
     <div class="note" style="margin-top:26px">
-      <b>關於名額：</b>本頁顯示的預約人數為你在這台裝置上的紀錄，並非全館即時名額。
-      送出預約後我們會在 LINE 上與你確認實際名額，額滿時會協助你安排候補或其他時段。<br>
-      費用採現場現金或匯款，暫無線上支付；扣課紀錄請於團課群組查詢。</div>
+      <b>這份課表是每週固定的時段表，沒有日期。</b>停課、調課、臨時加開都不會顯示在這裡 ——
+      <b>實際開課與即時名額請看官方 LINE</b>。<br>
+      團體課<b>送出就生效</b>，不用等我們回覆；<b>課前一小時內不能取消</b>；缺席不扣課，
+      堂數由教練課後現場核銷。剩餘堂數在 LINE 選單的「我的預約」隨時查得到。<br>
+      費用採現場現金或匯款，暫無線上支付。</div>
   </div></div>
 </section>
 
@@ -1899,9 +1935,10 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
       <details class="q"><summary>可以線上刷卡或轉帳付款嗎？</summary>
         <p>目前暫無線上支付與信用卡刷卡服務。所有款項一律於現場以現金繳費，或事先匯款後提供帳號後五碼核對，匯款帳戶請向櫃檯或官方 LINE 索取。</p></details>
       <details class="q"><summary>買了堂數方案，要怎麼查剩下幾堂？</summary>
-        <p>購買堂數方案後，每次上課依序扣課。第一次課程結束後我們會邀請你加入約課群組，個人的扣課紀錄可以在群組中查閱。</p></details>
+        <p>購買堂數方案後，每次上課依序扣課，<b>缺席不扣課</b>。剩餘堂數與每一筆扣課紀錄，在官方 LINE 選單的「我的預約」隨時查得到。</p></details>
       <details class="q"><summary>團體課額滿了怎麼辦？</summary>
-        <p>每班上限 10 人。如果你想上的時段已滿，請直接在 LINE 上告訴我們，我們會協助安排候補或推薦相近時段的課程。有人取消時會依登記順序通知遞補。</p></details>
+        <p>每班上限 10 人。<b>額滿仍然可以報名</b>，系統不會擋你 —— 但現場座位請先與教練確認，
+          我們會協助安排到相近時段的課程。</p></details>
       <details class="q"><summary>可以指定教練嗎？</summary>
         <p>私人教練課與私人團體班都可以指定教練，也可以選擇不指定，由我們依你的需求與時段安排最適合的教練。團體課則是依課表安排的教練授課，你可以在<a href="#/schedule" style="color:var(--blue)">課表頁面</a>查看各教練負責的時段。</p></details>
       <details class="q"><summary>有兒童或長輩的課程嗎？</summary>
@@ -1946,22 +1983,11 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
   </div>
 </footer>
 
-<!-- GT 預約表單 -->
-<div class="ov" id="ov-form">
-  <div class="sheet">
-    <div class="sheet-hd">
-      <div><h3 id="gtf-title">預約課程</h3><p class="sub" id="gtf-sub"></p></div>
-      <button class="x" data-close aria-label="關閉">✕</button></div>
-    <div style="margin-top:20px">
-      <div class="f"><label for="gt-name">姓名</label><input type="text" id="gt-name" placeholder="請輸入您的姓名"></div>
-      <div class="f"><label for="gt-phone">手機號碼</label><input type="tel" id="gt-phone" placeholder="09xx-xxx-xxx"></div>
-      <div class="note" id="gtf-note"></div>
-      <div class="macts">
-        <button class="btn btn-3" data-close>取消</button>
-        <button class="btn btn-1" id="gtf-confirm">確認預約</button></div>
-    </div>
-  </div>
-</div>
+<!-- ☢️ 2026-08-18：GT 預約表單整個拿掉。
+     它收姓名和手機，然後把資料存進 localStorage —— 店裡收不到。
+     真正的預約在 LINE 裡（那邊已經有身分，不用再填一次姓名手機）。
+     ☢️ 表單留著不接線也不行：它會在畫面上出現一個收個資的欄位，
+        而那些資料哪裡都不會去。 -->
 
 <!-- 送出訊息 -->
 <div class="ov" id="ov-msg">
@@ -2689,13 +2715,21 @@ window.addEventListener('load', markScrollers);
    預約入口 —— 下拉選單
    ═══════════════════════════════════════════════════════════ */
 (function () {
+  /* ☢️ 2026-08-18：href 從站內的 #/gt 改成【LINE 裡的訂課頁】。
+        官網已經不受理預約了（原本那套是假的，見下方 GT 區塊的註解），
+        所以「前往預約」必須把人送到真的能訂到課的地方。
+     ☢️ 網址一定要用 liff.line.me/2011063116-QOxXN30h/…（規則 17）。
+        直接寫 jerecyu.github.io/… 的話，在 LINE 裡只是普通瀏覽器 ——
+        liff.isLoggedIn() 會是 false，客人會被當成沒綁定的人。
+        不會報錯，只是功能默默降級。 */
+  var LIFF = 'https://liff.line.me/2011063116-QOxXN30h/';
   var OPTS = [
     { id: 'gt', code: 'GT', t: '主題式團體課', d: '每週固定開課 · 每班上限 10 人',
-      p: '單堂 NT$400 ・ 買10送2 NT$4,000', href: '#/gt' },
+      p: '單堂 NT$400 ・ 買10送2 NT$4,000', href: LIFF + 'GT-booking.html' },
     { id: 'pt', code: 'PT', t: '私人教練課', d: '一對一／一對二 · 與教練協調時間',
-      p: '體驗 NT$1,000 起 ・ 含 FMS 評估', href: '#/pt' },
+      p: '體驗 NT$1,000 起 ・ 含 FMS 評估', href: LIFF + 'PT-booking.html' },
     { id: 'pgt', code: 'PGT', t: '私人團體班', d: '三人以上成班 · 與教練詳談內容',
-      p: '單堂 NT$2,100 起 ・ 人數越多越省', href: '#/pgt' }
+      p: '單堂 NT$2,100 起 ・ 人數越多越省', href: LIFF + 'PGT-booking.html' }
   ];
   var cur = 'gt';
   var dd = FF.el('bk-dd'), btn = FF.el('bk-btn'), panel = FF.el('bk-panel'), go = FF.el('bk-go');
@@ -2708,7 +2742,8 @@ window.addEventListener('load', markScrollers);
     FF.el('bk-d').textContent = o.d;
     FF.el('bk-p').textContent = o.p;
     go.href = o.href;
-    go.innerHTML = '前往預約 ' + o.t + '<span class="ar">›</span>';
+    go.target = '_blank'; go.rel = 'noopener';
+    go.innerHTML = '在 LINE 裡預約 ' + o.t + '<span class="ar"></span>';
     FF.each(panel.querySelectorAll('.dd-opt'), function (el) {
       el.setAttribute('aria-selected', el.getAttribute('data-id') === cur ? 'true' : 'false');
     });
@@ -2738,16 +2773,21 @@ window.addEventListener('load', markScrollers);
 /* ═══════════════════════════════════════════════════════════
    GT 預約
    ═══════════════════════════════════════════════════════════ */
+/* ☢️ 2026-08-18：這一段原本是官網自己的「預約系統」——
+      localStorage 存預約、假的名額圖示、產生一段文字叫客人貼到 LINE。
+      拆到只剩【畫課表】。理由寫在上面 GT 區塊的註解裡。
+
+   ☢️ 拆就要拆乾淨：gt-mine / myOf / openForm / buildMsg / cancel /
+      renderMine / gtf-confirm / data-b / data-x / data-send / data-gttab
+      全部一起拿掉。「留著程式碼但不接上按鈕」不算拆乾淨 ——
+      下次有人看到 openForm 還在，會以為它只是壞了，然後把它修好。 */
 (function () {
   var D = FFDATA.days, LV = FFDATA.levels, CL = FFDATA.flatSchedule;
   var todayIdx = [6, 0, 1, 2, 3, 4, 5][new Date().getDay()];
-  var curDay = D[todayIdx].key, pending = null;
-  var mine = FF.load('gt-mine', []);
+  var curDay = D[todayIdx].key;
 
   function forDay(k) { return CL.filter(function (c) { return c.day === k; }); }
   function find(id) { return CL.filter(function (c) { return c.id === id; })[0]; }
-  function myOf(id) { return mine.filter(function (b) { return b.cid === id; })[0]; }
-  function gid() { return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
   function renderDays() {
     var w = FF.el('gt-days'); w.innerHTML = '';
@@ -2759,11 +2799,9 @@ window.addEventListener('load', markScrollers);
       w.appendChild(b);
     });
   }
-  function gauge(c, cap) {
-    var r = c / cap, cls = r >= 1 ? '' : (r >= .7 ? 'wn' : 'ok'), s = '';
-    for (var i = 0; i < cap; i++) s += '<div class="sg ' + (i < c ? cls : '') + '"></div>';
-    return s;
-  }
+  /* ☢️ gauge() 拿掉了。它畫的是「這台裝置上的紀錄」而不是真的名額 ——
+        對新訪客永遠是 0/10，客滿的課看起來也是空的。
+        真的名額在 LINE 的訂課頁（public_schedule 有 booked_count）。 */
   function renderList() {
     var el = FF.el('gt-list'), items = forDay(curDay);
     if (!items.length) {
@@ -2772,9 +2810,6 @@ window.addEventListener('load', markScrollers);
     }
     el.innerHTML = '';
     items.forEach(function (c) {
-      var m = myOf(c.id), t = m ? 1 : 0, btn;
-      if (m) btn = '<button class="btn btn-2" data-x="' + c.id + '">已記錄 · 取消</button>';
-      else btn = '<button class="btn btn-1" data-b="' + c.id + '">立即預約</button>';
       var d = document.createElement('div');
       d.className = 'cc ' + c.lv;
       d.innerHTML = '<div class="stripe"></div><div class="body">' +
@@ -2784,101 +2819,13 @@ window.addEventListener('load', markScrollers);
         '<span class="lv ' + c.lv + '">' + LV[c.lv] + '</span>' +
         '<span class="cco"><span class="cav">' + c.coach[0] + '</span>' + c.coach + ' 教練</span>' +
         '</div></div></div>' +
-        '<div class="gz">' + gauge(t, c.cap) + '</div>' +
-        '<div class="gzl"><span>上限 ' + c.cap + ' 人</span><span class="n">' + t + '/' + c.cap + '</span></div>' +
-        btn + '</div>';
+        '<div class="gzl"><span>上限 ' + c.cap + ' 人</span></div>' +
+        '</div>';
       el.appendChild(d);
     });
-    FF.each(el.querySelectorAll('[data-b]'), function (b) {
-      b.onclick = function () { openForm(b.getAttribute('data-b')); };
-    });
-    FF.each(el.querySelectorAll('[data-x]'), function (b) {
-      b.onclick = function () { cancel(b.getAttribute('data-x')); };
-    });
   }
-  function renderMine() {
-    var w = FF.el('gt-mylist');
-    if (!mine.length) {
-      w.innerHTML = '<div class="empty"><div class="h">尚無預約紀錄</div>到「本週課表」挑選喜歡的課程吧</div>';
-      return;
-    }
-    var ord = D.map(function (d) { return d.key; });
-    var s = mine.slice().sort(function (a, b) {
-      var x = ord.indexOf(a.day) - ord.indexOf(b.day); return x || a.time.localeCompare(b.time);
-    });
-    w.innerHTML = '';
-    s.forEach(function (b) {
-      var e = document.createElement('div');
-      e.className = 'mi';
-      e.innerHTML = '<div class="stripe"></div><div class="body"><div>' +
-        '<div class="dt">週' + b.dayZh + ' ' + b.time + '–' + b.end + '</div>' +
-        '<div class="nm">' + b.name + '</div>' +
-        '<div class="stt2">● 已記錄 · ' + b.coach + ' 教練</div></div>' +
-        '<div class="acts"><button class="btn btn-2" data-send="' + b.cid + '">重送 LINE</button>' +
-        '<button class="btn btn-3" data-y="' + b.cid + '">取消</button></div></div>';
-      w.appendChild(e);
-    });
-    FF.each(w.querySelectorAll('[data-y]'), function (b) {
-      b.onclick = function () { cancel(b.getAttribute('data-y')); };
-    });
-    FF.each(w.querySelectorAll('[data-send]'), function (b) {
-      b.onclick = function () {
-        var r = myOf(b.getAttribute('data-send'));
-        if (r) FF.showMsg(buildMsg(find(r.cid), r.who, r.phone));
-      };
-    });
-  }
-  function render() {
-    renderDays(); renderList(); renderMine();
-    FF.el('gt-count').textContent = mine.length ? '(' + mine.length + ')' : '';
-  }
+  function render() { renderDays(); renderList(); }
 
-  FF.each(document.querySelectorAll('[data-gttab]'), function (b) {
-    b.onclick = function () {
-      FF.each(document.querySelectorAll('[data-gttab]'), function (x) { x.classList.remove('on'); });
-      b.classList.add('on');
-      var t = b.getAttribute('data-gttab');
-      FF.el('gt-view-s').style.display = t === 's' ? 'block' : 'none';
-      FF.el('gt-view-m').style.display = t === 'm' ? 'block' : 'none';
-    };
-  });
-
-  function openForm(id) {
-    var c = find(id); pending = id;
-    FF.el('gtf-title').textContent = '預約課程';
-    FF.el('gtf-sub').textContent = '週' + c.dayZh + ' ' + c.time + '–' + c.end + '｜' +
-      c.name + '｜' + c.coach + ' 教練｜' + LV[c.lv];
-    FF.el('gtf-note').innerHTML =
-      '團體課單堂 <b>NT$400</b>；買 10 送 2 為 <b>NT$4,000</b>，等於上 12 堂、平均一堂 NT$333。<br>' +
-      '送出後我們會在 LINE 上與你確認名額，費用採現場現金或匯款。';
-    FF.el('gt-name').value = ''; FF.el('gt-phone').value = '';
-    FF.el('ov-form').classList.add('show');
-    setTimeout(function () { FF.el('gt-name').focus(); }, 120);
-  }
-  function buildMsg(c, name, phone) {
-    return '【團體課預約 GT】\n課程：' + c.name + '\n時間：週' + c.dayZh + ' ' + c.time + '–' + c.end +
-      '\n教練：' + c.coach + '\n難度：' + LV[c.lv] + '\n姓名：' + name + '\n手機：' + phone +
-      '\n（由官網預約系統產生）';
-  }
-  FF.el('gtf-confirm').onclick = function () {
-    var n = FF.el('gt-name').value.trim(), p = FF.el('gt-phone').value.trim();
-    if (!n || !p) { FF.toast('請填寫姓名與手機號碼', true); return; }
-    var c = find(pending);
-    if (!myOf(c.id)) {
-      mine.push({ cid: c.id, bid: gid(), day: c.day, dayZh: c.dayZh, time: c.time, end: c.end,
-                  name: c.name, coach: c.coach, who: n, phone: p });
-      FF.save('gt-mine', mine);
-    }
-    FF.el('ov-form').classList.remove('show');
-    render();
-    FF.showMsg(buildMsg(c, n, p));
-  };
-  function cancel(cid) {
-    mine = mine.filter(function (b) { return b.cid !== cid; });
-    FF.save('gt-mine', mine);
-    render();
-    FF.toast('已從紀錄中移除');
-  }
   render();
 })();
 
