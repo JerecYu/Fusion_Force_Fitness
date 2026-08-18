@@ -698,7 +698,18 @@
 
   function loadRoster(sid) {
     return DB.from('staff_roster')
-      .select('booking_id,session_id,booking_status,checked_at,checked_by_name,customer_id,customer_name,phone_tail,paid_by_customer_id,payer_name,balance,guest_count')
+      // ☢️ 2026-08-18 修掉一個從 8/17 上線那天就在的錯：
+      //    confirmed_at / confirmed_by 【漏掉沒 select】。
+      //    staff_roster 這兩欄一直都有（db/24 加的），是這裡沒跟他要。
+      //    PostgREST 只回你點名的欄位，沒點的就是 undefined ——
+      //    ☢️ 而 undefined 是 falsy，所以 if (p.confirmed_at) 永遠不成立：
+      //      · 「✓ 本人已確認」「✓ 教練確認的」永遠不會出現
+      //      · 「還有 N 位沒確認」永遠等於全部人數
+      //      · 按了「幫他確認」資料庫有寫進去，畫面卻還是「還沒確認」
+      //        —— 教練會以為沒成功，然後一直按
+      //    ☢️ 沒有人發現，是因為它【不會報錯】，而且到目前為止一次確認都還沒發生過
+      //       （資料庫裡 confirmed_at 有值的預約：0 筆）。
+      .select('booking_id,session_id,booking_status,checked_at,checked_by_name,customer_id,customer_name,phone_tail,paid_by_customer_id,payer_name,balance,guest_count,confirmed_at,confirmed_by')
       .eq('session_id', sid)
       .order('customer_name', { ascending: true })
       .then(function (r) {
@@ -934,11 +945,11 @@
     if (w === 'early') {
       return '<div class="qrnote">確認碼在<b>課前 15 分鐘</b>才能出示。</div>';
     }
-    // 過了 2 小時。☢️ 這時候還有沒確認的人，唯一的路是代確認 —— 要講出來。
+    // 過了 2 小時。☢️ 這時候還有沒確認的人，唯一的路是教練幫他確認 —— 要講出來。
     var live = ROSTER.filter(function (p) { return p.booking_status !== 'cancelled'; });
     var left = live.filter(function (p) { return !p.confirmed_at; }).length;
     return '<div class="qrnote">確認碼的時間已經過了（<b>課後 2 小時</b>內才能出示）。' +
-           (left ? '<br>還有 <b>' + left + '</b> 位沒確認，可以用下面每個人的「代確認」。' : '') +
+           (left ? '<br>還有 <b>' + left + '</b> 位沒確認，可以用下面每個人的「幫他確認」。' : '') +
            '</div>';
   }
 
@@ -991,11 +1002,11 @@
       //    staff = 教練說他來了（單方）—— 帳上可信度比較低，不能長一樣
       var byQr = p.confirmed_by !== 'staff';
       return '<div class="cf' + (byQr ? ' qr' : ' by') + '">' +
-             (byQr ? '✓　本人已確認' : '✓　教練代確認') + '</div>';
+             (byQr ? '✓　本人已確認' : '✓　教練確認的') + '</div>';
     }
     return '<div class="cf none">' +
       '<span>還沒確認</span>' +
-      '<button type="button" class="cfb" data-cf="' + id + '">代確認</button>' +
+      '<button type="button" class="cfb" data-cf="' + id + '">幫他確認</button>' +
       '</div>';
   }
 
@@ -1153,7 +1164,10 @@
       });
   }
 
-  // 教練代確認。☢️ 這【不會】扣課，也不會改出席狀態。
+  // 教練幫客人確認。☢️ 這【不會】扣課，也不會改出席狀態。
+  // ☢️ 2026-08-18 這顆鍵原本叫「代確認」（代替的代）。Jerec 把它看成「待確認」——
+  //    而它就貼在一個真的叫「還沒確認」的狀態旁邊，同音又形近。
+  //    ☢️ 老闆看錯，教練就會看錯。要靠解釋才懂的字不該留在按鈕上。
   function proxyConfirm(bookingId) {
     if (busy['cf' + bookingId]) return;
     busy['cf' + bookingId] = true;
@@ -1165,7 +1179,7 @@
       .then(function () {
         busy['cf' + bookingId] = false;
         renderRoster();
-        toast('已記成教練代確認');
+        toast('已記成：教練確認的');
       })
       .catch(function (e) {
         busy['cf' + bookingId] = false;
