@@ -156,7 +156,7 @@
 (function () {
   'use strict';
 
-  var DB = null, ME = null, DATA = null, BUSY = false, SHARES = [];
+  var DB = null, ME = null, DATA = null, BUSY = false, SHARES = [], PLANCHK = [];
   var elGate = document.getElementById('gate');
   var elMain = document.getElementById('main');
   var elWho  = document.getElementById('who');
@@ -309,6 +309,34 @@
     '</div>';
   }
 
+  /* 方案對帳（第 73 步）。
+     ☢️ 這一塊不看日期區間 —— 它問的是「方案結構有沒有壞掉」，
+        跟你在看哪一段期間無關。
+     每個人的「帳本餘額」必須等於「他所有方案的剩餘加總」。
+     只要有一個人對不上，方案那套就有問題，不能拿去算薪水。 */
+  function planCheckBlock() {
+    if (!PLANCHK.length) return '';
+    var bad = PLANCHK.filter(function (x) { return !x.ok; });
+    var pending = PLANCHK.reduce(function (a, x) { return a + Number(x.n_pending_basis || 0); }, 0);
+    var plans   = PLANCHK.reduce(function (a, x) { return a + Number(x.n_plans || 0); }, 0);
+    var head = bad.length
+      ? '<div class="sum bad"><div class="k">方案對帳</div><div class="v">☢️ ' + bad.length +
+        ' 個人對不上</div><div class="n">帳本餘額 ≠ 方案剩餘</div></div>'
+      : '<div class="sum big"><div class="k">方案對帳</div><div class="v">' + PLANCHK.length +
+        ' 人全部對得上</div><div class="n">帳本餘額＝方案剩餘</div></div>';
+    var rows = bad.map(function (x) {
+      return '<div class="row"><div class="r1"><span class="nm">' + esc(x.customer_name) + '</span>' +
+        '<span class="tl">' + esc(x.phone_tail) + '</span>' +
+        '<span class="amt">帳本 ' + x.ledger_balance + ' ／ 方案 ' + x.plan_balance + '</span></div></div>';
+    }).join('');
+    return '<div class="h">🧾 方案對帳</div><div class="card">' +
+      '<div class="sums">' + head + '</div>' + rows +
+      '<div class="note">共 ' + plans + ' 張方案，其中 <b>' + pending +
+      ' 張算不出每堂業績基礎</b>（搬遷進來的舊帳沒有實收金額與固定堂數）。' +
+      '☢️ 規則文件第三篇 4：資料不足時<b>維持待確認</b>，不可以拿現在的檯面價回推。' +
+      '<br>這一塊<b>不受上面的日期影響</b>。</div></div>';
+  }
+
   function downloadBlock() {
     var k = (DATA.credits || []).length;
     return '<div class="h">下載</div><div class="card">' +
@@ -330,7 +358,7 @@
     elMain.innerHTML =
       pickerBlock() +
       (DATA ? (sumsBlock() + '<div class="h">收款明細</div>' + rowsBlock() +
-               sharesBlock() + pendingBlock() + downloadBlock())
+               sharesBlock() + pendingBlock() + planCheckBlock() + downloadBlock())
             : '<div class="card"><div class="empty">讀取中…</div></div>');
     wire();
   }
@@ -375,6 +403,10 @@
     //    所以它失敗只會讓那一塊消失，不會讓 VC 對不了帳。
     Promise.all([
       DB.rpc('finance_report', { p_from: FROM, p_to: TO }),
+      DB.from('staff_plan_check')
+        .select('customer_name,phone_tail,product,ledger_balance,plan_balance,n_plans,n_pending_basis,ok')
+        .then(function (r) { return (!r.error && r.data) ? r.data : []; },
+              function () { return []; }),
       DB.from('staff_share_log')
         .select('session_date,start_time,title,payer_name,phone_tail,attendee_count,owner_present,shares,who,status')
         .gte('session_date', FROM).lte('session_date', TO)
@@ -384,7 +416,8 @@
     ])
       .then(function (all) {
         var r = all[0];
-        SHARES = all[1] || [];
+        PLANCHK = all[1] || [];
+        SHARES  = all[2] || [];
         BUSY = false;
         // ☢️ 錯誤和「沒有資料」在 supabase-js 裡都會讓你拿到空的東西，
         //    但意思完全相反 —— 一個是被擋下來，一個是這段期間沒收錢。（規則 14）
