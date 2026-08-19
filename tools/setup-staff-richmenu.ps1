@@ -36,20 +36,25 @@ $LIFF = 'https://liff.line.me/2011063116-QOxXN30h/'
 $IMG  = Join-Path $PSScriptRoot '..\assets\brand\fff-richmenu-staff.png'
 
 # ── 七位職員（櫃檯平板還沒開通，所以不在名單上）──────────────────
-# ☢️☢️ 這裡【必須填 Messaging API 那個 Provider 的編號】。
-#    我們資料庫裡那七個編號是 LINE Login channel（FUSIONFORCE）給的，
-#    而圖文選單屬於另一個 Provider —— 同一個人在兩邊是【不同的編號】。
-#    直接把舊的貼過來，七個全部都會 404。
-#    先跑 probe-line-ids.ps1 把正確的編號找出來，再填進這裡。
-$STAFF = @(
-  # @{ name = 'Jerec';    id = 'U...' },
-  # @{ name = 'VC';       id = 'U...' },
-  # @{ name = 'Peter';    id = 'U...' },
-  # @{ name = 'Jessica';  id = 'U...' },
-  # @{ name = 'Johnson';  id = 'U...' },
-  # @{ name = '簡基城';   id = 'U...' },
-  # @{ name = '林智謙';   id = 'U...' }
-)
+# ── 職員名單：從 tools\line-staff-ids.txt 讀，不寫在這支程式裡 ──────
+# ☢️ 為什麼分開放：這個 repo 是公開的（GitHub Pages 從它發布），
+#    使用者編號 commit 上去就永遠留在公開紀錄裡。
+#    那個 txt 已經在 .gitignore 裡，不會被推上去。
+#
+# ☢️ 檔案裡的編號必須是【Messaging API 那個 Provider】給的。
+#    資料庫 employees 裡那組是 LINE Login 給的，兩邊【不能互換】——
+#    換了就是全部 404，而錯誤訊息不會告訴你原因。
+$IDS = Join-Path $PSScriptRoot 'line-staff-ids.txt'
+$STAFF = @()
+if (Test-Path $IDS) {
+  foreach ($line in (Get-Content $IDS -Encoding UTF8)) {
+    $t = $line.Trim()
+    if ($t -eq '' -or $t.StartsWith('#')) { continue }
+    $parts = $t.Split(',')
+    if ($parts.Count -lt 2) { continue }
+    $STAFF += @{ name = $parts[0].Trim(); id = $parts[1].Trim() }
+  }
+}
 
 # ── 六格的座標 ───────────────────────────────────────────────────
 # ☢️ 2500 除以 3 除不盡（833.33）。中間那格給 834，總和才會剛好是 2500。
@@ -84,11 +89,12 @@ Write-Host '── 職員專屬圖文選單 ────────────
 Write-Host ''
 
 if ($STAFF.Count -eq 0) {
-  Write-Host '☢️ 職員名單是空的。' -ForegroundColor Red
-  Write-Host '   先跑 .\tools\probe-line-ids.ps1 找出七個人的編號，'
-  Write-Host '   把它們填進這支程式上面的 $STAFF，再回來執行。'
+  Write-Host '☢️ 讀不到職員名單。' -ForegroundColor Red
+  Write-Host "   應該要有這個檔案：$IDS"
+  Write-Host '   格式是每行「名字,編號」。找 Claude 要一份。'
   exit 1
 }
+Write-Host ("名單：{0} 位 —— {1}" -f $STAFF.Count, (($STAFF | ForEach-Object { $_.name }) -join '、'))
 
 if (-not (Test-Path $IMG)) {
   Write-Host "☢️ 找不到底圖：$IMG" -ForegroundColor Red
