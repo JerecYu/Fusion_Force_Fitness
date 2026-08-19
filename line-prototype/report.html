@@ -156,7 +156,7 @@
 (function () {
   'use strict';
 
-  var DB = null, ME = null, DATA = null, BUSY = false;
+  var DB = null, ME = null, DATA = null, BUSY = false, SHARES = [];
   var elGate = document.getElementById('gate');
   var elMain = document.getElementById('main');
   var elWho  = document.getElementById('who');
@@ -285,12 +285,37 @@
     '</div>';
   }
 
+  /* 分享課程（第 70 步）。
+     ☢️ 這一塊【不是收錢的紀錄】—— 分享出去的堂數是從分享人的餘額扣的，
+        當下沒有任何金流。它放在這裡是為了讓 VC 對帳時看得到
+        「這幾堂課的人，是誰的堂數在付」。 */
+  function sharesBlock() {
+    if (!SHARES.length) return '';
+    var total = SHARES.reduce(function (a, x) { return a + Number(x.shares || 0); }, 0);
+    return '<div class="h">🤝 分享課程（' + SHARES.length + ' 筆・共 ' + total + ' 堂）</div>' +
+      '<div class="card">' + SHARES.map(function (x) {
+        return '<div class="row">' +
+          '<div class="r1"><span class="nm">' + esc(x.payer_name) + '</span>' +
+            '<span class="tl">' + esc(x.phone_tail) + '</span>' +
+            '<span class="amt">' + x.shares + ' 堂</span></div>' +
+          '<div class="r2">' + esc(x.session_date) + ' ' +
+            esc(String(x.start_time || '').slice(0, 5)) + '　·　' + esc(x.title || '') +
+            '　·　' + (x.owner_present ? '本人也上' : '<b>本人沒上</b>') +
+            '　·　' + esc(x.who || '未具名') + '</div>' +
+        '</div>';
+      }).join('') +
+      '<div class="note">每 12 堂可以分享 2 堂。這裡列的是<b>用掉的分享額度</b>，' +
+      '不是收到的錢。<br>「未具名」代表教練還沒填線索 —— 可以在點名頁補。</div>' +
+    '</div>';
+  }
+
   function downloadBlock() {
     var k = (DATA.credits || []).length;
     return '<div class="h">下載</div><div class="card">' +
-      '<button type="button" class="btn" id="dl">下載 Excel（4 個工作表）</button>' +
+      '<button type="button" class="btn" id="dl">下載 Excel（5 個工作表）</button>' +
       '<div class="note">收款明細 ' + (DATA.rows||[]).length + ' 筆　·　每日合計 ' +
-        (DATA.days||[]).length + ' 天　·　待入帳 ' + (DATA.pending||[]).length + ' 筆　·　堂數異動 ' + k + ' 筆' +
+        (DATA.days||[]).length + ' 天　·　待入帳 ' + (DATA.pending||[]).length + ' 筆　·　堂數異動 ' + k +
+        ' 筆　·　分享課程 ' + SHARES.length + ' 筆' +
         '<br>堂數異動（上課扣堂、調整）只放在 Excel 裡，畫面上不列 —— 那部分通常有上百筆。' +
         '<br>資料時間：' + esc(DATA.made_at) + '</div>' +
       (window.FFF_AUTH.canLogout
@@ -305,7 +330,7 @@
     elMain.innerHTML =
       pickerBlock() +
       (DATA ? (sumsBlock() + '<div class="h">收款明細</div>' + rowsBlock() +
-               pendingBlock() + downloadBlock())
+               sharesBlock() + pendingBlock() + downloadBlock())
             : '<div class="card"><div class="empty">讀取中…</div></div>');
     wire();
   }
@@ -346,8 +371,20 @@
     if (BUSY) return;
     BUSY = true;
     render();
-    DB.rpc('finance_report', { p_from: FROM, p_to: TO })
-      .then(function (r) {
+    // ☢️ 分享紀錄讀不到【不該擋住整份報表】—— 錢的部分跟分享是兩件事。
+    //    所以它失敗只會讓那一塊消失，不會讓 VC 對不了帳。
+    Promise.all([
+      DB.rpc('finance_report', { p_from: FROM, p_to: TO }),
+      DB.from('staff_share_log')
+        .select('session_date,start_time,title,payer_name,phone_tail,attendee_count,owner_present,shares,who,status')
+        .gte('session_date', FROM).lte('session_date', TO)
+        .order('session_date', { ascending: false })
+        .then(function (r) { return (!r.error && r.data) ? r.data : []; },
+              function () { return []; })
+    ])
+      .then(function (all) {
+        var r = all[0];
+        SHARES = all[1] || [];
         BUSY = false;
         // ☢️ 錯誤和「沒有資料」在 supabase-js 裡都會讓你拿到空的東西，
         //    但意思完全相反 —— 一個是被擋下來，一個是這段期間沒收錢。（規則 14）
@@ -419,15 +456,25 @@
           rows:(DATA.credits||[]).map(function (x) {
             return [x.on_date, x.on_time, x.customer_name, x.phone_tail, x.kind,
                     x.credits, x.session_title, x.session_when, x.coach_name, x.by_name, x.note];
+          }) },
+        { name:'分享課程',
+          cols:[{t:'上課日',w:12},{t:'時間',w:7},{t:'課程',w:16},
+                {t:'分享人',w:15},{t:'末三碼',w:8},{t:'現場人數',w:10,num:true},
+                {t:'本人有上',w:9},{t:'分享堂數',w:10,num:true},{t:'被分享人',w:24},{t:'狀態',w:9}],
+          rows:(SHARES||[]).map(function (x) {
+            return [x.session_date, String(x.start_time || '').slice(0, 5), x.title,
+                    x.payer_name, x.phone_tail, x.attendee_count,
+                    x.owner_present ? '是' : '否', x.shares, x.who,
+                    x.status === 'attended' ? '已出席' : '已報名'];
           }) }
       ];
 
       var blob = window.FFF_XLSX.build(sheets);
       var ok = window.FFF_XLSX.save(blob, fileName());
-      btn.disabled = false; btn.textContent = '下載 Excel（4 個工作表）';
+      btn.disabled = false; btn.textContent = '下載 Excel（5 個工作表）';
       toast(ok ? '已產生：' + fileName() : '存檔失敗，請改用電腦試試', !ok);
     } catch (e) {
-      btn.disabled = false; btn.textContent = '下載 Excel（4 個工作表）';
+      btn.disabled = false; btn.textContent = '下載 Excel（5 個工作表）';
       toast('產生失敗：' + (e && e.message || e), true);
     }
   }

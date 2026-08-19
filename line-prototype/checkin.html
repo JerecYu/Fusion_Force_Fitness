@@ -149,6 +149,29 @@
   .gst.has{border-color:var(--blue);border-style:solid;background:#fff}
   .gst.has .lb{color:var(--blue)}
 
+  /* ── 分享課程（第 70 步）──
+     ☢️ 只有「這一筆 2 人以上」才會出現。一個人的預約完全看不到這一塊，
+        129 筆單人預約的畫面一個字都沒變。 */
+  .shr{margin-top:-1px;padding:9px;border:1px solid var(--blue);border-top:0;
+    border-radius:0 0 3px 3px;background:#fff}
+  .shr .row{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+  .shr .row:last-child{margin-bottom:0}
+  .shr label{font-size:12.5px;font-weight:700;color:var(--ink);
+    display:flex;align-items:center;gap:6px;cursor:pointer}
+  .shr input[type=checkbox]{width:17px;height:17px;accent-color:var(--blue)}
+  .shr .qt{font-size:11.5px;color:var(--dim);font-weight:700;
+    font-variant-numeric:tabular-nums;margin-left:auto}
+  .shr .qt b{color:var(--blue)}
+  .shr .qt.out b{color:var(--err)}
+  .shr .sq{font-size:11.5px;color:var(--dim);font-weight:700;min-width:44px}
+  .shr input[type=text]{flex:1;min-width:0;font-family:inherit;font-size:13px;
+    padding:6px 8px;border:1px solid var(--line);border-radius:3px;background:var(--surface2)}
+  .shr input[type=text]:focus{outline:0;border-color:var(--blue);background:#fff}
+  .shr .save{font-family:inherit;font-size:12px;font-weight:800;padding:6px 13px;
+    border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:3px;cursor:pointer}
+  .shr .save:disabled{opacity:.4;cursor:default}
+  .shr .tip{font-size:11px;color:var(--dim);line-height:1.5}
+
   /* ── 加人 ── */
   .add{background:var(--surface);border:1px dashed var(--line);border-radius:3px;
     padding:14px;margin-top:14px}
@@ -782,7 +805,7 @@
       //        —— 教練會以為沒成功，然後一直按
       //    ☢️ 沒有人發現，是因為它【不會報錯】，而且到目前為止一次確認都還沒發生過
       //       （資料庫裡 confirmed_at 有值的預約：0 筆）。
-      .select('booking_id,session_id,booking_status,checked_at,checked_by_name,customer_id,customer_name,phone_tail,paid_by_customer_id,payer_name,balance,attendee_count,confirmed_at,confirmed_by')
+      .select('booking_id,session_id,booking_status,checked_at,checked_by_name,customer_id,customer_name,phone_tail,paid_by_customer_id,payer_name,balance,attendee_count,owner_present,share_quota,share_used,share_labels,confirmed_at,confirmed_by')
       .eq('session_id', sid)
       .order('customer_name', { ascending: true })
       .then(function (r) {
@@ -1165,6 +1188,56 @@
       '<span class="n">' + n + ' 人</span>' +
       '<button type="button" data-g="' + id + '" data-n="' + (n + 1) + '"' +
         (lock || n >= 6 ? ' disabled' : '') + '>＋</button>' +
+    '</div>' + shareBox(p, lock);
+  }
+
+  /* 分享課程（第 70 步）。
+     ☢️ 只有「這一筆 2 人以上」或「本人沒上」才出現 ——
+        單人預約看不到這一塊，畫面跟以前一模一樣。
+
+     ☢️ 為什麼要問「本人有沒有上」：
+        attendee_count 是【現場實際幾個人】，它分不出
+        「本人＋1 位朋友」（用掉 1 個分享額度）和
+        「兩個兒子來、媽媽沒來」（用掉 2 個）。
+        差別就在本人算不算在這 N 個人裡面 —— 而那決定額度扣幾個。 */
+  function shareBox(p, lock) {
+    var n = Math.max(1, Number(p.attendee_count || 1));
+    var own = p.owner_present !== false;
+    if (n <= 1 && own) return '';
+
+    var id    = esc(p.booking_id);
+    var share = Math.max(n - (own ? 1 : 0), 0);
+    var quota = Number(p.share_quota || 0);
+    var used  = Number(p.share_used || 0);
+    var left  = quota - used;
+
+    var labels = [];
+    (Array.isArray(p.share_labels) ? p.share_labels : []).forEach(function (x) {
+      if (x && x.seq) labels[x.seq - 1] = x.label || '';
+    });
+
+    var rows = '';
+    for (var i = 0; i < share; i++) {
+      rows += '<div class="row">' +
+        '<span class="sq">第 ' + (i + 1) + ' 位</span>' +
+        '<input type="text" data-sl="' + id + '" data-i="' + i + '" maxlength="20" ' +
+          'placeholder="例：大兒子（可以不填）" value="' + esc(labels[i] || '') + '"' +
+          (lock ? ' disabled' : '') + '>' +
+      '</div>';
+    }
+
+    return '<div class="shr">' +
+      '<div class="row">' +
+        '<label><input type="checkbox" data-op="' + id + '"' + (own ? ' checked' : '') +
+          (lock ? ' disabled' : '') + '>本人' +
+          (p.customer_name ? '（' + esc(p.customer_name) + '）' : '') + '也有上這堂</label>' +
+        '<span class="qt' + (left <= 0 ? ' out' : '') + '">分享額度 ' + quota +
+          '　已用 <b>' + used + '</b>　剩 ' + left + '</span>' +
+      '</div>' +
+      rows +
+      '<div class="row"><button type="button" class="save" data-sv="' + id + '"' +
+        (lock ? ' disabled' : '') + '>儲存線索</button>' +
+        '<span class="tip">姓名手機可以不用留，寫「大兒子」這種線索就夠了。</span></div>' +
     '</div>';
   }
 
@@ -1176,8 +1249,21 @@
     });
     Array.prototype.forEach.call(elRoster.querySelectorAll('[data-g]'), function (b) {
       b.onclick = function () {
-        setAttendees(b.getAttribute('data-g'), Number(b.getAttribute('data-n')));
+        var p = findInRoster(b.getAttribute('data-g'));
+        setAttendees(b.getAttribute('data-g'), Number(b.getAttribute('data-n')),
+                     !p || p.owner_present !== false);
       };
+    });
+    // 本人有沒有上 —— 改這個等於改分享額度，所以走同一個 RPC。
+    Array.prototype.forEach.call(elRoster.querySelectorAll('[data-op]'), function (cb) {
+      cb.onchange = function () {
+        var idb = cb.getAttribute('data-op');
+        var p = findInRoster(idb);
+        setAttendees(idb, Math.max(1, Number((p && p.attendee_count) || 1)), cb.checked);
+      };
+    });
+    Array.prototype.forEach.call(elRoster.querySelectorAll('[data-sv]'), function (b) {
+      b.onclick = function () { saveLabels(b.getAttribute('data-sv')); };
     });
     Array.prototype.forEach.call(elRoster.querySelectorAll('[data-cf]'), function (b) {
       b.onclick = function () { proxyConfirm(b.getAttribute('data-cf')); };
@@ -1359,7 +1445,7 @@
   /* ══ 點名 ══════════════════════════════════════════════════════ */
   // 改「這一筆共幾人」。☢️ 跟 mark() 走同一套流程：鎖住 → 呼叫 → 重讀名單 → 重畫。
   //    重讀是必要的 —— set_attendees 會順手重跑 check_in()，餘額會變。
-  function setAttendees(bookingId, n) {
+  function setAttendees(bookingId, n, ownerPresent) {
     if (busy[bookingId]) return;
     if (n < 1 || n > 6) return;
     busy[bookingId] = true;
@@ -1368,14 +1454,52 @@
     if (card) Array.prototype.forEach.call(card.querySelectorAll('button'),
       function (b) { b.disabled = true; });
 
-    DB.rpc('set_attendees', { p_booking: bookingId, p_n: n })
+    DB.rpc('set_attendees', { p_booking: bookingId, p_n: n,
+                              p_owner_present: ownerPresent !== false })
       .then(function (r) {
         if (r.error) throw new Error(r.error.message);
+        // ☢️ 額度不夠【不是錯誤】，是規則擋下來 ——
+        //    所以它走 ok:false 而不是丟例外。丟例外的話畫面只會出現一串
+        //    看不懂的英文，而教練需要的是「那我最多能填幾人」。
+        if (r.data && r.data.ok === false) throw new Error(r.data.msg || '改不了');
         return loadRoster(CUR.session_id).then(function () {
           return refreshOneSession(CUR.session_id);
         });
       })
       .then(function () { busy[bookingId] = false; renderRoster(); })
+      .catch(function (e) {
+        busy[bookingId] = false;
+        toast(String(e.message || e), true);
+        renderRoster();
+      });
+  }
+
+  // 存被分享人的線索。
+  // ☢️ 這一支【不動任何堂數】，所以不用重跑 check_in、也不用重讀餘額。
+  //    存完只把名單重讀一次，讓畫面跟資料庫一致。
+  function saveLabels(bookingId) {
+    if (busy[bookingId]) return;
+    var box = elRoster.querySelector('.p[data-b="' + bookingId + '"]');
+    if (!box) return;
+    var inputs = box.querySelectorAll('[data-sl="' + bookingId + '"]');
+    var labels = [];
+    for (var i = 0; i < inputs.length; i++) {
+      labels[Number(inputs[i].getAttribute('data-i'))] = inputs[i].value.trim();
+    }
+    for (var j = 0; j < labels.length; j++) if (labels[j] === undefined) labels[j] = '';
+
+    busy[bookingId] = true;
+    var btn = box.querySelector('[data-sv="' + bookingId + '"]');
+    if (btn) { btn.disabled = true; btn.textContent = '存…'; }
+
+    DB.rpc('set_share_labels', { p_booking: bookingId, p_labels: labels })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        return loadRoster(CUR.session_id);
+      })
+      .then(function () {
+        busy[bookingId] = false; renderRoster(); toast('線索存好了');
+      })
       .catch(function (e) {
         busy[bookingId] = false;
         toast(String(e.message || e), true);
