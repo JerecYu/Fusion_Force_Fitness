@@ -32,10 +32,47 @@ Write-Host '── 探測 LINE Messaging API ───────────�
 Write-Host "   Channel ID：$CHANNEL_ID"
 Write-Host ''
 
-$sec = Read-Host '貼上 Channel secret（OA Manager → 設定 → Messaging API）' -AsSecureString
-$SECRET = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-            [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
-if (-not $SECRET) { Write-Host '☢️ 沒有輸入，停止。' -ForegroundColor Red; exit 1 }
+# ── 拿 Channel secret ────────────────────────────────────────────
+# ☢️ 2026-08-19：本來用 Read-Host -AsSecureString 請人貼上，結果只吃到一個字元。
+#    原因是【傳統 PowerShell 主控台的 Ctrl+V 不是貼上】——
+#    它會塞進一個控制字元，畫面上就是一個星號，然後 API 回 400。
+#    ☢️ 而那個 400 的訊息長得像「secret 貼錯了」，
+#       所以人會一直去檢查 secret，問題根本不在 secret。
+#
+#    改成【直接讀剪貼簿】：在瀏覽器按複製，回來按 Enter，不用貼。
+#    ☢️ 而且先驗格式（32 個十六進位字元）—— 這一關會把上面那種錯
+#       在送出去之前就擋下來，而不是讓 LINE 回一個看不懂的 400。
+function Get-ChannelSecret {
+  Write-Host ''
+  Write-Host '請先到 OA Manager → 設定 → Messaging API，'
+  Write-Host '按 Channel secret 旁邊的【複製】鈕把它複製起來。'
+  Write-Host ''
+  Read-Host '複製好了就按 Enter（不用貼上，我自己讀剪貼簿）' | Out-Null
+
+  $s = ''
+  try { $s = (Get-Clipboard -Raw) } catch { $s = '' }
+  if ($null -eq $s) { $s = '' }
+  $s = ($s -replace '\s', '')
+
+  if ($s -notmatch '^[0-9a-fA-F]{32}$') {
+    Write-Host ''
+    Write-Host '☢️ 剪貼簿裡的東西看起來不是 Channel secret。' -ForegroundColor Red
+    if ($s.Length -gt 12) {
+      Write-Host ("   讀到 {0} 個字元：{1}……{2}" -f $s.Length, $s.Substring(0,4), $s.Substring($s.Length-4))
+    } else {
+      Write-Host ("   讀到 {0} 個字元：{1}" -f $s.Length, $s)
+    }
+    Write-Host '   Channel secret 是【32 個】英數字（0-9 a-f）。'
+    Write-Host '   請重新複製一次再執行這支程式。'
+    return $null
+  }
+
+  Write-Host ("✓ 讀到 secret：{0}……{1}（{2} 個字元）" -f $s.Substring(0,4), $s.Substring($s.Length-4), $s.Length) -ForegroundColor Green
+  return $s
+}
+
+$SECRET = Get-ChannelSecret
+if (-not $SECRET) { exit 1 }
 
 # ── ① 換 token ───────────────────────────────────────────────────
 Write-Host ''
