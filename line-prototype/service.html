@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>服務登記 · FFF</title>
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  服務登記 —— 第 71 步 · 2026-08-19
+
+  網址：https://liff.line.me/2011063116-QOxXN30h/service.html
+
+  這一頁登記「已經發生的」PT／PGT／外派／諧動活動／企業包班。
+  規則文件第六篇 4 的「共用結算紀錄」，就是這一頁在填。
+
+  ☢️ GT 不在這裡。GT 走點名核銷（checkin.html），已經在線上跑了。
+
+  ☢️ 畫面上的試算【只是給人看的】。真正的金額由資料庫的 add_service()
+     算完回傳 —— 送出後看到的數字才是存進去的那個。
+     前端算好再送過來的話，改一下網頁原始碼就能塞任何金額進帳。
+  ═══════════════════════════════════════════════════════════════════
+-->
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --ink:#0E2A3B; --ink2:#1C4257; --blue:#2E86AB; --teal:#6FBAC9;
+    --bg:#F4F8FA; --surface:#FFF; --surface2:#EDF4F7;
+    --line:#DCE8EE; --dim:#587589; --faint:#93AEBD;
+    --ok:#2F6B54; --ok-bg:#E4F0EA; --ok-line:#B9D8C8;
+    --warn:#B4661F; --warn-bg:#FBEFE2; --warn-line:#EBC4A0;
+    --err:#A4211A; --err-bg:#FBE9E7; --err-line:#F3C9C5;
+  }
+  body{background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:44px}
+
+  .top{background:var(--ink);color:#fff;padding:13px;display:flex;align-items:center;gap:6px}
+  .who{font-size:16px;font-weight:800;letter-spacing:.03em}
+  .sub{font-size:11px;color:#A9C6D4;margin-top:1px}
+  .sp{flex:1}
+  .who,.sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ar{display:inline-block;flex:0 0 auto;width:9px;height:9px;
+    border-right:2.6px solid currentColor;border-top:2.6px solid currentColor;
+    border-radius:1.5px;transform:rotate(45deg);font-size:0;line-height:0;
+    vertical-align:middle;margin:0 3px 1px 5px}
+  .iconbtn{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:9px;
+    padding:9px 10px;font-family:inherit;font-size:12.5px;font-weight:700;white-space:nowrap;
+    text-decoration:none;display:inline-flex;align-items:center;flex:0 0 auto;
+    cursor:pointer;line-height:1.5}
+  .iconbtn:active{background:rgba(255,255,255,.25)}
+
+  .wrap{max-width:520px;margin:0 auto;padding:14px 14px 0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:13px;margin-bottom:12px}
+  .h{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--faint);margin:16px 3px 8px}
+
+  /* ── 服務類型 ── */
+  .types{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .ty{background:var(--surface2);border:1px solid var(--line);border-radius:11px;
+    padding:10px 11px;font-family:inherit;text-align:left;cursor:pointer;color:var(--ink)}
+  .ty .t{font-size:14px;font-weight:800}
+  .ty .d{font-size:11px;color:var(--dim);margin-top:1px}
+  .ty.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .ty.on .d{color:#A9C6D4}
+
+  /* ── 表單 ── */
+  .f{margin-bottom:11px}
+  .f:last-child{margin-bottom:0}
+  .f label{display:block;font-size:11.5px;font-weight:800;color:var(--dim);
+    letter-spacing:.04em;margin-bottom:4px}
+  .f input,.f select,.f textarea{width:100%;font-family:inherit;font-size:14.5px;color:var(--ink);
+    background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:9px 10px}
+  .f input:focus,.f select:focus,.f textarea:focus{outline:0;border-color:var(--blue);background:#fff}
+  .f textarea{min-height:60px;resize:vertical}
+  .f .hint{font-size:11px;color:var(--faint);margin-top:3px;line-height:1.5}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .pills{display:flex;gap:6px;flex-wrap:wrap}
+  .pill{background:var(--surface2);border:1px solid var(--line);color:var(--ink2);
+    border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;
+    font-family:inherit;cursor:pointer}
+  .pill.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .pill:disabled{opacity:.4;cursor:default}
+
+  /* ── 客人搜尋 ── */
+  .hit{border-top:1px solid var(--line);padding:8px 2px;cursor:pointer;display:flex;
+    align-items:baseline;gap:7px}
+  .hit:first-child{border-top:0}
+  .hit .nm{font-size:14px;font-weight:800}
+  .hit .tl{font-size:11.5px;color:var(--faint);
+    font-family:"SFMono-Regular",Menlo,Consolas,monospace}
+  .hit .bl{margin-left:auto;font-size:11.5px;color:var(--dim)}
+  .picked{background:var(--ok-bg);border:1px solid var(--ok-line);border-radius:9px;
+    padding:9px 10px;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:800}
+  .picked button{margin-left:auto;background:none;border:0;color:var(--dim);
+    font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline}
+
+  /* ── 試算 ── */
+  .calc{background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:11px}
+  .cl{display:flex;font-size:13px;padding:2px 0}
+  .cl .k{color:var(--dim)}
+  .cl .v{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+  .cl.tot{border-top:1px solid var(--line);margin-top:5px;padding-top:6px;font-size:15px}
+  .cl.tot .v{font-weight:800;color:var(--ok)}
+  .cl.perf .v{color:var(--blue)}
+
+  .btn{width:100%;background:var(--ink);color:#fff;border:0;border-radius:11px;
+    padding:14px;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:4px}
+  .btn:active{background:var(--ink2)}
+  .btn:disabled{opacity:.5}
+  .btn.ghost{background:none;color:var(--dim);border:1px solid var(--line);
+    font-size:13.5px;padding:11px;margin-top:10px}
+
+  /* ── 清單 ── */
+  .row{border-top:1px solid var(--line);padding:9px 2px}
+  .row:first-child{border-top:0}
+  .r1{display:flex;align-items:baseline;gap:7px}
+  .nm{font-size:14px;font-weight:800}
+  .amt{margin-left:auto;font-size:14.5px;font-weight:800;font-variant-numeric:tabular-nums}
+  .r2{font-size:11.5px;color:var(--dim);margin-top:1px}
+  .r3{margin-top:6px;display:flex;gap:6px}
+  .r3 button{font-family:inherit;font-size:12px;font-weight:800;padding:6px 12px;
+    border-radius:8px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink2)}
+  .r3 button.go{background:var(--ok);border-color:var(--ok);color:#fff}
+  .row.void{opacity:.55}
+  .row.void .amt{text-decoration:line-through;color:var(--err)}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;
+    border:1px solid var(--line);background:var(--surface2);color:var(--ink2);margin-left:5px}
+  .tag.fin{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok)}
+  .tag.pen{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
+
+  .note{font-size:11.5px;color:var(--dim);margin-top:8px}
+  .empty{text-align:center;color:var(--faint);font-size:13px;padding:16px 4px}
+  .gate{padding:56px 20px;text-align:center}
+  .gate .g1{font-size:17px;font-weight:800;color:var(--ink)}
+  .gate.err .g1{color:var(--err)}
+  .gate .g2{font-size:12.5px;color:var(--dim);margin-top:6px}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:11px 17px;border-radius:11px;
+    font-size:13px;font-weight:600;max-width:88%;text-align:center;z-index:50}
+  .toast.bad{background:var(--err)}
+  [hidden]{display:none !important}
+
+  /* ══ 桌機 ══ 跟 checkin.html 同一套（第 59 步）══ */
+  @media (min-width:1000px){
+    :root{--col:640px}
+    .top,.wrap{zoom:1.22}
+    .wrap{max-width:var(--col)}
+    .top{padding-inline:max(13px, calc((100% - var(--col)) / 2 + 14px))}
+  }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div>
+    <div class="who" id="who">服務登記</div>
+    <div class="sub" id="whoSub">辨識中…</div>
+  </div>
+  <div class="sp"></div>
+  <a class="iconbtn" href="staff-tools.html">後台<span class="ar"></span></a>
+  <button type="button" class="iconbtn" id="reload">重新整理</button>
+</div>
+
+<div class="wrap">
+  <div id="gate" class="gate"><div class="g1">辨識中…</div><div class="g2">跟資料庫確認你是誰</div></div>
+  <div id="main" hidden></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="liff-auth.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  var DB = null, ME = null, BUSY = false;
+  var PRICES = { PT: [], PGT: [] };
+  var COACHES = [], LIST = [];
+  var elGate = document.getElementById('gate');
+  var elMain = document.getElementById('main');
+  var elWho  = document.getElementById('who');
+  var elSub  = document.getElementById('whoSub');
+
+  /* 表單狀態。☢️ 只放「人填的原始輸入」，不放算出來的金額 ——
+     金額由資料庫算，前端算的那份只是給人看的。 */
+  var F = {
+    type: 'PT', customer: null, headcount: 1, product_code: '',
+    charge: 'single', attended: '', hours: '', area: '',
+    company: '', tax_id: '', booked_hours: '', approved_headcount: '',
+    scope: '', transport: '', approver_id: '', approved_on: '',
+    amount: '', note: '', coaches: []
+  };
+
+  var TYPES = [
+    { k:'PT',      t:'私人教練課',   d:'PT · 1~2 人' },
+    { k:'PT_OUT',  t:'PT 外派',      d:'課程費 ＋ 交通 500' },
+    { k:'PGT',     t:'私人團體班',   d:'PGT · 3~6 人' },
+    { k:'PGT_OUT', t:'PGT 外派',     d:'課程費 ＋ 交通 500' },
+    { k:'EVENT',   t:'諧動外派活動', d:'鐘點制 · 最多 2 位教練' },
+    { k:'CORP',    t:'企業包班',     d:'人工核定整案總價' }
+  ];
+  function typeName(k) {
+    for (var i = 0; i < TYPES.length; i++) if (TYPES[i].k === k) return TYPES[i].t;
+    return k;
+  }
+  var isPT   = function (k) { return k === 'PT' || k === 'PT_OUT'; };
+  var isPGT  = function (k) { return k === 'PGT' || k === 'PGT_OUT'; };
+  var isOut  = function (k) { return k === 'PT_OUT' || k === 'PGT_OUT'; };
+  var isCourse = function (k) { return isPT(k) || isPGT(k); };
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function money(n) { return 'NT$' + Number(n || 0).toLocaleString('en-US'); }
+  function gate(cls, t1, t2) {
+    elGate.className = 'gate' + (cls ? ' ' + cls : '');
+    elGate.innerHTML = '<div class="g1">' + esc(t1) + '</div><div class="g2">' + esc(t2||'') + '</div>';
+    elGate.hidden = false; elMain.hidden = true;
+  }
+  var tT;
+  function toast(msg, bad) {
+    var d = document.querySelector('.toast');
+    if (d) d.remove();
+    d = document.createElement('div');
+    d.className = 'toast' + (bad ? ' bad' : '');
+    d.textContent = msg;
+    document.body.appendChild(d);
+    clearTimeout(tT);
+    tT = setTimeout(function () { d.remove(); }, bad ? 5200 : 2600);
+  }
+
+  // 台北時間的「現在」，塞進 datetime-local
+  function nowLocal() {
+    var s = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Taipei' });
+    return s.slice(0, 16).replace(' ', 'T');
+  }
+
+  /* ══ 試算 ══════════════════════════════════════════════════════
+     ☢️ 這裡算的數字【只是給人看的】，送出後以資料庫回傳為準。
+        兩邊的公式必須一致 —— 不一致的話畫面會騙人。 */
+  function priceOf(code) {
+    var all = PRICES.PT.concat(PRICES.PGT);
+    for (var i = 0; i < all.length; i++) if (all[i].code === code) return all[i].price;
+    return 0;
+  }
+  function calc() {
+    var t = F.type, rev = 0, travel = 0, perf = 0, hours = null;
+    if (isCourse(t)) {
+      rev = F.charge === 'free' ? 0
+          : (F.product_code ? priceOf(F.product_code) : Number(F.amount || 0));
+      travel = isOut(t) ? 500 : 0;
+      perf = rev + travel;
+    } else if (t === 'EVENT') {
+      var raw = Number(F.hours || 0);
+      hours = raw > 0 ? Math.ceil(raw) : 0;            // 無條件進位
+      var n = F.coaches.length || 0;
+      rev = (n * hours * 600) + (hours * 600);
+      travel = hours > 0 ? 500 : 0;
+      perf = 0;                                        // 活動走鐘點費
+    } else {
+      rev = Number(F.amount || 0);
+      perf = rev;
+    }
+    return { rev: rev, travel: travel, perf: perf, hours: hours, total: rev + travel,
+             coachPay: t === 'EVENT' ? (hours || 0) * 600 : null };
+  }
+
+  /* ══ 畫面 ══════════════════════════════════════════════════════ */
+  function typeBlock() {
+    return '<div class="h">這是哪一種服務</div><div class="card"><div class="types">' +
+      TYPES.map(function (x) {
+        return '<button type="button" class="ty' + (F.type === x.k ? ' on' : '') +
+          '" data-ty="' + x.k + '"><div class="t">' + x.t + '</div>' +
+          '<div class="d">' + x.d + '</div></button>';
+      }).join('') + '</div></div>';
+  }
+
+  function customerBlock() {
+    if (!isCourse(F.type)) return '';
+    var body = F.customer
+      ? '<div class="picked">' + esc(F.customer.name) +
+        '<span style="font-weight:400;color:var(--dim);font-size:12px">' +
+        esc(F.customer.phone_tail || '') + '</span>' +
+        '<button type="button" id="unpick">換一個</button></div>'
+      : '<input id="q" type="search" placeholder="打名字或手機末三碼" autocomplete="off">' +
+        '<div id="hits" style="margin-top:8px"></div>';
+    return '<div class="f"><label>客人</label>' + body + '</div>';
+  }
+
+  function headBlock() {
+    if (!isCourse(F.type)) return '';
+    var lo = isPT(F.type) ? 1 : 3, hi = isPT(F.type) ? 2 : 6, out = '';
+    for (var n = lo; n <= hi; n++) {
+      out += '<button type="button" class="pill' + (F.headcount === n ? ' on' : '') +
+             '" data-head="' + n + '">' + n + ' 人</button>';
+    }
+    return '<div class="f"><label>購買商品人數規格</label><div class="pills">' + out + '</div>' +
+      '<div class="hint">人數只算學員，不含教練。' +
+      (isPT(F.type) ? 'PT 只有 1 人或 2 人。' : 'PGT 只有 3 到 6 人。') + '</div></div>';
+  }
+
+  function planBlock() {
+    if (!isCourse(F.type)) return '';
+    var pool = (isPT(F.type) ? PRICES.PT : PRICES.PGT).filter(function (p) {
+      return p.headcount === F.headcount;
+    });
+    var opts = '<option value="">（不是檯面方案 —— 自己填業績金額）</option>' +
+      pool.map(function (p) {
+        return '<option value="' + esc(p.code) + '"' +
+          (F.product_code === p.code ? ' selected' : '') + '>' +
+          esc(p.label) + '　' + money(p.price) + '</option>';
+      }).join('');
+    var charge =
+      ['single','plan','free'].map(function (k) {
+        var lab = k === 'single' ? '單堂現收' : k === 'plan' ? '扣預收' : '體驗／贈課';
+        return '<button type="button" class="pill' + (F.charge === k ? ' on' : '') +
+               '" data-charge="' + k + '">' + lab + '</button>';
+      }).join('');
+
+    var manual = (!F.product_code && F.charge !== 'free')
+      ? '<div class="f"><label>這一堂的業績金額</label>' +
+        '<input id="fAmount" type="number" min="0" step="1" value="' + esc(F.amount) + '" ' +
+        'placeholder="預付方案＝實收總額 ÷ 固定堂數"><div class="hint">' +
+        '☢️ 歷史方案與扣預收要填這一格。規則是「該筆已確認實收總額 ÷ 固定堂數」，' +
+        '不可以拿現在的檯面價回推。</div></div>'
+      : '';
+
+    return '<div class="f"><label>銷課方式</label><div class="pills">' + charge + '</div></div>' +
+      '<div class="f"><label>檯面方案</label><select id="fPlan">' + opts + '</select>' +
+      (F.charge === 'free' ? '<div class="hint">體驗／贈課不認列課程收入。</div>' : '') +
+      '</div>' + manual;
+  }
+
+  function coachBlock() {
+    var max = F.type === 'EVENT' ? 2 : 1;
+    var pills = COACHES.map(function (c) {
+      var on = F.coaches.indexOf(c.id) >= 0;
+      // ☢️ 只有「最多 2 位」的活動才鎖。單人的類型按另一位＝【換人】，
+      //    鎖住的話要先取消原本那位才能改，多一個沒必要的步驟。
+      var full = !on && max > 1 && F.coaches.length >= max;
+      return '<button type="button" class="pill' + (on ? ' on' : '') +
+        '" data-coach="' + esc(c.id) + '"' + (full ? ' disabled' : '') + '>' +
+        esc(c.display_name) + '</button>';
+    }).join('');
+    return '<div class="f"><label>授課教練' + (max > 1 ? '（最多 2 位）' : '') + '</label>' +
+      '<div class="pills">' + pills + '</div>' +
+      (F.type === 'EVENT'
+        ? '<div class="hint">每位教練各拿「計費時數 × 600」，跟派幾位無關。</div>'
+        : F.type === 'CORP'
+          ? '<div class="hint">企業包班單次至多 1 位主導教練。</div>' : '') +
+      '</div>';
+  }
+
+  function eventBlock() {
+    if (F.type !== 'EVENT') return '';
+    return '<div class="two">' +
+      '<div class="f"><label>活動時數</label>' +
+      '<input id="fHours" type="number" min="0.1" step="0.1" value="' + esc(F.hours) + '" placeholder="例：2.2"></div>' +
+      '<div class="f"><label>服務地區</label>' +
+      '<input id="fArea" type="text" value="' + esc(F.area) + '" placeholder="例：台北市信義區"></div></div>' +
+      '<div class="f"><div class="hint">☢️ 時數<b>無條件進位</b>：0.5→1、1.5→2、2.2→3。' +
+      '限大台北地區、限工作室外場。</div></div>';
+  }
+
+  function corpBlock() {
+    if (F.type !== 'CORP') return '';
+    var apr = '<option value="">（選核准人）</option>' + COACHES.map(function (c) {
+      return '<option value="' + esc(c.id) + '"' +
+        (F.approver_id === c.id ? ' selected' : '') + '>' + esc(c.display_name) + '</option>';
+    }).join('');
+    return '<div class="two">' +
+        '<div class="f"><label>公司名稱</label><input id="fCompany" type="text" value="' + esc(F.company) + '"></div>' +
+        '<div class="f"><label>統一編號</label><input id="fTax" type="text" value="' + esc(F.tax_id) + '"></div>' +
+      '</div>' +
+      '<div class="two">' +
+        '<div class="f"><label>服務地區</label><input id="fArea" type="text" value="' + esc(F.area) + '"></div>' +
+        '<div class="f"><label>預約時數</label><input id="fBooked" type="number" min="0" step="0.5" value="' + esc(F.booked_hours) + '"></div>' +
+      '</div>' +
+      '<div class="two">' +
+        '<div class="f"><label>核定人數</label><input id="fAppHead" type="number" min="1" step="1" value="' + esc(F.approved_headcount) + '"></div>' +
+        '<div class="f"><label>核定整案總價</label><input id="fAmount" type="number" min="1" step="1" value="' + esc(F.amount) + '"></div>' +
+      '</div>' +
+      '<div class="f"><label>專案內容</label><textarea id="fScope">' + esc(F.scope) + '</textarea></div>' +
+      '<div class="f"><label>交通安排</label><input id="fTransport" type="text" value="' + esc(F.transport) + '"></div>' +
+      '<div class="two">' +
+        '<div class="f"><label>核准人</label><select id="fApprover">' + apr + '</select></div>' +
+        '<div class="f"><label>核准日期</label><input id="fApprovedOn" type="date" value="' + esc(F.approved_on) + '"></div>' +
+      '</div>' +
+      '<div class="f"><div class="hint">☢️ 企業包班<b>不套用 PT／PGT 人數規格</b>，總價由人工核定，系統不自動算時數。</div></div>';
+  }
+
+  function calcBlock() {
+    var c = calc();
+    var lines = '';
+    if (F.type === 'EVENT') {
+      var n = F.coaches.length || 0;
+      lines =
+        '<div class="cl"><span class="k">計費時數（進位後）</span><span class="v">' +
+          (c.hours || 0) + ' 小時</span></div>' +
+        '<div class="cl"><span class="k">教練費（' + n + ' 位 × ' + (c.hours||0) + ' 小時 × 600）</span>' +
+          '<span class="v">' + money(n * (c.hours||0) * 600) + '</span></div>' +
+        '<div class="cl"><span class="k">活動費（' + (c.hours||0) + ' 小時 × 600）</span>' +
+          '<span class="v">' + money((c.hours||0) * 600) + '</span></div>' +
+        '<div class="cl"><span class="k">交通費</span><span class="v">' + money(c.travel) + '</span></div>' +
+        '<div class="cl tot"><span class="k">客人付</span><span class="v">' + money(c.total) + '</span></div>' +
+        '<div class="cl perf"><span class="k">每位教練鐘點</span><span class="v">' +
+          money(c.coachPay) + '</span></div>' +
+        '<div class="cl"><span class="k">進 PT＋PGT 抽成</span><span class="v">不進（走鐘點費）</span></div>';
+    } else {
+      lines =
+        '<div class="cl"><span class="k">' + (F.type === 'CORP' ? '核定整案總價' : '課程費') +
+          '</span><span class="v">' + money(c.rev) + '</span></div>' +
+        (c.travel ? '<div class="cl"><span class="k">交通費（外派固定）</span><span class="v">' +
+          money(c.travel) + '</span></div>' : '') +
+        '<div class="cl tot"><span class="k">客人付</span><span class="v">' + money(c.total) + '</span></div>' +
+        '<div class="cl perf"><span class="k">進這位教練的 PT＋PGT 業績</span><span class="v">' +
+          money(c.perf) + '</span></div>';
+    }
+    return '<div class="calc">' + lines + '</div>' +
+      '<div class="note">☢️ 這是畫面上的試算。<b>送出後以資料庫算的為準</b> —— 存進去的金額由資料庫決定。</div>';
+  }
+
+  /* 還缺什麼才能送。
+     ☢️ 這【不是】驗證 —— 真正的規則在資料庫的 add_service()，
+        就算跳過這一段，資料庫照樣會擋。這裡只是不要讓人白按一次。 */
+  function missing() {
+    if (!F.coaches.length) return '要選授課教練';
+    if (isCourse(F.type)) {
+      if (!F.customer) return '要選客人';
+      if (!F.product_code && F.charge !== 'free' && !Number(F.amount || 0))
+        return '要選檯面方案，或自己填業績金額';
+    }
+    if (F.type === 'EVENT' && !(Number(F.hours || 0) > 0)) return '要填活動時數';
+    if (F.type === 'CORP') {
+      if (!Number(F.amount || 0)) return '要填核定整案總價';
+      if (!F.approver_id) return '要選核准人';
+    }
+    return '';
+  }
+
+  function formBlock() {
+    return '<div class="h">' + typeName(F.type) + '</div><div class="card">' +
+      '<div class="f"><label>完成日期與時間</label>' +
+      '<input id="fDone" type="datetime-local" value="' + esc(F.done || nowLocal()) + '">' +
+      '<div class="hint">☢️ 這一欄決定薪資算在哪個月，不看收款日。填「已經上完」的時間。</div></div>' +
+      customerBlock() + headBlock() + planBlock() + eventBlock() + corpBlock() + coachBlock() +
+      (isCourse(F.type)
+        ? '<div class="f"><label>當日實際出席人數</label>' +
+          '<input id="fAtt" type="number" min="0" step="1" value="' + esc(F.attended) + '" ' +
+          'placeholder="沒到齊就填實際人數"></div>' : '') +
+      '<div class="f"><label>原始備註</label><textarea id="fNote" placeholder="現場狀況、特殊情形…">' +
+        esc(F.note) + '</textarea></div>' +
+      calcBlock() +
+      '<button type="button" class="btn" id="save" style="margin-top:12px"' +
+        (missing() ? ' disabled' : '') + '>' + (missing() || '登記這一筆') + '</button>' +
+    '</div>';
+  }
+
+  function listBlock() {
+    if (!LIST.length) {
+      return '<div class="h">最近登記</div><div class="card"><div class="empty">還沒有任何服務紀錄</div></div>';
+    }
+    return '<div class="h">最近登記（' + LIST.length + '）</div><div class="card">' +
+      LIST.map(function (x) {
+        var fin = x.fin_status === 'final';
+        return '<div class="row' + (x.voided ? ' void' : '') + '">' +
+          '<div class="r1"><span class="nm">' + esc(typeName(x.service_type)) + '</span>' +
+            '<span class="tag ' + (fin ? 'fin' : 'pen') + '">' +
+              (fin ? '已認列' : '待確認') + '</span>' +
+            (x.voided ? '<span class="tag">已作廢</span>' : '') +
+            '<span class="amt">' + money(x.total_amount) + '</span></div>' +
+          '<div class="r2">' + esc(x.done_date) + ' ' + esc(x.done_time) +
+            '　·　' + esc(x.coach_names || '—') +
+            (x.customer_name ? '　·　' + esc(x.customer_name) : '') +
+            (x.company_name ? '　·　' + esc(x.company_name) : '') +
+            (x.billed_hours ? '　·　' + x.billed_hours + ' 小時' : '') +
+            (x.headcount ? '　·　' + x.headcount + ' 人' : '') +
+            '　·　業績 ' + money(x.perf_amount) +
+            '　·　' + esc(x.created_by_name || '') + ' 登的' +
+            (x.voided && x.void_reason ? '<br>作廢原因：' + esc(x.void_reason) : '') +
+          '</div>' +
+          (ME && ME.can_finance && !x.voided
+            ? '<div class="r3">' +
+              (fin ? '' : '<button type="button" class="go" data-fin="' + esc(x.id) + '">最終認列</button>') +
+              '<button type="button" data-void="' + esc(x.id) + '">作廢</button></div>'
+            : '') +
+        '</div>';
+      }).join('') +
+      '<div class="note">☢️「最終認列」只有財務按得動。沒有認列的紀錄<b>不會進薪資</b>。</div></div>';
+  }
+
+  function render() {
+    elGate.hidden = true; elMain.hidden = false;
+    elMain.innerHTML = typeBlock() + formBlock() + listBlock();
+    wire();
+  }
+
+  /* ══ 綁事件 ══════════════════════════════════════════════════ */
+  function on(id, ev, fn) { var e = document.getElementById(id); if (e) e[ev] = fn; }
+  function each(sel, fn) {
+    Array.prototype.forEach.call(elMain.querySelectorAll(sel), fn);
+  }
+
+  /* 只重畫試算和送出鍵。
+     ☢️ 不能整頁 render() —— 那會把游標踢走、輸入到一半的字消失。
+        會改變版面的欄位（類型、人數、銷課方式、教練、方案）才 render()。 */
+  function refreshCalc() {
+    var box = document.querySelector('.calc');
+    if (box) box.outerHTML = calcBlock().split('<div class="note">')[0];
+    var b = document.getElementById('save');
+    if (b) {
+      var m = missing();
+      b.disabled = !!m;
+      b.textContent = m || '登記這一筆';
+    }
+  }
+
+  function wire() {
+    each('[data-ty]', function (b) {
+      b.onclick = function () {
+        var k = b.getAttribute('data-ty');
+        if (k === F.type) return;
+        F.type = k;
+        F.headcount = isPT(k) ? 1 : isPGT(k) ? 3 : F.headcount;
+        F.product_code = '';
+        F.coaches = F.coaches.slice(0, k === 'EVENT' ? 2 : 1);
+        render();
+      };
+    });
+    each('[data-head]', function (b) {
+      b.onclick = function () {
+        F.headcount = Number(b.getAttribute('data-head'));
+        F.product_code = '';       // 換人數就換方案，舊的代號不再適用
+        render();
+      };
+    });
+    each('[data-charge]', function (b) {
+      b.onclick = function () { F.charge = b.getAttribute('data-charge'); render(); };
+    });
+    each('[data-coach]', function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-coach'), i = F.coaches.indexOf(id);
+        var max = F.type === 'EVENT' ? 2 : 1;
+        if (i >= 0) F.coaches.splice(i, 1);
+        else { if (F.coaches.length >= max) F.coaches.shift(); F.coaches.push(id); }
+        render();
+      };
+    });
+
+    on('fPlan', 'onchange', function (e) { F.product_code = e.target.value; render(); });
+    on('fDone', 'onchange', function (e) { F.done = e.target.value; });
+
+    // ☢️ 這幾格【不重畫】—— 重畫會把游標踢走、輸入到一半的字消失。
+    //    只有會改變版面的欄位（類型、人數、銷課方式、教練、方案）才 render()。
+    var live = { fAmount:'amount', fHours:'hours', fArea:'area', fNote:'note',
+                 fAtt:'attended', fCompany:'company', fTax:'tax_id',
+                 fBooked:'booked_hours', fAppHead:'approved_headcount',
+                 fScope:'scope', fTransport:'transport', fApprovedOn:'approved_on' };
+    Object.keys(live).forEach(function (id) {
+      on(id, 'oninput', function (e) {
+        F[live[id]] = e.target.value;
+        refreshCalc();
+      });
+    });
+    on('fApprover', 'onchange', function (e) { F.approver_id = e.target.value; refreshCalc(); });
+
+    on('unpick', 'onclick', function () { F.customer = null; render(); });
+    var q = document.getElementById('q');
+    if (q) {
+      var timer;
+      q.oninput = function () {
+        clearTimeout(timer);
+        var v = q.value.trim();
+        if (v.length < 1) { document.getElementById('hits').innerHTML = ''; return; }
+        timer = setTimeout(function () { search(v); }, 260);
+      };
+    }
+
+    on('save', 'onclick', save);
+
+    each('[data-fin]', function (b) {
+      b.onclick = function () { finalize(b.getAttribute('data-fin')); };
+    });
+    each('[data-void]', function (b) {
+      b.onclick = function () { voidOne(b.getAttribute('data-void')); };
+    });
+  }
+
+  /* ══ 客人搜尋 ══════════════════════════════════════════════════
+     ☢️ 姓名和暱稱各查一次再合併，不用 or() —— 名字裡有逗號或括號會把網址拆壞
+        （跟 staff-tools.html 同一個理由）。 */
+  function search(v) {
+    var hits = document.getElementById('hits');
+    if (!hits) return;
+    var digits = /^\d+$/.test(v);
+    var COLS = 'id,name,nickname,phone_tail,balance,is_active';
+    var qy = digits
+      ? DB.from('staff_customers').select(COLS).limit(8).like('phone', '%' + v)
+      : Promise.all([
+          DB.from('staff_customers').select(COLS).limit(8).ilike('name', '%' + v + '%'),
+          DB.from('staff_customers').select(COLS).limit(8).ilike('nickname', '%' + v + '%')
+        ]).then(function (rs) {
+          var bad = rs.filter(function (r) { return r.error; })[0];
+          if (bad) return { error: bad.error, data: null };
+          var seen = {}, out = [];
+          rs.forEach(function (r) {
+            (r.data || []).forEach(function (c) {
+              if (seen[c.id]) return; seen[c.id] = 1; out.push(c);
+            });
+          });
+          return { error: null, data: out.slice(0, 8) };
+        });
+
+    qy.then(function (r) {
+      if (r.error) { hits.innerHTML = '<div class="empty">查不動：' + esc(r.error.message) + '</div>'; return; }
+      var d = r.data || [];
+      if (!d.length) { hits.innerHTML = '<div class="empty">沒有這個人</div>'; return; }
+      hits.innerHTML = d.map(function (c) {
+        return '<div class="hit" data-pick="' + esc(c.id) + '" data-name="' + esc(c.name) +
+          '" data-tail="' + esc(c.phone_tail || '') + '">' +
+          '<span class="nm">' + esc(c.name) + '</span>' +
+          '<span class="tl">' + esc(c.phone_tail || '') + '</span>' +
+          '<span class="bl">GT 剩 ' + (c.balance == null ? '—' : c.balance) + ' 堂</span></div>';
+      }).join('');
+      Array.prototype.forEach.call(hits.querySelectorAll('[data-pick]'), function (el) {
+        el.onclick = function () {
+          F.customer = { id: el.getAttribute('data-pick'),
+                         name: el.getAttribute('data-name'),
+                         phone_tail: el.getAttribute('data-tail') };
+          render();
+        };
+      });
+    }, function (e) {
+      hits.innerHTML = '<div class="empty">查不動：' + esc(e && e.message || e) + '</div>';
+    });
+  }
+
+  /* ══ 送出 ══════════════════════════════════════════════════════ */
+  function save() {
+    if (BUSY) return;
+    var btn = document.getElementById('save');
+    var done = (document.getElementById('fDone') || {}).value || F.done;
+    if (!done) { toast('要填完成日期與時間', true); return; }
+
+    var payload = {
+      service_type: F.type,
+      done_at: done + ':00+08:00',
+      coach_ids: F.coaches,
+      charge_method: isCourse(F.type) ? F.charge : 'single',
+      note: F.note
+    };
+    if (isCourse(F.type)) {
+      payload.customer_id    = F.customer ? F.customer.id : '';
+      payload.headcount      = F.headcount;
+      payload.attended_count = F.attended;
+      payload.product_code   = F.product_code;
+      payload.revenue_amount = F.amount;
+    } else if (F.type === 'EVENT') {
+      payload.hours = F.hours;
+      payload.area  = F.area;
+    } else {
+      payload.revenue_amount     = F.amount;
+      payload.company_name       = F.company;
+      payload.tax_id             = F.tax_id;
+      payload.area               = F.area;
+      payload.booked_hours       = F.booked_hours;
+      payload.approved_headcount = F.approved_headcount;
+      payload.scope              = F.scope;
+      payload.transport          = F.transport;
+      payload.approver_id        = F.approver_id;
+      payload.approved_on        = F.approved_on;
+    }
+
+    BUSY = true; btn.disabled = true; btn.textContent = '登記中…';
+    DB.rpc('add_service', { p_data: payload })
+      .then(function (r) {
+        BUSY = false;
+        if (r.error) throw new Error(r.error.message);
+        // ☢️ 規則擋下來不是錯誤，走 ok:false。訊息是資料庫寫的，直接給人看。
+        if (!r.data || r.data.ok === false) {
+          throw new Error((r.data && r.data.msg) || '登記不成功');
+        }
+        toast('登記好了：客人付 ' + money(r.data.total) + '　業績 ' + money(r.data.perf));
+        // 清掉這一筆的內容，類型和教練留著（通常會連續登記同一種）
+        F.customer = null; F.attended = ''; F.note = '';
+        F.hours = ''; F.amount = ''; F.scope = ''; F.done = nowLocal();
+        return load();
+      })
+      .catch(function (e) {
+        BUSY = false;
+        toast(String(e && e.message || e), true);
+        var b = document.getElementById('save');
+        if (b) { b.disabled = false; b.textContent = '登記這一筆'; }
+      });
+  }
+
+  function finalize(id) {
+    if (BUSY) return;
+    BUSY = true;
+    DB.rpc('finalize_service', { p_id: id })
+      .then(function (r) {
+        BUSY = false;
+        if (r.error) throw new Error(r.error.message);
+        if (!r.data || r.data.ok === false) throw new Error((r.data && r.data.msg) || '認列不成功');
+        toast('已最終認列');
+        return load();
+      })
+      .catch(function (e) { BUSY = false; toast(String(e && e.message || e), true); });
+  }
+
+  function voidOne(id) {
+    if (BUSY) return;
+    var why = window.prompt('作廢原因（會留在紀錄上）');
+    if (why == null) return;
+    if (!why.trim()) { toast('要寫作廢原因', true); return; }
+    BUSY = true;
+    DB.rpc('void_service', { p_id: id, p_reason: why.trim() })
+      .then(function (r) {
+        BUSY = false;
+        if (r.error) throw new Error(r.error.message);
+        if (!r.data || r.data.ok === false) throw new Error((r.data && r.data.msg) || '作廢不成功');
+        toast('已作廢');
+        return load();
+      })
+      .catch(function (e) { BUSY = false; toast(String(e && e.message || e), true); });
+  }
+
+  /* ══ 讀資料 ══════════════════════════════════════════════════ */
+  function load() {
+    // ☢️ 價格與教練名單讀不到，不該讓整頁掛掉 —— 但要讓人看得出少了東西。
+    return Promise.all([
+      DB.rpc('list_prices', { p_product: 'PT' })
+        .then(function (r) { PRICES.PT = (!r.error && r.data) ? r.data : []; },
+              function () { PRICES.PT = []; }),
+      DB.rpc('list_prices', { p_product: 'PGT' })
+        .then(function (r) { PRICES.PGT = (!r.error && r.data) ? r.data : []; },
+              function () { PRICES.PGT = []; }),
+      DB.from('employees').select('id,display_name,role').eq('is_active', true)
+        .order('display_name')
+        .then(function (r) { COACHES = (!r.error && r.data) ? r.data : []; },
+              function () { COACHES = []; }),
+      DB.from('staff_services')
+        .select('id,service_type,done_date,done_time,customer_name,company_name,headcount,' +
+                'billed_hours,revenue_amount,travel_fee,perf_amount,total_amount,' +
+                'fin_status,voided,void_reason,coach_names,created_by_name')
+        .order('created_at', { ascending: false }).limit(20)
+        .then(function (r) { LIST = (!r.error && r.data) ? r.data : []; },
+              function () { LIST = []; })
+    ]).then(function () {
+      if (!F.done) F.done = nowLocal();
+      render();
+    });
+  }
+
+  /* ══ 開場 ══════════════════════════════════════════════════════ */
+  function boot() {
+    if (!window.FFF_AUTH || !window.FFF_AUTH.ready) {
+      gate('err', '身分程式沒載進來', 'liff-auth.js 沒跑起來'); return;
+    }
+    window.FFF_AUTH.ready.then(function () {
+      var st = window.FFF_AUTH.state;
+      if (st === 'browsing') {
+        elSub.textContent = '未登入';
+        gate('err', '要先登入', '請從教練登入頁進來（staff.html）'); return;
+      }
+      // ☢️ state 還停在 checking 代表正要跳去 LINE 重新登入。
+      //    不擋的話會把整頁畫出來、看起來已登入，但查詢全部回空（第 62 步）。
+      if (st === 'checking') {
+        elSub.textContent = '重新登入中';
+        gate('', '正在重新登入…', '登入過期了，馬上跳到 LINE 幫你換一張'); return;
+      }
+      if (st === 'error') {
+        elSub.textContent = '辨識失敗';
+        if (window.FFF_AUTH.canLogin) {
+          gate('', '登入過期了',
+               (window.FFF_AUTH.errorNote || '按下面重新登入就好。') +
+               '（' + (window.FFF_AUTH.error || '') + '）');
+          var rb = document.createElement('button');
+          rb.type = 'button'; rb.className = 'btn';
+          rb.style.cssText = 'max-width:280px;margin:18px auto 0';
+          rb.textContent = '重新登入';
+          rb.onclick = function () {
+            rb.textContent = '正在開啟 LINE 登入…'; rb.disabled = true;
+            if (!window.FFF_AUTH.login()) {
+              rb.textContent = '開不起來，請改從 LINE 裡面開'; rb.disabled = false;
+            }
+          };
+          elGate.appendChild(rb);
+          return;
+        }
+        gate('err', '辨識失敗',
+             (window.FFF_AUTH.errorNote ? window.FFF_AUTH.errorNote + '　' : '') +
+             (window.FFF_AUTH.error || '')); return;
+      }
+      if (!window.fffDB) { gate('err', '資料庫連線沒建立', 'no_fffDB'); return; }
+      DB = window.fffDB;
+
+      DB.auth.getUser().then(function (u) {
+        if (u.error || !u.data || !u.data.user) {
+          gate('err', '拿不到登入身分', (u.error && u.error.message) || 'no_user'); return;
+        }
+        return DB.from('employees')
+          .select('id,display_name,role,is_active,can_finance')
+          .eq('auth_user_id', u.data.user.id)
+          .then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            if (!r.data || !r.data.length) {
+              elSub.textContent = '未開通';
+              gate('err', '你的帳號還沒開通', '先開 staff.html 把登入代號給 Jerec'); return;
+            }
+            ME = r.data[0];
+            if (ME.is_active === false) {
+              gate('err', ME.display_name + '　已停用', '如果這是誤設，請找 Jerec'); return;
+            }
+            elWho.textContent = ME.display_name;
+            elSub.textContent = '服務登記';
+            return load();
+          }, function (e) {
+            gate('err', '查不到員工名單', String(e && e.message || e));
+          });
+      });
+    });
+  }
+
+  document.getElementById('reload').onclick = function () { if (DB) load(); };
+  window.FFF_AUTH.onResume = function () { if (DB && ME) load(); };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+</body>
+</html>
