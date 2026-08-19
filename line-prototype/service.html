@@ -177,7 +177,7 @@
   'use strict';
 
   var DB = null, ME = null, BUSY = false;
-  var PRICES = { PT: [], PGT: [] };
+  var PRICES = { PT: [], PGT: [], CORP: [] };
   var COACHES = [], LIST = [];
   var elGate = document.getElementById('gate');
   var elMain = document.getElementById('main');
@@ -188,7 +188,7 @@
      金額由資料庫算，前端算的那份只是給人看的。 */
   var F = {
     type: 'PT', customer: null, headcount: 1, product_code: '',
-    charge: 'single', attended: '', hours: '', area: '',
+    charge: 'single', attended: '', hours: '', area: '', area_kind: '', corpHead: '',
     company: '', tax_id: '', booked_hours: '', approved_headcount: '',
     scope: '', transport: '', approver_id: '', approved_on: '',
     amount: '', note: '', coaches: []
@@ -243,9 +243,13 @@
      ☢️ 這裡算的數字【只是給人看的】，送出後以資料庫回傳為準。
         兩邊的公式必須一致 —— 不一致的話畫面會騙人。 */
   function priceOf(code) {
-    var all = PRICES.PT.concat(PRICES.PGT);
+    var all = PRICES.PT.concat(PRICES.PGT).concat(PRICES.CORP);
     for (var i = 0; i < all.length; i++) if (all[i].code === code) return all[i].price;
     return 0;
+  }
+  // 企業包班的每小時費率。☢️ 從資料庫的 products 來，不寫死在畫面裡。
+  function corpRate() {
+    return F.area_kind ? priceOf('CORP-' + F.area_kind) : 0;
   }
   function calc() {
     var t = F.type, rev = 0, travel = 0, perf = 0, hours = null;
@@ -262,7 +266,8 @@
       travel = hours > 0 ? 500 : 0;
       perf = 0;                                        // 活動走鐘點費
     } else {
-      rev = Number(F.amount || 0);
+      // 企業包班：地區 × 時數（每小時費用已含交通費，所以不再加 500）
+      rev = Math.round(corpRate() * Number(F.hours || 0));
       perf = rev;
     }
     return { rev: rev, travel: travel, perf: perf, hours: hours, total: rev + travel,
@@ -372,25 +377,36 @@
       return '<option value="' + esc(c.id) + '"' +
         (F.approver_id === c.id ? ' selected' : '') + '>' + esc(c.display_name) + '</option>';
     }).join('');
+    // 地區決定費率（正式補全版第二篇 4）。費率從 products 讀，不寫死。
+    var kinds = [['TPE','大台北地區'], ['OUT','非大台北地區']];
+    var areaPills = kinds.map(function (k) {
+      var rate = priceOf('CORP-' + k[0]);
+      return '<button type="button" class="pill' + (F.area_kind === k[0] ? ' on' : '') +
+        '" data-akind="' + k[0] + '">' + k[1] +
+        (rate ? '　' + money(rate) + '／小時' : '') + '</button>';
+    }).join('');
+
     return '<div class="two">' +
         '<div class="f"><label>公司名稱</label><input id="fCompany" type="text" value="' + esc(F.company) + '"></div>' +
         '<div class="f"><label>統一編號</label><input id="fTax" type="text" value="' + esc(F.tax_id) + '"></div>' +
       '</div>' +
+      '<div class="f"><label>服務地區</label><div class="pills">' + areaPills + '</div>' +
+        '<div class="hint">每小時費用<b>已含交通費</b>，不會再另外加 500。</div></div>' +
       '<div class="two">' +
-        '<div class="f"><label>服務地區</label><input id="fArea" type="text" value="' + esc(F.area) + '"></div>' +
-        '<div class="f"><label>預約時數</label><input id="fBooked" type="number" min="0" step="0.5" value="' + esc(F.booked_hours) + '"></div>' +
+        '<div class="f"><label>服務時數</label>' +
+          '<input id="fHours" type="number" min="0.5" step="0.5" value="' + esc(F.hours) + '"></div>' +
+        '<div class="f"><label>開班人數</label>' +
+          '<input id="fCorpHead" type="number" min="7" step="1" value="' + esc(F.corpHead) + '" placeholder="7 人以上"></div>' +
       '</div>' +
-      '<div class="two">' +
-        '<div class="f"><label>核定人數</label><input id="fAppHead" type="number" min="1" step="1" value="' + esc(F.approved_headcount) + '"></div>' +
-        '<div class="f"><label>核定整案總價</label><input id="fAmount" type="number" min="1" step="1" value="' + esc(F.amount) + '"></div>' +
-      '</div>' +
+      '<div class="f"><label>地點（哪裡，選填）</label><input id="fArea" type="text" value="' + esc(F.area) + '" placeholder="例：內湖科學園區 ○○ 大樓"></div>' +
       '<div class="f"><label>專案內容</label><textarea id="fScope">' + esc(F.scope) + '</textarea></div>' +
       '<div class="f"><label>交通安排</label><input id="fTransport" type="text" value="' + esc(F.transport) + '"></div>' +
       '<div class="two">' +
-        '<div class="f"><label>核准人</label><select id="fApprover">' + apr + '</select></div>' +
-        '<div class="f"><label>核准日期</label><input id="fApprovedOn" type="date" value="' + esc(F.approved_on) + '"></div>' +
+        '<div class="f"><label>核准人（選填）</label><select id="fApprover">' + apr + '</select></div>' +
+        '<div class="f"><label>核准日期（選填）</label><input id="fApprovedOn" type="date" value="' + esc(F.approved_on) + '"></div>' +
       '</div>' +
-      '<div class="f"><div class="hint">☢️ 企業包班<b>不套用 PT／PGT 人數規格</b>，總價由人工核定，系統不自動算時數。</div></div>';
+      '<div class="f"><div class="hint">☢️ 企業包班<b>不套用 PT／PGT 人數規格</b>，<b>7 人（含）以上開班、人數不限</b>。' +
+      '時數<b>不進位</b> —— 無條件進位是諧動外派活動的規則，這裡沒有。</div></div>';
   }
 
   function calcBlock() {
@@ -410,10 +426,18 @@
         '<div class="cl perf"><span class="k">每位教練鐘點</span><span class="v">' +
           money(c.coachPay) + '</span></div>' +
         '<div class="cl"><span class="k">進 PT＋PGT 抽成</span><span class="v">不進（走鐘點費）</span></div>';
+    } else if (F.type === 'CORP') {
+      lines =
+        '<div class="cl"><span class="k">每小時費用（含交通費）</span><span class="v">' +
+          (corpRate() ? money(corpRate()) : '（先選地區）') + '</span></div>' +
+        '<div class="cl"><span class="k">服務時數</span><span class="v">' +
+          (Number(F.hours || 0) || 0) + ' 小時</span></div>' +
+        '<div class="cl tot"><span class="k">客人付</span><span class="v">' + money(c.total) + '</span></div>' +
+        '<div class="cl perf"><span class="k">進這位教練的 PT＋PGT 業績</span><span class="v">' +
+          money(c.perf) + '</span></div>';
     } else {
       lines =
-        '<div class="cl"><span class="k">' + (F.type === 'CORP' ? '核定整案總價' : '課程費') +
-          '</span><span class="v">' + money(c.rev) + '</span></div>' +
+        '<div class="cl"><span class="k">課程費</span><span class="v">' + money(c.rev) + '</span></div>' +
         (c.travel ? '<div class="cl"><span class="k">交通費（外派固定）</span><span class="v">' +
           money(c.travel) + '</span></div>' : '') +
         '<div class="cl tot"><span class="k">客人付</span><span class="v">' + money(c.total) + '</span></div>' +
@@ -436,8 +460,9 @@
     }
     if (F.type === 'EVENT' && !(Number(F.hours || 0) > 0)) return '要填活動時數';
     if (F.type === 'CORP') {
-      if (!Number(F.amount || 0)) return '要填核定整案總價';
-      if (!F.approver_id) return '要選核准人';
+      if (!F.area_kind) return '要選服務地區';
+      if (!(Number(F.hours || 0) > 0)) return '要填服務時數';
+      if (!(Number(F.corpHead || 0) >= 7)) return '企業包班要 7 人以上';
     }
     return '';
   }
@@ -558,7 +583,7 @@
     //    只有會改變版面的欄位（類型、人數、銷課方式、教練、方案）才 render()。
     var live = { fAmount:'amount', fHours:'hours', fArea:'area', fNote:'note',
                  fAtt:'attended', fCompany:'company', fTax:'tax_id',
-                 fBooked:'booked_hours', fAppHead:'approved_headcount',
+                 fCorpHead:'corpHead',
                  fScope:'scope', fTransport:'transport', fApprovedOn:'approved_on' };
     Object.keys(live).forEach(function (id) {
       on(id, 'oninput', function (e) {
@@ -567,6 +592,10 @@
       });
     });
     on('fApprover', 'onchange', function (e) { F.approver_id = e.target.value; refreshCalc(); });
+    // 地區換了費率就換，整塊重畫（費率會顯示在按鈕上）
+    each('[data-akind]', function (b) {
+      b.onclick = function () { F.area_kind = b.getAttribute('data-akind'); render(); };
+    });
 
     on('unpick', 'onclick', function () { F.customer = null; render(); });
     var q = document.getElementById('q');
@@ -663,16 +692,17 @@
       payload.hours = F.hours;
       payload.area  = F.area;
     } else {
-      payload.revenue_amount     = F.amount;
-      payload.company_name       = F.company;
-      payload.tax_id             = F.tax_id;
-      payload.area               = F.area;
-      payload.booked_hours       = F.booked_hours;
-      payload.approved_headcount = F.approved_headcount;
-      payload.scope              = F.scope;
-      payload.transport          = F.transport;
-      payload.approver_id        = F.approver_id;
-      payload.approved_on        = F.approved_on;
+      // 企業包班：只送【原始輸入】，金額由資料庫用 地區 × 時數 算
+      payload.area_kind    = F.area_kind;
+      payload.hours        = F.hours;
+      payload.headcount    = F.corpHead;
+      payload.company_name = F.company;
+      payload.tax_id       = F.tax_id;
+      payload.area         = F.area;
+      payload.scope        = F.scope;
+      payload.transport    = F.transport;
+      payload.approver_id  = F.approver_id;
+      payload.approved_on  = F.approved_on;
     }
 
     BUSY = true; btn.disabled = true; btn.textContent = '登記中…';
@@ -687,7 +717,7 @@
         toast('登記好了：客人付 ' + money(r.data.total) + '　業績 ' + money(r.data.perf));
         // 清掉這一筆的內容，類型和教練留著（通常會連續登記同一種）
         F.customer = null; F.attended = ''; F.note = '';
-        F.hours = ''; F.amount = ''; F.scope = ''; F.done = nowLocal();
+        F.hours = ''; F.amount = ''; F.scope = ''; F.corpHead = ''; F.done = nowLocal();
         return load();
       })
       .catch(function (e) {
@@ -739,6 +769,9 @@
       DB.rpc('list_prices', { p_product: 'PGT' })
         .then(function (r) { PRICES.PGT = (!r.error && r.data) ? r.data : []; },
               function () { PRICES.PGT = []; }),
+      DB.rpc('list_prices', { p_product: 'CORP' })
+        .then(function (r) { PRICES.CORP = (!r.error && r.data) ? r.data : []; },
+              function () { PRICES.CORP = []; }),
       DB.from('employees').select('id,display_name,role').eq('is_active', true)
         .order('display_name')
         .then(function (r) { COACHES = (!r.error && r.data) ? r.data : []; },

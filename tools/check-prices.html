@@ -137,8 +137,13 @@
     var dbRows = r[0], idx = r[1], pri = r[2], pjs = r[3], gtb = r[4],
         capRows = r[5], ent = r[6];
 
+    // ☢️ 只比【對客人公開】的商品（GT／PT／PGT）。
+    //    企業包班（CORP）的每小時費率也在 products 裡，但它是 B2B 報價，
+    //    官網和 LIFF 都不會印出來 —— 一起比的話，prices.js 會被判「漏了兩筆」，
+    //    整頁變紅，而其實什麼都沒錯。
+    var PUBLIC = { GT: 1, PT: 1, PGT: 1 };
     var db = {};
-    dbRows.forEach(function (x) { db[x.code] = x.price; });
+    dbRows.forEach(function (x) { if (PUBLIC[x.product]) db[x.code] = x.price; });
 
     var site = X.fromSiteData(idx);
     var rows = X.compare(db, [
