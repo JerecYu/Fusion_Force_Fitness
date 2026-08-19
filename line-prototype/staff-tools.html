@@ -44,7 +44,33 @@
     font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
     line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:44px}
 
-  .top{background:var(--ink);color:#fff;padding:13px 13px;display:flex;align-items:center;gap:6px}
+  /* ☢️ flex-wrap 不能省。第 71 步這一列變成 5~6 顆鍵，
+        360px 的手機一列放不下 —— 而 flex 預設 nowrap，
+        放不下的不是換行，是【被切在畫面外】，連捲軸都沒有。 */
+  .top{background:var(--ink);color:#fff;padding:13px;display:flex;align-items:center;
+    gap:6px;flex-wrap:wrap;row-gap:9px}
+  .idw{min-width:0;flex:0 1 auto}
+  /* 鍵包成一組：寬螢幕貼右邊排成一列，窄螢幕整組掉到第二列、自己再換行 */
+  .nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+    margin-left:auto;justify-content:flex-end}
+  /* 窄機把鍵上的字縮短，六顆才排得回一列。
+     ☢️ 用兩個 span 切換，不要寫兩份 HTML —— 兩份遲早只改到一份。
+     ☢️☢️ 名字一定要加 nv- 前綴。第一版用了 .lg／.sm ——
+           而這個檔案第 301 行【早就有一個 .lg】（「綁不上的人」那張卡片，
+           有 padding 和邊框）。結果按鍵裡的「核銷」兩個字被套上卡片樣式，
+           整顆鍵變成兩行高、頂欄從 87px 漲到 183px。
+           <b>撞名不會報錯</b>，只會讓版面莫名其妙壞掉。加名字前先搜一次。 */
+  .nv-short{display:none}
+  @media (max-width:430px){
+    .nv-long{display:none}
+    .nv-short{display:inline}
+    /* 手機上再省一點：內距縮一格、頂欄的箭頭拿掉。
+       ☢️ 箭頭只是裝飾，字本身已經說清楚要去哪 ——
+          留著多佔 14px × 3 顆，剛好就是排不下的那一點。
+       ☢️ 選擇器一定要寫 .top，不然會把畫面其他地方的箭頭一起關掉。 */
+    .top .iconbtn{padding:8px 9px}
+    .top .iconbtn .ar{display:none}
+  }
   .who{font-size:16px;font-weight:800;letter-spacing:.03em}
   .sub{font-size:11px;color:#A9C6D4;margin-top:1px}
   .sp{flex:1}
@@ -341,25 +367,31 @@
 <body>
 
 <div class="top">
-  <div>
+  <div class="idw">
     <div class="who" id="who">教練後台</div>
     <div class="sub" id="whoSub">辨識中…</div>
   </div>
-  <div class="sp"></div>
-  <!-- ☢️ 順序是有意義的：導覽鍵在左、重新整理固定在最右。
-       checkin.html 的 [← 課表][重新整理] 也是這個順序 ——
-       兩頁同樣兩顆鍵左右相反的話，人會按錯。 -->
-  <a class="iconbtn" href="https://jerecyu.github.io/Fusion_Force_Fitness/"
-     target="_blank" rel="noopener">官網</a>
-  <a class="iconbtn" href="checkin.html">點名核銷<span class="ar"></span></a>
-  <!-- PT／PGT／外派／諧動活動／企業包班的登記入口（第 71 步）。
-       ☢️ GT 不走這裡 —— GT 在點名核銷那一頁。 -->
-  <a class="iconbtn" href="service.html">服務登記<span class="ar"></span></a>
-  <!-- 只有 can_finance（負責人／VC）才會現身 -->
-  <a class="iconbtn" id="rptLink" href="report.html" hidden>對帳<span class="ar"></span></a>
-  <button type="button" class="iconbtn" id="reload">重新整理</button>
-  <!-- ☢️ 只在瀏覽器裡出現。在 LINE App 裡按了會自動登入回來，等於沒作用。 -->
-  <button type="button" class="iconbtn" id="logout" hidden>登出</button>
+  <!-- ☢️ 2026-08-19：這幾顆鍵一定要包在 .nav 裡。
+       第 71 步多了「服務登記」之後變成 5~6 顆，手機一列排不下 ——
+       而 flex 預設【不換行】，排不下的那幾顆是直接被切在畫面外，
+       不會有捲軸、也不會有任何提示。Jerec 就是這樣按不到「重新整理」的。
+       包起來之後：寬螢幕一列排完，窄螢幕整組掉到第二列自己排。 -->
+  <div class="nav">
+    <!-- ☢️ 順序是有意義的：導覽鍵在左、重新整理固定在最右。
+         checkin.html 的 [← 課表][重新整理] 也是這個順序 ——
+         兩頁同樣兩顆鍵左右相反的話，人會按錯。 -->
+    <a class="iconbtn" href="https://jerecyu.github.io/Fusion_Force_Fitness/"
+       target="_blank" rel="noopener">官網</a>
+    <a class="iconbtn" href="checkin.html">點名<span class="nv-long">核銷</span><span class="ar"></span></a>
+    <!-- PT／PGT／外派／諧動活動／企業包班的登記入口（第 71 步）。
+         ☢️ GT 不走這裡 —— GT 在點名核銷那一頁。 -->
+    <a class="iconbtn" href="service.html">服務<span class="nv-long">登記</span><span class="ar"></span></a>
+    <!-- 只有 can_finance（負責人／VC）才會現身 -->
+    <a class="iconbtn" id="rptLink" href="report.html" hidden>對帳<span class="ar"></span></a>
+    <button type="button" class="iconbtn" id="reload"><span class="nv-long">重新整理</span><span class="nv-short">重整</span></button>
+    <!-- ☢️ 只在瀏覽器裡出現。在 LINE App 裡按了會自動登入回來，等於沒作用。 -->
+    <button type="button" class="iconbtn" id="logout" hidden>登出</button>
+  </div>
 </div>
 
 <div class="wrap">
