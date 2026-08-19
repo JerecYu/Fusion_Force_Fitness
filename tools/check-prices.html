@@ -69,12 +69,11 @@
     });
   }
 
-  function getDB() {
+  function api(pathAndQuery) {
     if (!window.SUPABASE_URL || !window.SUPABASE_PUBLISHABLE_KEY) {
       throw new Error('supabase-config.js 沒載到');
     }
-    return fetch(window.SUPABASE_URL +
-        '/rest/v1/products?select=code,price,headcount,product&is_active=eq.true', {
+    return fetch(window.SUPABASE_URL + '/rest/v1/' + pathAndQuery, {
       headers: {
         apikey: window.SUPABASE_PUBLISHABLE_KEY,
         Authorization: 'Bearer ' + window.SUPABASE_PUBLISHABLE_KEY
@@ -85,37 +84,44 @@
     });
   }
 
-  function render(rows, extra) {
-    var by = {};
-    rows.forEach(function (r) { (by[r.source] = by[r.source] || []).push(r); });
-    var html = '';
-    Object.keys(by).forEach(function (name) {
-      var list = by[name], bad = list.filter(function (r) { return !r.ok; }).length;
-      html += '<div class="card"><div class="ttl">' + esc(name) +
-              '　' + (bad ? '❌ ' + bad + ' 項對不上' : '✅ ' + list.length + ' 項全對') + '</div>' +
-              '<table><tr><th></th><th>商品代號</th><th>資料庫</th><th>這份檔案</th></tr>';
-      list.forEach(function (r) {
-        html += '<tr class="' + (r.ok ? '' : 'bad') + '">' +
-          '<td><span class="fl ' + (r.ok ? 'ok' : 'bad') + '">' + (r.ok ? '✓' : '✕') + '</span></td>' +
-          '<td class="n">' + esc(r.code) + '</td>' +
-          '<td class="n">' + esc(r.want) + '</td>' +
-          '<td class="n">' + esc(r.got) + '</td></tr>';
-      });
-      html += '</table></div>';
+  function getDB() {
+    return api('products?select=code,price,headcount,product&is_active=eq.true');
+  }
+
+  // 團體課上限：拿今天以後的課，看它們的 capacity 是多少
+  function getCapacity() {
+    var today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' });
+    return api('public_schedule?select=capacity&session_date=gte.' + today + '&limit=200');
+  }
+
+  // 一張卡片 ＝ 一份來源。標題自己算出全對還是幾項不合。
+  function card(title, list, head, note) {
+    if (!list.length) return '';
+    var bad = list.filter(function (r) { return !r.ok; }).length;
+    var html = '<div class="card"><div class="ttl">' + esc(title) + '　' +
+      (bad ? '❌ ' + bad + ' 項對不上' : '✅ ' + list.length + ' 項全對') + '</div>' +
+      '<table><tr><th></th><th>' + head[0] + '</th><th>' + head[1] + '</th><th>' + head[2] + '</th></tr>';
+    list.forEach(function (r) {
+      html += '<tr class="' + (r.ok ? '' : 'bad') + '">' +
+        '<td><span class="fl ' + (r.ok ? 'ok' : 'bad') + '">' + (r.ok ? '✓' : '✕') + '</span></td>' +
+        '<td class="n">' + esc(r.code) + '</td>' +
+        '<td class="n">' + esc(r.want) + '</td>' +
+        '<td class="n">' + esc(r.got) + '</td></tr>';
     });
-    if (extra.length) {
-      var eb = extra.filter(function (r) { return !r.ok; }).length;
-      html += '<div class="card"><div class="ttl">人數上限　' +
-        (eb ? '❌ ' + eb + ' 項對不上' : '✅ ' + extra.length + ' 項全對') + '</div><table>' +
-        '<tr><th></th><th>檢查項目</th><th>應該是</th><th>實際</th></tr>';
-      extra.forEach(function (r) {
-        html += '<tr class="' + (r.ok ? '' : 'bad') + '">' +
-          '<td><span class="fl ' + (r.ok ? 'ok' : 'bad') + '">' + (r.ok ? '✓' : '✕') + '</span></td>' +
-          '<td>' + esc(r.code) + '</td><td class="n">' + esc(r.want) +
-          '</td><td class="n">' + esc(r.got) + '</td></tr>';
-      });
-      html += '</table><div class="note">☢️ PGT 只賣到六人。七人以上是外派／企業包班，走不同的計價。</div></div>';
-    }
+    return html + '</table>' + (note ? '<div class="note">' + note + '</div>' : '') + '</div>';
+  }
+
+  function render(rows, extra, capChecks) {
+    var by = {}, html = '';
+    rows.forEach(function (r) { (by[r.source] = by[r.source] || []).push(r); });
+    Object.keys(by).forEach(function (name) {
+      html += card(name, by[name], ['商品代號', '資料庫', '這份檔案']);
+    });
+    html += card('私人團體班人數範圍', extra, ['檢查項目', '應該是', '實際'],
+      '☢️ PGT 只賣到六人。七人以上是外派／企業包班，走不同的計價。');
+    html += card('團體課每班上限', capChecks, ['檢查項目', '應該是', '實際'],
+      '☢️ 這一段是直接掃文字裡每一句「上限 N 人」，不是靠標記 —— ' +
+      '所以以後有人在任何地方多寫一句舊數字，這裡都會抓到。');
     out.innerHTML = html;
   }
 
@@ -124,9 +130,12 @@
     getText('../index.html'),
     getText('../line-prototype/pricing.html'),
     getText('../line-prototype/prices.js'),
-    getText('../line-prototype/GT-booking.html')
+    getText('../line-prototype/GT-booking.html'),
+    getCapacity(),
+    getText('../line-prototype/A-entry.html')
   ]).then(function (r) {
-    var dbRows = r[0], idx = r[1], pri = r[2], pjs = r[3], gtb = r[4];
+    var dbRows = r[0], idx = r[1], pri = r[2], pjs = r[3], gtb = r[4],
+        capRows = r[5], ent = r[6];
 
     var db = {};
     dbRows.forEach(function (x) { db[x.code] = x.price; });
@@ -151,17 +160,50 @@
       { code: 'prices.js PGT_MAX',    want: dbMax, got: pickNum(pjs, 'PGT_MAX'), ok: pickNum(pjs, 'PGT_MAX') === dbMax }
     ];
 
+    // ── 團體課每班上限 ───────────────────────────────────────────
+    // ☢️ 這一段不看 data 標記，直接掃文字裡每一句「上限 N 人」。
+    //    上限散在文案、表格、SEO 描述、下拉選單裡，靠人工標記一定會漏。
+    var caps = {};
+    capRows.forEach(function (x) { caps[x.capacity] = (caps[x.capacity] || 0) + 1; });
+    var capList = Object.keys(caps).map(Number);
+    var dbCap = capList.length === 1 ? capList[0] : null;
+
+    var capChecks = [];
+    if (dbCap === null) {
+      capChecks.push({ code: '資料庫（今天以後的課）', want: '只能有一種上限',
+                       got: capList.length ? capList.join('、') + ' 混在一起' : '沒有未來的課', ok: false });
+    } else {
+      capChecks.push({ code: '資料庫（今天以後 ' + capRows.length + ' 堂）', want: dbCap, got: dbCap, ok: true });
+      [['官網 index.html', idx], ['LIFF pricing.html', pri],
+       ['LIFF GT-booking.html', gtb], ['LIFF A-entry.html', ent]].forEach(function (pair) {
+        var found = X.fromCapacityText(pair[1]);
+        if (!found.length) {
+          capChecks.push({ code: pair[0], want: dbCap, got: '(沒寫到上限)', ok: true });
+          return;
+        }
+        var wrong = found.filter(function (v) { return v !== dbCap; });
+        var kinds = wrong.filter(function (v, i) { return wrong.indexOf(v) === i; });
+        capChecks.push({
+          code: pair[0] + '（' + found.length + ' 句）',
+          want: dbCap,
+          got: wrong.length ? '有 ' + wrong.length + ' 句寫 ' + kinds.join('／') : dbCap,
+          ok: wrong.length === 0
+        });
+      });
+    }
+
     var bad = rows.filter(function (x) { return !x.ok; }).length +
-              extra.filter(function (x) { return !x.ok; }).length;
-    var all = rows.length + extra.length;
+              extra.filter(function (x) { return !x.ok; }).length +
+              capChecks.filter(function (x) { return !x.ok; }).length;
+    var all = rows.length + extra.length + capChecks.length;
 
     verdict.className = 'big ' + (bad ? 'bad' : 'ok');
     verdict.innerHTML = bad
       ? '❌ ' + bad + ' 項對不上（共查 ' + all + ' 項）<small>下面紅色那幾行就是要改的地方。' +
         '「資料庫」那欄是對的，把檔案改成跟它一樣。</small>'
-      : '✅ 全部一致（共查 ' + all + ' 項）<small>資料庫、官網、LIFF 三邊的價格完全相同。</small>';
+      : '✅ 全部一致（共查 ' + all + ' 項）<small>資料庫、官網、LIFF 三邊的價格與人數上限完全相同。</small>';
 
-    render(rows, extra);
+    render(rows, extra, capChecks);
   }).catch(function (e) {
     verdict.className = 'big bad';
     verdict.innerHTML = '⚠️ 對不了<small>' + esc(e && e.message ? e.message : e) +

@@ -379,7 +379,7 @@
   //    這個變數負責讓它記得剛剛是開著的。
   var NEWOPEN = false;
   var SIGNUPS = [];
-  var UNPAID = [], PRODUCTS = [];
+  var UNPAID = [], PRODUCTS = [], OVER = [];
   var RECENT = [];          // 最近的購課（只有 owner 看得到，也是沖銷的入口）
   var HITS = [];
 
@@ -616,7 +616,13 @@
         .select('ledger_id,created_at,customer_name,phone_tail,credits,amount,created_by_name,waited_days')
         .order('created_at', { ascending: true })
         .then(function (r) { UNPAID = (!r.error && r.data) ? r.data : []; },
-              function () { UNPAID = []; })
+              function () { UNPAID = []; }),
+
+      // 人數超過上限的課。正常情況這是空的 —— 空的就完全不會出現在畫面上。
+      DB.from('staff_overbooked')
+        .select('session_id,session_date,start_time,title,coach_name,capacity,people,booking_rows,over_by')
+        .then(function (r) { OVER = (!r.error && r.data) ? r.data : []; },
+              function () { OVER = []; })
     ]);
   }
 
@@ -638,6 +644,31 @@
            '<div class="card">' + rows +
            '<div class="hint" style="margin-top:8px">☢️ 這些人的<b>堂數已經給了</b>，只差錢還沒確認進帳戶。' +
            '按「錢到了」＝確認入帳，不會改動堂數。</div></div>';
+  }
+
+  // 人數超過上限的課。
+  // ☢️ 這不是「額滿」，額滿是正常的（我們本來就不擋額滿報名）。
+  //    這是【超過上限】—— 團體課一班最多 12 人，出現 13 人以上代表資料有問題：
+  //    可能是重複報名、也可能是教練點名時「另外帶了 N 位」按太多。
+  //    系統不會自動改任何東西，只把它指出來給人看。
+  function overBlock() {
+    if (!OVER.length) return '';
+    var rows = OVER.map(function (o) {
+      var d = String(o.session_date || '').slice(5).replace('-', '/');
+      var t = String(o.start_time || '').slice(0, 5);
+      return '<div class="up">' +
+        '<div class="upl"><b>' + d + ' ' + t + '　' + esc(o.title || '') + '</b>' +
+          '<i>上限 ' + o.capacity + ' 人　·　實際 <b>' + o.people + '</b> 人' +
+          '（超出 ' + o.over_by + ' 人）　·　' + o.booking_rows + ' 筆報名' +
+          (o.coach_name ? '　·　' + esc(o.coach_name) : '') + '</i></div>' +
+      '</div>';
+    }).join('');
+    return '<div class="sec hot">☢️ 人數超過上限（' + OVER.length + ' 堂）</div>' +
+           '<div class="card">' + rows +
+           '<div class="hint" style="margin-top:8px">團體課一班上限 <b>12</b> 人。' +
+           '這幾堂的實際人數超過了 —— <b>不是額滿，是資料對不上</b>。<br>' +
+           '常見原因：同一個人被重複報名、或點名時「另外帶了 N 位」按多了。' +
+           '請到點名頁把那堂的名單看一次。</div></div>';
   }
 
   // 最近的購課。☢️ 只有 owner 看得到 —— 這一塊是沖銷的入口。
@@ -805,7 +836,8 @@
     // ② 新增客人 —— 收起來，要用才展開
     html += newCustomerFold();
 
-    // ③④⑤ 偶爾才處理一次的三塊
+    // ③④⑤ 偶爾才處理一次的三塊，外加一塊「正常時完全不存在」的異常提醒
+    html += '<div id="overBox">' + overBlock() + '</div>';
     html += '<div id="unpaidBox">' + unpaidBlock() + '</div>';
     html += '<div id="stuckBox">' + stuckBlock() + '</div>';
     html += '<div id="recentBox">' + recentBlock() + '</div>';

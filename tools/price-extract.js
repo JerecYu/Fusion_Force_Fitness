@@ -65,6 +65,16 @@
     return { prices: out, meta: meta };
   }
 
+  // ── ③-b 文案裡的「每班上限 N 人」 ───────────────────────────────
+  //    ☢️ 這個不靠 data-p，直接掃整份文字 ——
+  //       上限這個數字散在文案、表格、SEO 描述、下拉選單裡，
+  //       靠人工標記一定會漏。掃文字才抓得到「以後某天有人又寫了一句」。
+  function fromCapacityText(html) {
+    var out = [], re = /(?:每班上限|每堂課上限|上限|不超過)\s*(?:<b>)?\s*(\d+)\s*(?:<\/b>)?\s*人/g, m;
+    while ((m = re.exec(html))) out.push(num(m[1]));
+    return out;
+  }
+
   // ── ④ 比對 ─────────────────────────────────────────────────────
   //    db     ＝ {代號: 價格}，資料庫那份，當標準答案
   //    source ＝ {name, prices, expectAll}
@@ -108,5 +118,6 @@
   }
 
   return { fromDataP: fromDataP, fromFallback: fromFallback,
-           fromSiteData: fromSiteData, compare: compare };
+           fromSiteData: fromSiteData, fromCapacityText: fromCapacityText,
+           compare: compare };
 });
