@@ -218,6 +218,26 @@
   details.fold[open] > summary .ar{transform:rotate(-45deg);margin-bottom:0}
   .foldb{padding:0 14px 14px}
 
+  /* 課程轉讓（第 74 步）。
+     ☢️ 名字都加 xf- / 2 的後綴，先搜過確定這個檔案裡沒有同名的 ——
+        第 72 步就是因為 .lg 撞名，把按鍵撐成兩行高。 */
+  .picked2{background:var(--ok-bg);border:1px solid var(--ok-line);border-radius:9px;
+    padding:9px 10px;display:flex;align-items:center;gap:7px;font-size:14.5px;font-weight:800}
+  .picked2 span{font-weight:400;color:var(--dim);font-size:12px}
+  .picked2 button{margin-left:auto;background:none;border:0;color:var(--dim);
+    font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline}
+  .xfhits{margin-top:7px}
+  .xfhit{border-top:1px solid var(--line);padding:8px 2px;cursor:pointer;
+    display:flex;align-items:baseline;gap:7px;font-size:14px}
+  .xfhit:first-child{border-top:0}
+  .xfhit b{font-weight:800}
+  .xfhit span{font-size:11.5px;color:var(--faint)}
+  .xfhit i{margin-left:auto;font-style:normal;font-size:11.5px;color:var(--dim)}
+  .xfp{border:1px solid var(--line);border-radius:9px;padding:9px 10px;margin-top:7px;
+    font-size:13px;cursor:pointer;background:var(--surface2)}
+  .xfp.on{border-color:var(--blue);background:#fff;box-shadow:inset 0 0 0 1px var(--blue)}
+  .xfp i{display:block;font-style:normal;font-size:11px;color:var(--warn);margin-top:2px}
+
   /* ══ 待入帳 ═══════════════════════════════════════════════ */
   .up{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
   .up:last-of-type{border-bottom:0}
@@ -413,6 +433,12 @@
   //    建完客人剛好會重畫一次，成功訊息就跟著被收進去看不見了。
   //    這個變數負責讓它記得剛剛是開著的。
   var NEWOPEN = false;
+
+  /* 課程轉讓（第 74 步）。☢️ 只有財務看得到 ——
+     一張 12 堂的方案換人＝把 NT$4,000 的權益移過去，那不是任何一位教練該按的。
+     真正的牆在資料庫（transfer_plan 檢查 is_finance），這裡只是不要讓人白按。 */
+  var XFOPEN = false;
+  var XF = { from: null, plans: [], plan: null, to: null, busy: false };
   var SIGNUPS = [];
   var UNPAID = [], PRODUCTS = [], OVER = [];
   var RECENT = [];          // 最近的購課（只有 owner 看得到，也是沖銷的入口）
@@ -853,6 +879,194 @@
       '</div></details>';
   }
 
+  /* ══ 課程轉讓 ══════════════════════════════════════════════ */
+  function xfPerson(label, who, qid, hid) {
+    if (who) {
+      return '<label>' + label + '</label><div class="picked2">' + esc(who.name) +
+        '<span>' + esc(who.phone_tail || '') + '</span>' +
+        '<button type="button" data-xfclr="' + esc(qid) + '">換一個</button></div>';
+    }
+    return '<label>' + label + '</label>' +
+      '<input id="' + qid + '" type="search" placeholder="打名字或手機後三碼" autocomplete="off">' +
+      '<div id="' + hid + '" class="xfhits"></div>';
+  }
+
+  function xfPlanList() {
+    if (!XF.from) return '';
+    if (!XF.plans.length) {
+      return '<div class="hint" style="margin-top:8px">☢️ 這個人名下沒有可以轉讓的方案。' +
+             '（單堂、已經用完的、PGT 都不能轉）</div>';
+    }
+    return '<label style="margin-top:11px">要轉哪一張</label>' +
+      XF.plans.map(function (p) {
+        var on = XF.plan && XF.plan.id === p.id;
+        return '<div class="xfp' + (on ? ' on' : '') + '" data-xfplan="' + esc(p.id) + '">' +
+          '<b>' + esc(p.opened_on) + '</b>　' + esc(p.product) +
+          (p.product_label ? '・' + esc(p.product_label) : '') +
+          '　<b>剩 ' + p.remaining + ' 堂</b>（共 ' + p.total_credits + '）' +
+          (p.basis_status === 'pending'
+            ? '<i>☢️ 這批算不出每堂業績基礎（搬遷進來的舊帳）</i>' : '') +
+        '</div>';
+      }).join('');
+  }
+
+  function transferFold() {
+    if (!ME || !ME.can_finance) return '';
+    var ready = XF.from && XF.plan && XF.to;
+    return '<details class="fold" id="xfFold"' + (XFOPEN ? ' open' : '') + '>' +
+      '<summary>課程轉讓<span class="cap">把剩餘堂數換人</span><span class="ar"></span></summary>' +
+      '<div class="foldb">' +
+        xfPerson('誰要轉出', XF.from, 'xfQ', 'xfHits') +
+        xfPlanList() +
+        (XF.plan ? xfPerson('轉給誰', XF.to, 'xfQ2', 'xfHits2') : '') +
+        (XF.plan && XF.to
+          ? '<label>備註（選填）</label><input id="xfNote" type="text" placeholder="例：學員不再上課，轉給家人">'
+          : '') +
+        '<button type="button" class="btn" id="xfGo"' + (ready ? '' : ' disabled') + '>' +
+          (ready ? '確認轉讓 ' + XF.plan.remaining + ' 堂' : '選好轉出人、方案、接收人') + '</button>' +
+        '<div class="hint" style="margin-top:9px">☢️ 轉讓<b>不產生收入也不產生業績</b>，' +
+        '方案編號不變、只換擁有人。原擁有人會永久留在紀錄上。<br>' +
+        'PGT 不可轉讓；單堂課程不可轉讓。</div>' +
+        '<div id="xfRes"></div>' +
+      '</div></details>';
+  }
+
+  /* 轉讓的搜尋與按鈕。
+     ☢️ 這一段自己搜自己的，不共用上面「幫學員購課」那個 search() ——
+        那一支會畫出「購課」按鈕，混進轉讓流程裡人會按錯。 */
+  function xfSearch(v, box, pick) {
+    var digits = /^\d+$/.test(v);
+    var COLS = 'id,name,nickname,phone_tail,balance,is_active';
+    var qy = digits
+      ? DB.from('staff_customers').select(COLS).limit(8).like('phone', '%' + v)
+      : Promise.all([
+          DB.from('staff_customers').select(COLS).limit(8).ilike('name', '%' + v + '%'),
+          DB.from('staff_customers').select(COLS).limit(8).ilike('nickname', '%' + v + '%')
+        ]).then(function (rs) {
+          var bad = rs.filter(function (r) { return r.error; })[0];
+          if (bad) return { error: bad.error, data: null };
+          var seen = {}, out = [];
+          rs.forEach(function (r) {
+            (r.data || []).forEach(function (c) {
+              if (seen[c.id]) return; seen[c.id] = 1; out.push(c);
+            });
+          });
+          return { error: null, data: out.slice(0, 8) };
+        });
+
+    qy.then(function (r) {
+      if (r.error) { box.innerHTML = '<div class="empty">查不動：' + esc(r.error.message) + '</div>'; return; }
+      var d = r.data || [];
+      if (!d.length) { box.innerHTML = '<div class="empty">沒有這個人</div>'; return; }
+      box.innerHTML = d.map(function (c) {
+        return '<div class="xfhit" data-xfpick="' + esc(c.id) + '" data-nm="' + esc(c.name) +
+          '" data-tl="' + esc(c.phone_tail || '') + '"><b>' + esc(c.name) + '</b>' +
+          '<span>' + esc(c.phone_tail || '') + '</span><i>剩 ' +
+          (c.balance == null ? '—' : c.balance) + ' 堂</i></div>';
+      }).join('');
+      Array.prototype.forEach.call(box.querySelectorAll('[data-xfpick]'), function (el) {
+        el.onclick = function () {
+          pick({ id: el.getAttribute('data-xfpick'),
+                 name: el.getAttribute('data-nm'),
+                 phone_tail: el.getAttribute('data-tl') });
+        };
+      });
+    }, function (e) {
+      box.innerHTML = '<div class="empty">查不動：' + esc(e && e.message || e) + '</div>';
+    });
+  }
+
+  function xfLoadPlans() {
+    // ☢️ 只列【真的能轉】的：還有剩、不是單堂、不是 PGT。
+    //    列出來卻按不下去，比不列出來更討厭。
+    return DB.from('staff_plans')
+      .select('id,product,product_code,product_label,product_kind,total_credits,remaining,basis_status,opened_on')
+      .eq('owner_customer_id', XF.from.id)
+      .gt('remaining', 0)
+      .order('opened_on')
+      .then(function (r) {
+        var d = (!r.error && r.data) ? r.data : [];
+        XF.plans = d.filter(function (p) {
+          return p.product !== 'PGT' && p.product_kind !== 'single';
+        });
+      }, function () { XF.plans = []; });
+  }
+
+  function wireTransfer() {
+    var fold = document.getElementById('xfFold');
+    if (fold) fold.addEventListener('toggle', function () { XFOPEN = fold.open; });
+
+    var t1;
+    var q1 = document.getElementById('xfQ');
+    if (q1) q1.oninput = function () {
+      clearTimeout(t1);
+      var v = q1.value.trim();
+      var box = document.getElementById('xfHits');
+      if (v.length < 1) { box.innerHTML = ''; return; }
+      t1 = setTimeout(function () {
+        xfSearch(v, box, function (who) {
+          XF.from = who; XF.plan = null; XF.to = null; XFOPEN = true;
+          xfLoadPlans().then(render);
+        });
+      }, 260);
+    };
+
+    var t2;
+    var q2 = document.getElementById('xfQ2');
+    if (q2) q2.oninput = function () {
+      clearTimeout(t2);
+      var v = q2.value.trim();
+      var box = document.getElementById('xfHits2');
+      if (v.length < 1) { box.innerHTML = ''; return; }
+      t2 = setTimeout(function () {
+        xfSearch(v, box, function (who) { XF.to = who; XFOPEN = true; render(); });
+      }, 260);
+    };
+
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-xfclr]'), function (b) {
+      b.onclick = function () {
+        if (b.getAttribute('data-xfclr') === 'xfQ') { XF.from = null; XF.plans = []; XF.plan = null; XF.to = null; }
+        else { XF.to = null; }
+        XFOPEN = true; render();
+      };
+    });
+
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-xfplan]'), function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-xfplan');
+        XF.plan = XF.plans.filter(function (p) { return p.id === id; })[0] || null;
+        XFOPEN = true; render();
+      };
+    });
+
+    var go = document.getElementById('xfGo');
+    if (go) go.onclick = doTransfer;
+  }
+
+  function doTransfer() {
+    if (XF.busy || !XF.from || !XF.plan || !XF.to) return;
+    var note = (document.getElementById('xfNote') || {}).value || '';
+    var go = document.getElementById('xfGo');
+    XF.busy = true; if (go) { go.disabled = true; go.textContent = '轉讓中…'; }
+
+    DB.rpc('transfer_plan', { p_plan: XF.plan.id, p_to: XF.to.id, p_note: note })
+      .then(function (r) {
+        XF.busy = false;
+        if (r.error) throw new Error(r.error.message);
+        // ☢️ 規則擋下來不是錯誤，走 ok:false。訊息是資料庫寫的，直接給人看。
+        if (!r.data || r.data.ok === false) throw new Error((r.data && r.data.msg) || '轉不了');
+        toast(r.data.credits + ' 堂已從 ' + r.data.from + ' 轉給 ' + r.data.to);
+        XF = { from: null, plans: [], plan: null, to: null, busy: false };
+        XFOPEN = true;
+        return load().then(render);
+      })
+      .catch(function (e) {
+        XF.busy = false;
+        toast(String(e && e.message || e), true);
+        XFOPEN = true; render();
+      });
+  }
+
   function render() {
     elGate.hidden = true; elMain.hidden = false;
 
@@ -871,6 +1085,9 @@
     // ② 新增客人 —— 收起來，要用才展開
     html += newCustomerFold();
 
+    // ②-b 課程轉讓 —— 只有財務看得到，而且收起來
+    html += transferFold();
+
     // ③④⑤ 偶爾才處理一次的三塊，外加一塊「正常時完全不存在」的異常提醒
     html += '<div id="overBox">' + overBlock() + '</div>';
     html += '<div id="unpaidBox">' + unpaidBlock() + '</div>';
@@ -885,6 +1102,7 @@
     // 摺疊區記住開闔 —— 重畫之後才不會把剛剛的成功訊息收進去
     var fold = document.getElementById('newFold');
     if (fold) fold.addEventListener('toggle', function () { NEWOPEN = fold.open; });
+    wireTransfer();
 
     wireGo(elMain);
     wireNotify(elMain);
