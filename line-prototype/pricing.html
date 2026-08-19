@@ -226,9 +226,9 @@
     <div class="tb">
       <table>
         <tr><th>項目</th><th>一對一</th><th>一對二</th><th>三人以上</th></tr>
-        <tr><td>體驗</td><td>NT$1,000</td><td>NT$1,500</td><td rowspan="3" class="mute">請見<br>私人團體班</td></tr>
-        <tr><td>單堂</td><td>NT$1,500</td><td>NT$2,200</td></tr>
-        <tr><td>10 堂</td><td>NT$12,000</td><td>NT$20,000</td></tr>
+        <tr><td>體驗</td><td data-p="PT-TRY-1">NT$1,000</td><td data-p="PT-TRY-2">NT$1,500</td><td rowspan="3" class="mute">請見<br>私人團體班</td></tr>
+        <tr><td>單堂</td><td data-p="PT-1-1">NT$1,800</td><td data-p="PT-1-2">NT$2,200</td></tr>
+        <tr><td>10 堂</td><td data-p="PT-10-1">NT$15,000</td><td data-p="PT-10-2">NT$20,000</td></tr>
       </table>
     </div>
     <div class="marks">
@@ -242,14 +242,14 @@
     <div class="sh"><span class="mk"><i></i><i></i><i></i></span><h2>私人團體班</h2><span class="en">Private Group</span></div>
     <div class="tb">
       <table>
-        <tr><th>項目</th><th>一對三</th><th>一對四</th><th>一對五</th><th>一對多</th></tr>
-        <tr><td>單堂</td><td>NT$1,800</td><td>NT$2,100</td><td>NT$2,400</td><td class="mute">以此類推</td></tr>
-        <tr><td>每人均攤</td><td>NT$600</td><td>NT$525</td><td>NT$480</td><td class="mute">人數越多越低</td></tr>
+        <tr><th>項目</th><th>一對三</th><th>一對四</th><th>一對五</th><th>一對六</th></tr>
+        <tr><td>單堂總價</td><td data-p="PGT-1-3">NT$2,100</td><td data-p="PGT-1-4">NT$2,400</td><td data-p="PGT-1-5">NT$2,700</td><td data-p="PGT-1-6">NT$3,000</td></tr>
+        <tr><td>每人均攤</td><td id="pgt-e3">NT$700</td><td id="pgt-e4">NT$600</td><td id="pgt-e5">NT$540</td><td id="pgt-e6">NT$500</td></tr>
       </table>
     </div>
     <div class="marks">
       <div>私人團體班與教練詳談課程內容</div>
-      <div>每增加一人約 +NT$300，實際以現場確認為準</div>
+      <div>每增加一人 +NT$300，六人為上限；七人以上請洽櫃檯</div>
     </div>
     <div class="cta-row"><a class="btn btn-1" href="PGT-booking.html">預約私人團體班<span class="ar">›</span></a></div>
   </section>
@@ -259,7 +259,7 @@
     <div class="tb">
       <table>
         <tr><th>項目</th><th>單堂</th><th>買 10 送 2</th><th>平均一堂</th></tr>
-        <tr><td>費用</td><td>NT$400</td><td>NT$4,000</td><td class="hi">NT$333</td></tr>
+        <tr><td>費用</td><td data-p="GT-1">NT$400</td><td data-p="GT-12">NT$4,000</td><td class="hi">NT$333</td></tr>
       </table>
     </div>
     <div class="hlt">
@@ -335,5 +335,23 @@
     <a href="https://jerecyu.github.io/Fusion_Force_Fitness/" target="_blank" rel="noopener">諧動空間官方網站<span class="ar">›</span></a>
   </div>
 </div>
+
+<!-- ☢️ 上面表格裡的數字是「沒有網路也看得到」的版本。
+     下面兩支腳本會去資料庫把最新價格蓋上來。
+     兩邊對不上時，tools/check-prices.mjs 會在推之前就報錯。 -->
+<script src="supabase-config.js"></script>
+<script src="prices.js"></script>
+<script>
+(function () {
+  function eachOf(P) {
+    for (var n = P.PGT.min; n <= P.PGT.max; n++) {
+      var el = document.getElementById('pgt-e' + n);
+      if (el) el.textContent = FFF_PRICES.money(Math.round(P.PGT.rates[n] / n));
+    }
+  }
+  eachOf(FFF_PRICES.now());
+  FFF_PRICES.load().then(function (P) { FFF_PRICES.paint(P); eachOf(P); });
+})();
+</script>
 </body>
 </html>

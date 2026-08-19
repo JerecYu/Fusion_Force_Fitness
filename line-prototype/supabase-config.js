@@ -27,6 +27,16 @@ const SUPABASE_URL = 'https://ubvbmksvvyzjzsmfxeby.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ypWxEaKKmCkdYtxayl7YCQ_GciheV_h';
 
 
+// ── ②-b 把網址與金鑰掛到門牌上 ───────────────────────────────
+//    理由跟下面 window.fffDB 那一行一樣：const 宣告的東西不會自動變成
+//    window 的屬性。prices.js 在沒有 supabase 工廠的頁面要靠這兩個值
+//    直接打 REST，所以一定要匯出。
+//    ☢️ 這兩行必須放在 createClient 前面 —— 萬一 CDN 沒載到，
+//       下一行會當場出錯，放後面就匯不出去了。
+window.SUPABASE_URL = SUPABASE_URL;
+window.SUPABASE_PUBLISHABLE_KEY = SUPABASE_PUBLISHABLE_KEY;
+
+
 // ── ③ 建立連線 ──────────────────────────────────────────────
 //
 //    注意變數叫 fffDB，不叫 supabase。
@@ -37,10 +47,12 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ypWxEaKKmCkdYtxayl7YCQ_GciheV_h
 //    工廠（supabase） → 生出 → 連線（fffDB）
 //    兩個是不同東西，名字不能撞。
 //
-const fffDB = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
-);
+//    ☢️ 有些頁面（純靜態的價目表）不載 CDN，只要上面那兩個值就夠了。
+//       所以這裡先確認工廠在不在，不在就不要當場爆掉 ——
+//       爆掉的話連 ②-b 後面的東西都跑不完。
+const fffDB = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+  : null;
 
 // ⚠️ 這一行不能省。
 //    在 <script> 裡用 const 宣告的東西，只活在「腳本作用域」，

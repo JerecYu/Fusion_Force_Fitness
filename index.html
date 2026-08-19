@@ -1115,12 +1115,12 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
       <div class="card prod pt"><div class="bar"></div><div class="in">
         <div class="code">PT</div><h3>私人教練課</h3>
         <p>一對一或一對二，與教練協調時間。採 FFT 評估系統做短中長期的全盤規劃，適合有明確目標或需要處理特定不適的人。</p>
-        <div class="price">體驗 NT$1,000 起<small>單堂 NT$1,800 起・首次含 FMS 評估檢測</small></div>
+        <div class="price">體驗 <span data-p="PT-TRY-1">NT$1,000</span> 起<small>單堂 <span data-p="PT-1-1">NT$1,800</span> 起・首次含 FMS 評估檢測</small></div>
         <a class="btn btn-2" href="#/pt">預約教練課</a></div></div>
       <div class="card prod pgt"><div class="bar"></div><div class="in">
         <div class="code">PGT</div><h3>私人團體班</h3>
-        <p>三人以上自行成班，與教練詳談課程內容，進度式週期教學。和朋友、同事或家人一起練，人數越多每人均攤越低。</p>
-        <div class="price">單堂 NT$2,100 起<small>一對三每人 NT$700・人數越多越省</small></div>
+        <p>三～六人自行成班，與教練詳談課程內容，進度式週期教學。和朋友、同事或家人一起練，人數越多每人均攤越低。</p>
+        <div class="price">單堂 <span data-p="PGT-1-3">NT$2,100</span> 起<small>一對三每人 NT$700・人數越多越省</small></div>
         <a class="btn btn-2" href="#/pgt">預約私人團體班</a></div></div>
       <div class="card prod"><div class="bar"></div><div class="in">
         <div class="code">GT</div><h3>主題式團體課</h3>
@@ -1392,7 +1392,7 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
           <div class="kv"><div class="k">人數</div><div class="v">1對3 ～ 1對多</div></div>
           <div class="kv"><div class="k">排課</div><div class="v">預約制</div></div>
           <div class="kv"><div class="k">評估</div><div class="v">FMS 系統</div></div>
-          <div class="kv"><div class="k">單堂起</div><div class="v mono">NT$2,100</div></div></div>
+          <div class="kv"><div class="k">單堂起</div><div class="v mono" data-p="PGT-1-3">NT$2,100</div></div></div>
         <div class="btn-row" style="margin-top:20px">
           <a class="btn btn-1" href="#/pgt">預約私人團體班</a>
           <a class="btn btn-2" href="#/pricing">看完整價格</a></div></div></div>
@@ -1533,9 +1533,9 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
       <h2>私人教練</h2><span class="en" style="margin-left:auto">Personal Training</span></div></div>
     <div class="card tb"><table>
       <tr><th>項目</th><th>一對一</th><th>一對二</th><th>三人以上</th></tr>
-      <tr><td>體驗</td><td>NT$1,000</td><td>NT$1,500</td><td rowspan="3" class="mute">請見<br>私人團體班</td></tr>
-      <tr><td>單堂</td><td>NT$1,800</td><td>NT$2,200</td></tr>
-      <tr><td>10 堂</td><td>NT$15,000</td><td>NT$20,000</td></tr></table></div>
+      <tr><td>體驗</td><td data-p="PT-TRY-1">NT$1,000</td><td data-p="PT-TRY-2">NT$1,500</td><td rowspan="3" class="mute">請見<br>私人團體班</td></tr>
+      <tr><td>單堂</td><td data-p="PT-1-1">NT$1,800</td><td data-p="PT-1-2">NT$2,200</td></tr>
+      <tr><td>10 堂</td><td data-p="PT-10-1">NT$15,000</td><td data-p="PT-10-2">NT$20,000</td></tr></table></div>
     <div class="hlt"><div class="big">FMS</div><div>
       <div class="t">第一次體驗含 FMS 功能性評估檢測</div>
       <div class="d">先了解你的動作品質與限制，再決定訓練方向。諧動教練學員自主訓練 9am–6pm 免費。</div></div></div>
@@ -1550,10 +1550,11 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
     <div class="sec-head"><div class="top"><span class="mk"><i></i><i></i><i></i></span>
       <h2>私人團體班</h2><span class="en" style="margin-left:auto">Private Group</span></div></div>
     <div class="card tb"><table>
-      <tr><th>項目</th><th>一對三</th><th>一對四</th><th>一對五</th><th>六人以上</th></tr>
-      <tr><td>單堂總價</td><td>NT$2,100</td><td>NT$2,400</td><td>NT$2,500</td><td class="mute">內洽</td></tr>
-      <tr><td>每人均攤</td><td class="hi">NT$700</td><td class="hi">NT$600</td><td class="hi">NT$500</td>
-        <td class="mute">請來電詢問</td></tr></table></div>
+      <tr><th>項目</th><th>一對三</th><th>一對四</th><th>一對五</th><th>一對六</th></tr>
+      <tr><td>單堂總價</td><td data-p="PGT-1-3">NT$2,100</td><td data-p="PGT-1-4">NT$2,400</td>
+        <td data-p="PGT-1-5">NT$2,700</td><td data-p="PGT-1-6">NT$3,000</td></tr>
+      <tr><td>每人均攤</td><td class="hi">NT$700</td><td class="hi">NT$600</td><td class="hi">NT$540</td>
+        <td class="hi">NT$500</td></tr></table></div>
     <div class="card card-p calc" style="margin-top:13px">
       <p style="font-size:1.168rem;color:var(--dim);text-align:center;margin-bottom:18px">調整人數，看看每個人要分攤多少</p>
       <div class="stepper">
@@ -1566,7 +1567,7 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
     </div>
     <div class="marks">
       <div>私人團體班與教練詳談課程內容，採進度式週期教學</div>
-      <div>六人以上請來電洽詢 (02) 2356-9462</div></div>
+      <div>每增加一人 +NT$300，六人為上限；七人以上請來電洽詢 (02) 2356-9462</div></div>
     <div class="btn-row" style="margin-top:20px">
       <a class="btn btn-1" href="#/pgt">預約私人團體班</a></div>
   </div></div>
@@ -1576,7 +1577,7 @@ select:focus-visible,[tabindex]:focus-visible{outline:2.5px solid var(--teal);ou
       <h2>團體課程</h2><span class="en" style="margin-left:auto">Group Training</span></div></div>
     <div class="card tb"><table>
       <tr><th>項目</th><th>單堂</th><th>買 10 送 2</th><th>平均一堂</th></tr>
-      <tr><td>費用</td><td>NT$400</td><td>NT$4,000</td><td class="hi">NT$333</td></tr></table></div>
+      <tr><td>費用</td><td data-p="GT-1">NT$400</td><td data-p="GT-12">NT$4,000</td><td class="hi">NT$333</td></tr></table></div>
     <div class="hlt"><div class="big">+2</div><div>
       <div class="t">買 10 堂送 2 堂，實際可以上 12 堂</div>
       <div class="d">NT$4,000 ÷ 12 堂 = 平均一堂 NT$333，比單堂省下 NT$67。</div></div></div>
@@ -2287,8 +2288,9 @@ var FFDATA = {
       { id: '1v1', k: '一對一', trial: 1000, single: 1800, pack10: 15000 },
       { id: '1v2', k: '一對二', trial: 1500, single: 2200, pack10: 20000 }
     ],
-    /* 私人團體班改為對照表：價格非線性，六人以上內洽 */
-    pgt: { rates: { 3: 2100, 4: 2400, 5: 2500 }, min: 3, max: 5 },
+    /* ☢️ 私人團體班只賣到六人，七人以上是外派／企業包班，要另外談。
+       這裡的數字必須跟資料庫 products 表一致 —— tools/check-prices.mjs 會擋。 */
+    pgt: { rates: { 3: 2100, 4: 2400, 5: 2700, 6: 3000 }, min: 3, max: 6 },
     gt:  { single: 400, pack: 4000, packQty: 10, bonus: 2 },
     open: [
       { t: '9am–12pm',  p: 100, u: '/hr' },
@@ -2723,13 +2725,19 @@ window.addEventListener('load', markScrollers);
         liff.isLoggedIn() 會是 false，客人會被當成沒綁定的人。
         不會報錯，只是功能默默降級。 */
   var LIFF = 'https://liff.line.me/2011063116-QOxXN30h/';
+  /* ☢️ 價格不要在這裡再寫一次 —— 全部從 FFDATA.pricing 拿。
+     同一個數字在檔案裡出現兩次，遲早會有一次忘了改。 */
+  var PR = FFDATA.pricing;
   var OPTS = [
     { id: 'gt', code: 'GT', t: '主題式團體課', d: '每週固定開課 · 每班上限 10 人',
-      p: '單堂 NT$400 ・ 買10送2 NT$4,000', href: LIFF + 'GT-booking.html' },
+      p: '單堂 ' + FF.money(PR.gt.single) + ' ・ 買10送2 ' + FF.money(PR.gt.pack),
+      href: LIFF + 'GT-booking.html' },
     { id: 'pt', code: 'PT', t: '私人教練課', d: '一對一／一對二 · 與教練協調時間',
-      p: '體驗 NT$1,000 起 ・ 含 FMS 評估', href: LIFF + 'PT-booking.html' },
-    { id: 'pgt', code: 'PGT', t: '私人團體班', d: '三人以上成班 · 與教練詳談內容',
-      p: '單堂 NT$2,100 起 ・ 人數越多越省', href: LIFF + 'PGT-booking.html' }
+      p: '體驗 ' + FF.money(PR.pt[0].trial) + ' 起 ・ 含 FMS 評估',
+      href: LIFF + 'PT-booking.html' },
+    { id: 'pgt', code: 'PGT', t: '私人團體班', d: '三～六人成班 · 與教練詳談內容',
+      p: '單堂 ' + FF.money(PR.pgt.rates[PR.pgt.min]) + ' 起 ・ 人數越多越省',
+      href: LIFF + 'PGT-booking.html' }
   ];
   var cur = 'gt';
   var dd = FF.el('bk-dd'), btn = FF.el('bk-btn'), panel = FF.el('bk-panel'), go = FF.el('bk-go');
@@ -2939,8 +2947,9 @@ window.addEventListener('load', markScrollers);
       d.className = 'avd' + (i < n ? ' on' : ''); d.textContent = '人'; a.appendChild(d);
     }
     FF.el('pgt-note').innerHTML = '一對三 ' + FF.money(P.rates[3]) + '　·　一對四 ' + FF.money(P.rates[4]) +
-      '　·　一對五 ' + FF.money(P.rates[5]) + '　·　六人以上請來電洽詢<br>' +
-      '<b>人數越多，每人均攤越低。</b>實際課程內容與週期規劃由教練與你詳談後確認。';
+      '　·　一對五 ' + FF.money(P.rates[5]) + '　·　一對六 ' + FF.money(P.rates[6]) + '<br>' +
+      '<b>人數越多，每人均攤越低。六人為上限</b>，七人以上請來電洽詢。' +
+      '實際課程內容與週期規劃由教練與你詳談後確認。';
     renderSum();
   }
   FF.el('pgt-minus').onclick = function () { if (n > P.min) { n--; renderPeople(); } };

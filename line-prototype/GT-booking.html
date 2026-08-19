@@ -428,7 +428,7 @@
     <div class="pb">
       <div class="l">
         <div class="k">Group Training</div>
-        <div class="v">單堂 <b>NT$400</b>　·　買 10 送 2 <b>NT$4,000</b>
+        <div class="v">單堂 <b data-p="GT-1">NT$400</b>　·　買 10 送 2 <b data-p="GT-12">NT$4,000</b>
           <span class="sm">等於上 12 堂，平均一堂 NT$333</span></div>
       </div>
       <a href="pricing.html">價目表</a>
@@ -514,6 +514,10 @@
 <!-- 先載入 Supabase 工廠，再載入我們的設定檔（裡面會建立 window.fffDB） -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+
+<!-- 價格。頁面上 data-p="商品代號" 的地方會被換成資料庫裡的最新價格。 -->
+<script src="prices.js"></script>
+<script>FFF_PRICES.load().then(function (P) { FFF_PRICES.paint(P); });</script>
 
 <!-- 第 31 步：LINE 身分辨識。
      必須放在 supabase-config.js 之後 ——

@@ -253,16 +253,21 @@
      順序不能換 —— pt-request.js 要用 window.fffDB 和 window.FFF_AUTH。 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+<script src="prices.js"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="liff-auth.js"></script>
 <script src="pt-request.js"></script>
 
 <script>
 (function(){
+  // ☢️ 價格不寫在這裡了。正本在資料庫 products 表，備援在 prices.js。
+  //    now() 先給一份立刻能畫的，load() 回來再換成資料庫的版本。
+  let PRICE=FFF_PRICES.now();
   const SPECS=[
-    {id:'1v1',k:'一對一',trial:1000,single:1500,pack10:12000},
-    {id:'1v2',k:'一對二',trial:1500,single:2200,pack10:20000}
+    {id:'1v1',k:'一對一',hc:1},
+    {id:'1v2',k:'一對二',hc:2}
   ];
+  const rate=s=>PRICE.PT[s.hc];
   const COACHES=[
     {id:'jerec',n:'Jerec',zh:'總教練',sk:'整復師、特殊族群體適能、感覺統合運動'},
     {id:'jessica',n:'Jessica',zh:'王韻茹',sk:'女性體態雕塑、抗肌筋膜老化、久坐姿勢矯正'},
@@ -280,15 +285,15 @@
     SPECS.forEach(s=>{
       const d=document.createElement('div');
       d.className='opt'+(s.id===spec?' on':'');
-      d.innerHTML='<div class="k">'+s.k+'</div><div class="p">'+money(s.single)+'</div><div class="sm">單堂價</div>';
+      d.innerHTML='<div class="k">'+s.k+'</div><div class="p">'+money(rate(s).single)+'</div><div class="sm">單堂價</div>';
       d.onclick=()=>{spec=s.id;renderSpecs();renderNote();renderSum()};
       w.appendChild(d);
     });
   }
   function renderNote(){
-    const s=SPECS.find(x=>x.id===spec);
+    const s=SPECS.find(x=>x.id===spec),r=rate(s);
     document.getElementById('specNote').innerHTML=
-      '<b>'+s.k+'</b>　初次體驗 '+money(s.trial)+'　·　單堂 '+money(s.single)+'　·　10 堂 '+money(s.pack10)+
+      '<b>'+s.k+'</b>　初次體驗 '+money(r.trial)+'　·　單堂 '+money(r.single)+'　·　10 堂 '+money(r.pack10)+
       '<br>第一次體驗含 <b>FMS 評估檢測</b>；諧動教練客戶自主訓練免費。';
   }
   function renderCoaches(){
@@ -320,7 +325,7 @@
       '<div class="rw"><span class="k">規格</span><span class="v">'+s.k+'</span></div>'+
       '<div class="rw"><span class="k">教練</span><span class="v">'+c.n+(c.id==='any'?'':'（'+c.zh+'）')+'</span></div>'+
       '<div class="rw"><span class="k">希望時段</span><span class="v">'+(dt||'未選擇')+' '+(slot||'')+'</span></div>'+
-      '<div class="tot"><span class="k">初次體驗價（含 FMS 評估）</span><span class="v">'+money(s.trial)+'</span></div>';
+      '<div class="tot"><span class="k">初次體驗價（含 FMS 評估）</span><span class="v">'+money(rate(s).trial)+'</span></div>';
     check();
   }
   function check(){
@@ -357,7 +362,7 @@
         ['規格', s.k],
         ['教練', c.id==='any' ? '不指定' : c.n],
         ['希望時段', (document.getElementById('iDate').value+' '+slot).trim() || '未選擇'],
-        ['體驗價', money(s.trial)]
+        ['體驗價', money(rate(s).trial)]
       ]
     });
   };
@@ -370,6 +375,9 @@
   document.getElementById('iDate').min=new Date().toISOString().slice(0,10);
 
   renderSpecs();renderNote();renderCoaches();renderSlots();renderSum();
+
+  // 資料庫的價格回來了就重畫。讀不到就維持備援的數字，畫面不會空掉。
+  FFF_PRICES.load().then(P=>{PRICE=P;renderSpecs();renderNote();renderSum()});
 })();
 </script>
 </body>
