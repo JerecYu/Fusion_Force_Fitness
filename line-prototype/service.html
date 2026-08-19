@@ -178,7 +178,7 @@
 
   var DB = null, ME = null, BUSY = false;
   var PRICES = { PT: [], PGT: [], CORP: [] };
-  var COACHES = [], LIST = [];
+  var COACHES = [], LIST = [], STAFF = [];
   var elGate = document.getElementById('gate');
   var elMain = document.getElementById('main');
   var elWho  = document.getElementById('who');
@@ -200,7 +200,7 @@
     { k:'PGT',     t:'私人團體班',   d:'PGT · 3~6 人' },
     { k:'PGT_OUT', t:'PGT 外派',     d:'課程費 ＋ 交通 500' },
     { k:'EVENT',   t:'諧動外派活動', d:'鐘點制 · 最多 2 位教練' },
-    { k:'CORP',    t:'企業包班',     d:'人工核定整案總價' }
+    { k:'CORP',    t:'企業包班',     d:'地區 × 時數費率' }
   ];
   function typeName(k) {
     for (var i = 0; i < TYPES.length; i++) if (TYPES[i].k === k) return TYPES[i].t;
@@ -373,7 +373,9 @@
 
   function corpBlock() {
     if (F.type !== 'CORP') return '';
-    var apr = '<option value="">（選核准人）</option>' + COACHES.map(function (c) {
+    // ☢️ 核准人用【全體職員】，不是授課教練清單 ——
+    //    核准跟授課是兩件事，顧問／股東也可能是核准人。
+    var apr = '<option value="">（選核准人）</option>' + STAFF.map(function (c) {
       return '<option value="' + esc(c.id) + '"' +
         (F.approver_id === c.id ? ' selected' : '') + '>' + esc(c.display_name) + '</option>';
     }).join('');
@@ -772,10 +774,18 @@
       DB.rpc('list_prices', { p_product: 'CORP' })
         .then(function (r) { PRICES.CORP = (!r.error && r.data) ? r.data : []; },
               function () { PRICES.CORP = []; }),
-      DB.from('employees').select('id,display_name,role').eq('is_active', true)
+      // ☢️ 授課教練只列【實際會站上課堂】的人（can_teach）。
+      //    職稱是教練不代表他授課 —— 簡基城是顧問／股東，role 是 coach 但不上課。
+      DB.from('employees').select('id,display_name,role')
+        .eq('is_active', true).eq('can_teach', true)
         .order('display_name')
         .then(function (r) { COACHES = (!r.error && r.data) ? r.data : []; },
               function () { COACHES = []; }),
+      // 核准人用得到全體職員
+      DB.from('employees').select('id,display_name,role').eq('is_active', true)
+        .order('display_name')
+        .then(function (r) { STAFF = (!r.error && r.data) ? r.data : []; },
+              function () { STAFF = []; }),
       DB.from('staff_services')
         .select('id,service_type,done_date,done_time,customer_name,company_name,headcount,' +
                 'billed_hours,revenue_amount,travel_fee,perf_amount,total_amount,' +
