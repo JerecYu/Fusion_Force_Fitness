@@ -408,6 +408,7 @@
     <a class="iconbtn" href="service.html">服務<span class="nv-long">登記</span><span class="ar"></span></a>
     <!-- 只有 can_finance（負責人／VC）才會現身 -->
     <a class="iconbtn" id="rptLink" href="report.html" hidden>對帳<span class="ar"></span></a>
+    <a class="iconbtn" id="payLink" href="payroll.html" hidden>薪資<span class="ar"></span></a>
     <button type="button" class="iconbtn" id="reload"><span class="nv-long">重新整理</span><span class="nv-short">重整</span></button>
     <!-- ☢️ 只在瀏覽器裡出現。在 LINE App 裡按了會自動登入回來，等於沒作用。 -->
     <button type="button" class="iconbtn" id="logout" hidden>登出</button>
@@ -1691,6 +1692,8 @@
             if (ME.can_finance) {
               var rl = document.getElementById('rptLink');
               if (rl) rl.hidden = false;
+              var pl = document.getElementById('payLink');
+              if (pl) pl.hidden = false;
             }
             gate('', '讀取中…', '');
             return loadSignups()
