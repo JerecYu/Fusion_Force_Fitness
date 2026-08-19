@@ -14,13 +14,15 @@
 #  ☢️ 客人【完全不受影響】。預設的圖文選單一動也沒動 ——
 #     只有被綁定的那七個人會看到職員版，其他人看到的還是原本那張。
 #
-#  ☢️ token 去哪裡拿：
-#     LINE Developers → 你的 Messaging API channel（2009245280）
-#     → Messaging API 分頁 → Channel access token（long-lived）
-#     ☢️ 不是 LINE Login 那個 channel（2011063116）的 token —— 圖文選單
-#        屬於 Messaging API，拿錯 channel 會回 401，而且訊息看起來像 token 過期。
+#  ☢️ 這一支要的是 Channel secret，不是 token。
+#     OA Manager → 設定 → Messaging API → Channel secret（就在 Channel ID 下面）
+#     程式會自己拿它去換一張 30 天的 token。
+#     ☢️ 所以【不需要 LINE Developers Console 的權限】——
+#        2026-08-19 查出來那個 channel 掛在別人的 Provider 底下，進不去。
+#        換 token 這條路繞過那個問題。
 #
-#  ☢️ token 不要存進檔案、不要貼進 git。這支程式只在記憶體裡用它。
+#  ☢️ 換新 token【不會】讓現有的 token 失效，所以不會弄壞任何正在跑的東西。
+#  ☢️ secret 不要存進檔案、不要貼進 git。這支程式只在記憶體裡用它。
 # ═══════════════════════════════════════════════════════════════════
 
 # ☢️ PowerShell 5.1 預設可能用 TLS 1.0，LINE 的 API 只收 1.2 以上。
@@ -29,18 +31,24 @@
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $ErrorActionPreference = 'Stop'
+$CHANNEL_ID = '2009245280'
 $LIFF = 'https://liff.line.me/2011063116-QOxXN30h/'
 $IMG  = Join-Path $PSScriptRoot '..\assets\brand\fff-richmenu-staff.png'
 
 # ── 七位職員（櫃檯平板還沒開通，所以不在名單上）──────────────────
+# ☢️☢️ 這裡【必須填 Messaging API 那個 Provider 的編號】。
+#    我們資料庫裡那七個編號是 LINE Login channel（FUSIONFORCE）給的，
+#    而圖文選單屬於另一個 Provider —— 同一個人在兩邊是【不同的編號】。
+#    直接把舊的貼過來，七個全部都會 404。
+#    先跑 probe-line-ids.ps1 把正確的編號找出來，再填進這裡。
 $STAFF = @(
-  @{ name = 'Jerec';    id = 'Ue999b972c268536e239ea873c1a011b9' },
-  @{ name = 'VC';       id = 'Uc9a7ab3448ac79b2e603aca95d2d8f39' },
-  @{ name = 'Peter';    id = 'U7481a5bd8b50932a2a26ddce7c029288' },
-  @{ name = 'Jessica';  id = 'U8043f9ca4feac87a0195151a2ad0ab40' },
-  @{ name = 'Johnson';  id = 'U08501df8eb0fc2f9c59d9f74e765c42e' },
-  @{ name = '簡基城';   id = 'Uabea1c538b52f099f8f36d852eca89e5' },
-  @{ name = '林智謙';   id = 'Ubbe89e7bb1ca36142314b3e23e61a465' }
+  # @{ name = 'Jerec';    id = 'U...' },
+  # @{ name = 'VC';       id = 'U...' },
+  # @{ name = 'Peter';    id = 'U...' },
+  # @{ name = 'Jessica';  id = 'U...' },
+  # @{ name = 'Johnson';  id = 'U...' },
+  # @{ name = '簡基城';   id = 'U...' },
+  # @{ name = '林智謙';   id = 'U...' }
 )
 
 # ── 六格的座標 ───────────────────────────────────────────────────
@@ -75,6 +83,13 @@ Write-Host ''
 Write-Host '── 職員專屬圖文選單 ──────────────────────────────' -ForegroundColor Cyan
 Write-Host ''
 
+if ($STAFF.Count -eq 0) {
+  Write-Host '☢️ 職員名單是空的。' -ForegroundColor Red
+  Write-Host '   先跑 .\tools\probe-line-ids.ps1 找出七個人的編號，'
+  Write-Host '   把它們填進這支程式上面的 $STAFF，再回來執行。'
+  exit 1
+}
+
 if (-not (Test-Path $IMG)) {
   Write-Host "☢️ 找不到底圖：$IMG" -ForegroundColor Red
   Write-Host '   先在 assets/brand 執行 python3 shot-staff.py 產生它。'
@@ -87,10 +102,24 @@ if ($imgSize -ge 1MB) {
   exit 1
 }
 
-$sec   = Read-Host '貼上 Messaging API 的 Channel access token' -AsSecureString
-$TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-           [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
-if (-not $TOKEN) { Write-Host '☢️ 沒有 token，停止。' -ForegroundColor Red; exit 1 }
+$sec = Read-Host '貼上 Channel secret（OA Manager → 設定 → Messaging API）' -AsSecureString
+$SECRET = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+            [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
+if (-not $SECRET) { Write-Host '☢️ 沒有輸入，停止。' -ForegroundColor Red; exit 1 }
+
+Write-Host ''
+Write-Host '⓪ 換 token…' -NoNewline
+try {
+  $body = "grant_type=client_credentials&client_id=$CHANNEL_ID&client_secret=$SECRET"
+  $t = Invoke-RestMethod -Method Post -Uri 'https://api.line.me/v2/oauth/accessToken' `
+        -ContentType 'application/x-www-form-urlencoded' -Body $body
+  $TOKEN = $t.access_token
+  Write-Host ("  ✓ 有效 {0} 天" -f [int]($t.expires_in / 86400)) -ForegroundColor Green
+} catch {
+  Write-Host '  ☢️ 失敗（400 通常是 secret 貼錯或前後有空白）' -ForegroundColor Red
+  Write-Host "     $($_.Exception.Message)"
+  exit 1
+}
 
 $H = @{ Authorization = "Bearer $TOKEN" }
 
