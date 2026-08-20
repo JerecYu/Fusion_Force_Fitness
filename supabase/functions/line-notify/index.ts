@@ -96,11 +96,23 @@ Deno.serve(async (req) => {
       .eq('id', sessionId).maybeSingle()
     if (!ses) return json({ ok: false, why: 'no_session', msg: '找不到這堂課' }, 404)
 
-    const { data: bks } = await admin
+    // ☢️☢️ 一定要指名走哪一條外鍵。
+    //    bookings 有【兩條】指向 customers：customer_id（誰上課）與
+    //    paid_by_customer_id（誰的堂數付的）。只寫 customers!inner(...) 的話
+    //    PostgREST 不知道要用哪一條，整個查詢會回錯。
+    //    2026-08-20 實測踩到：錯誤沒接住的話 data 是 null，收件人變成空的，
+    //    畫面上看起來就像「這堂課沒有人要通知」—— 而且不會報錯。
+    //    ☢️ 這一類 bug 只有在【真的有人該收到卻沒收到】的時候才會被發現。
+    const { data: bks, error: bkErr } = await admin
       .from('bookings')
-      .select('customer_id, status, customers!inner(id, name, phone, push_user_id)')
+      .select('customer_id, status, customers!bookings_customer_id_fkey(id, name, phone, push_user_id)')
       .eq('session_id', sessionId)
       .in('status', ['booked', 'cancelled'])
+
+    if (bkErr) {
+      return json({ ok: false, why: 'lookup_failed',
+        msg: '查不到這堂課的名單：' + bkErr.message, push: 0, manual: [] }, 500)
+    }
 
     const seen = new Set<string>()
     const people: any[] = []
