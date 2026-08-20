@@ -105,6 +105,26 @@
   .banner.dead{background:var(--err-bg);color:var(--err);border:1px solid var(--err-line)}
   .banner.soon{background:var(--surface2);color:var(--ink2);border:1px solid var(--line)}
 
+  /* 第 81 步：停課／請假通知。☢️ 類別名開頭都是 sb- —— 動手前先在整份檔案
+     搜過一次，確定沒有撞名（第 62 步被 .lg 撞過，版面壞掉而且不會報錯）。 */
+  .sb-open{margin-top:10px;width:100%;background:none;border:1px solid var(--err-line);
+    color:var(--err);border-radius:2px;padding:9px;font-family:inherit;
+    font-size:13px;font-weight:800;cursor:pointer}
+  .sb-open:active{background:var(--err-bg)}
+  .sb-box{margin-top:10px;border:1px solid var(--err-line);background:var(--err-bg);
+    border-radius:2px;padding:11px}
+  .sb-h{font-size:13.5px;font-weight:800;color:var(--err)}
+  .sb-t{font-size:12px;color:var(--ink2);margin-top:4px;font-weight:400;line-height:1.6}
+  .sb-in{width:100%;margin-top:8px;font-family:inherit;font-size:14px;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:2px;padding:9px;resize:vertical}
+  .sb-who{margin-top:8px;font-size:12px;color:var(--ink2);line-height:1.7}
+  .sb-who b{color:var(--err)}
+  .sb-go{width:100%;margin-top:9px;background:var(--err);color:#fff;border:0;border-radius:2px;
+    padding:12px;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer}
+  .sb-go:disabled{opacity:.5}
+  .sb-no{width:100%;margin-top:6px;background:none;border:0;color:var(--dim);
+    font-family:inherit;font-size:12.5px;cursor:pointer;padding:6px}
+
   .p{background:var(--surface);border:1px solid var(--line);border-radius:3px;
     padding:12px 13px;margin-bottom:8px}
   .p.on{border-color:var(--ok-line);background:#F7FCF9}
@@ -1006,6 +1026,7 @@
       '<div class="h2">' + esc(s.coach_name || '未指定教練') + '　·　' + (LV[s.level] || s.level) + '</div>' +
       (dead ? '<div class="banner dead">這堂課已經取消，點不了名。<br>如果實際上有上課，請找 Jerec 在後台改課次狀態。</div>' : '') +
       (soon ? '<div class="banner soon">還太早 —— <b>課前 15 分鐘</b>才能開始點名。<br>現在可以先把臨時要來的人加進名單。</div>' : '') +
+      stopArea(s, dead) +
       qrArea(s, lock) +
       '</div>';
 
@@ -1025,6 +1046,115 @@
 
     elRoster.innerHTML = html;
     wireRoster(dead);   // 搜尋框只有「已取消」才關；未來的課可以先加人
+    stopWire();
+  }
+
+  /* ══ 停課／請假通知（第 81 步）══════════════════════════════════
+     ☢️ 已經有人點過名的課【取消不了】—— 那不是停課，那是上完了。
+        擋在資料庫的 cancel_session() 裡，這裡只是不要讓人白按。
+     ☢️ 推得到的人只有【完成推播綁定】的那些。推不到的會列成名單 ——
+        那些人不會靜靜消失，他們是會站在門口等的人。 */
+  var STOP_OPEN = false, STOP_WHO = null, STOP_BUSY = false;
+
+  function stopArea(s, dead) {
+    if (dead) return '';
+    if (!STOP_OPEN) {
+      return '<button type="button" class="sb-open" id="sbOpen">停課／請假　通知這堂課的人</button>';
+    }
+    var w = STOP_WHO;
+    var who = !w ? '<div class="sb-who">正在查這堂課有誰…</div>'
+      : '<div class="sb-who">' +
+          (w.push.length
+            ? '推播給 <b>' + w.push.length + '</b> 位：' +
+              w.push.map(function (x) { return esc(x.name); }).join('、')
+            : '<b>目前沒有人開啟推播通知</b>') +
+          (w.manual.length
+            ? '<br>☢️ 這 <b>' + w.manual.length + '</b> 位推不到，要打電話：' +
+              w.manual.map(function (x) { return esc(x.name) + '（' + esc(x.phone_tail) + '）'; }).join('、')
+            : '') +
+        '</div>';
+    return '<div class="sb-box">' +
+      '<div class="sb-h">停課／請假</div>' +
+      '<div class="sb-t">這堂課會標成<b>已取消</b>，報名的人堂數<b>不會被扣</b>。' +
+        '有開啟通知的直接傳 LINE，其餘列名單給櫃檯。</div>' +
+      '<textarea class="sb-in" id="sbWhy" rows="2" placeholder="原因（會出現在通知裡）。例：教練臨時請假，改約下週同一時段"></textarea>' +
+      who +
+      '<button type="button" class="sb-go" id="sbGo">確認停課並通知</button>' +
+      '<button type="button" class="sb-no" id="sbNo">先不要</button>' +
+    '</div>';
+  }
+
+  function stopWire() {
+    var o = document.getElementById('sbOpen');
+    if (o) o.onclick = function () {
+      STOP_OPEN = true; STOP_WHO = null; renderRoster();
+      DB.rpc('session_notice_list', { p_session: CUR.session_id })
+        .then(function (r) {
+          if (r.error || !r.data || !r.data.ok) { STOP_WHO = { push: [], manual: [] }; }
+          else { STOP_WHO = { push: r.data.push || [], manual: r.data.manual || [] }; }
+          if (STOP_OPEN) renderRoster();
+        }, function () { STOP_WHO = { push: [], manual: [] }; if (STOP_OPEN) renderRoster(); });
+    };
+    var n = document.getElementById('sbNo');
+    if (n) n.onclick = function () { STOP_OPEN = false; renderRoster(); };
+    var g = document.getElementById('sbGo');
+    if (g) g.onclick = doStop;
+  }
+
+  function doStop() {
+    if (STOP_BUSY) return;
+    STOP_BUSY = true;
+    var g = document.getElementById('sbGo');
+    var why = (document.getElementById('sbWhy') || {}).value || '';
+    g.disabled = true; g.textContent = '處理中…';
+
+    DB.rpc('cancel_session', { p_session: CUR.session_id, p_why: why })
+      .then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        var d = r.data || {};
+        if (!d.ok) throw new Error(d.msg || '取消失敗');
+        // 課次取消成功了 —— 通知失敗【不能】讓人以為課沒取消
+        return pushNotice(why).then(function (p) {
+          STOP_BUSY = false; STOP_OPEN = false;
+          var msg = '已停課。';
+          if (p && p.push) msg += '推播 ' + p.push + ' 則。';
+          if (p && p.manual && p.manual.length) {
+            msg += '☢️ 要打電話：' +
+              p.manual.map(function (x) { return x.name + '(' + x.phone_tail + ')'; }).join('、');
+          }
+          if (p && p.why === 'no_line_credential') msg = '已停課，但推播還沒設定好（' + p.msg + '）。';
+          toast(msg, !!(p && p.manual && p.manual.length));
+          // 課表和名單都要重讀 —— 這堂課現在是「已取消」，畫面得跟著變
+          return loadSessions().then(function () {
+            // ☢️ CUR 是從 SESSIONS 挑出來的那個【物件】—— 重讀之後它還是舊的，
+            //    session_status 仍然寫著 pending，紅色橫幅就不會出現。
+            //    看起來像「按了沒反應」，其實課已經取消了。
+            var fresh = SESSIONS.filter(function (x) { return x.session_id === CUR.session_id; })[0];
+            if (fresh) CUR = fresh;
+            return loadRoster(CUR.session_id).then(renderRoster);
+          });
+        });
+      })
+      .catch(function (e) {
+        STOP_BUSY = false;
+        if (g) { g.disabled = false; g.textContent = '確認停課並通知'; }
+        toast(String(e && e.message || e), true);
+      });
+  }
+
+  // ☢️ 收件人由 Edge Function 自己去資料庫查，這裡【只傳課次 ID】。
+  //    傳名單過去的話，這支就變成「叫我發給誰就發給誰」的工具。
+  function pushNotice(why) {
+    return DB.auth.getSession().then(function (s) {
+      var tok = s && s.data && s.data.session && s.data.session.access_token;
+      if (!tok) return { push: 0, manual: [] };
+      return fetch(window.SUPABASE_URL + '/functions/v1/line-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+        body: JSON.stringify({ session_id: CUR.session_id, body: why })
+      }).then(function (r) { return r.json(); })
+        .catch(function () { return { push: 0, manual: [] }; });
+    });
   }
 
   // 確認碼那一塊：時窗內才是按鈕，時窗外只講一句話。
