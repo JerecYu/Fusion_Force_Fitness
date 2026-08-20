@@ -75,6 +75,20 @@
   .od.late{cursor:default;background:#FFF7F6;border-style:dashed}
   .od.late .odr{color:var(--dim);font-weight:600}
   .sec{margin:20px 0 9px;font-size:11px;font-weight:800;letter-spacing:.18em;color:var(--faint)}
+
+  /* 第 83 步：更後面的課（摺疊）。☢️ 類別名開頭一律 fs- ——
+     動手前先搜過整份檔案確認沒撞名（第 62 步被 .lg 撞過，版面壞掉又不報錯）。 */
+  .fs-box{margin-top:20px}
+  .fs-box>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+    padding:11px 13px;background:var(--surface);border:1px solid var(--line);border-radius:2px;
+    font-size:13px;font-weight:800;color:var(--ink2)}
+  .fs-box>summary::-webkit-details-marker{display:none}
+  .fs-cap{font-weight:400;font-size:11.5px;color:var(--faint)}
+  .fs-ar{margin-left:auto;display:inline-block;width:8px;height:8px;
+    border-right:2.4px solid var(--faint);border-bottom:2.4px solid var(--faint);
+    border-radius:1.5px;transform:rotate(45deg);transition:transform .15s}
+  .fs-box[open]>summary .fs-ar{transform:rotate(-135deg)}
+  .fs-box[open]>summary{margin-bottom:9px}
   .sec.hot{color:var(--warn)}
 
   /* ── 課次卡 ── */
@@ -754,6 +768,15 @@
     return s;   // YYYY-MM-DD
   }
 
+  // ☢️ 加一天要用 UTC 去推，不要用 new Date(y,m,d) 再 setDate ——
+  //    後者會用瀏覽器所在時區，跨月／跨日光節約時會多一天或少一天。
+  function addDay(iso, n) {
+    var p = String(iso).split('-');
+    var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+
   var toastTimer;
   function toast(msg, bad) {
     var old = document.querySelector('.toast');
@@ -958,8 +981,22 @@
     }
     html += '<div class="sec">今天　' + dstr(today) + '</div>';
     html += now.length ? now.map(card).join('') : '<div class="empty">今天沒有團體課</div>';
-    if (next.length) {
-      html += '<div class="sec">接下來</div>' + next.map(card).join('');
+    // ☢️ 第 83 步把課表範圍從「今天+1」放寬到「今天+14」之後，
+    //    「接下來」會從 3 張卡變成 27 張 —— 而教練 99% 的時候是來點【今天】的名。
+    //    所以只有【明天】維持攤開，再往後的收進摺疊區：
+    //    要提前停課的人找得到，每天在用的人不用滑過去。
+    var tmr = addDay(today, 1);
+    var soon  = next.filter(function (s) { return s.session_date <= tmr; });
+    var later = next.filter(function (s) { return s.session_date >  tmr; });
+
+    if (soon.length) {
+      html += '<div class="sec">明天　' + dstr(tmr) + '</div>' + soon.map(card).join('');
+    }
+    if (later.length) {
+      html += '<details class="fs-box"><summary>更後面的課（' + later.length + ' 堂）' +
+                '<span class="fs-cap">要提前停課在這裡找</span><span class="fs-ar"></span></summary>' +
+                later.map(card).join('') +
+              '</details>';
     }
     // ☢️ 逾期區塊在的時候不能整個蓋掉 —— 那是這一頁最重要的一塊。
     if (!missed.length && !now.length && !next.length && !OVERDUE.length && !OVERDUE_ERR) {
