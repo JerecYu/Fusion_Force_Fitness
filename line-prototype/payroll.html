@@ -112,6 +112,41 @@
   .btn.ghost{background:none;color:var(--dim);border:1px solid var(--line);
     font-size:13.5px;padding:11px;margin-top:10px}
 
+  /* 第 84 步：職級與加給的設定。☢️ 類別名一律 cfg- 開頭 ——
+     動手前搜過整份檔案確定沒撞名（第 62 步被 .lg 撞過，版面壞掉又不報錯）。 */
+  .cfg-box{margin-top:16px}
+  .cfg-box>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+    padding:12px 13px;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    font-size:13.5px;font-weight:800;color:var(--ink2)}
+  .cfg-box>summary::-webkit-details-marker{display:none}
+  .cfg-cap{font-weight:400;font-size:11.5px;color:var(--faint)}
+  .cfg-ar{margin-left:auto;display:inline-block;width:8px;height:8px;
+    border-right:2.4px solid var(--faint);border-bottom:2.4px solid var(--faint);
+    border-radius:1.5px;transform:rotate(45deg);transition:transform .15s}
+  .cfg-box[open]>summary .cfg-ar{transform:rotate(-135deg)}
+  .cfg-r{border-top:1px solid var(--line);padding:9px 2px;display:flex;align-items:baseline;gap:7px;
+    flex-wrap:wrap}
+  .cfg-r:first-child{border-top:0}
+  .cfg-nm{font-size:14px;font-weight:800}
+  .cfg-t{font-size:11.5px;color:var(--dim)}
+  .cfg-t b{color:var(--ink2)}
+  .cfg-x{margin-left:auto;background:none;border:1px solid var(--line);border-radius:8px;
+    color:var(--ink2);font-family:inherit;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer}
+  .cfg-x:active{background:var(--surface2)}
+  .cfg-f{width:100%;margin-top:7px;padding:10px;background:var(--surface2);
+    border:1px solid var(--line);border-radius:10px;display:grid;gap:7px}
+  .cfg-f label{font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.06em}
+  .cfg-f input,.cfg-f select{width:100%;font-family:inherit;font-size:14px;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+  .cfg-go{background:var(--ink);color:#fff;border:0;border-radius:9px;padding:11px;
+    font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+  .cfg-go:disabled{opacity:.5}
+  .cfg-no{background:none;border:0;color:var(--dim);font-family:inherit;font-size:12px;
+    cursor:pointer;padding:4px}
+  .cfg-tag{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;
+    border:1px solid var(--line);background:var(--surface2);color:var(--ink2)}
+  .cfg-tag.sup{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
+
   .note{font-size:11.5px;color:var(--dim);margin-top:8px}
   .empty{text-align:center;color:var(--faint);font-size:13px;padding:16px 4px}
   .gate{padding:56px 20px;text-align:center}
@@ -160,6 +195,10 @@
   'use strict';
 
   var DB = null, ME = null, DATA = null, BUSY = false, OPEN = {};
+  // 第 84 步：職級與加給的設定資料。☢️ 讀不到不該擋住薪資報表 ——
+  //    設定是「偶爾才動」的東西，薪資是「每個月一定要看」的東西。
+  var EMPS = [], GRADES = [], ALLOW = [], CFGFORM = null, CFGBUSY = false;
+  var CFGOPEN = false;   // 摺疊區是不是展開的（render 之後要記得還原）
   var elGate = document.getElementById('gate');
   var elMain = document.getElementById('main');
   var elWho  = document.getElementById('who');
@@ -204,6 +243,8 @@
     return d.toLocaleString('zh-TW', { timeZone:'Asia/Taipei', month:'2-digit', day:'2-digit',
                                        hour:'2-digit', minute:'2-digit', hour12:false });
   }
+
+  function monthFirst() { return twMonth() + '-01'; }
 
   var MONTH = twMonth();
 
@@ -340,12 +381,131 @@
     '</div>';
   }
 
+  /* ══ 職級與加給（第 84 步）══════════════════════════════════════
+     ☢️ 這兩張表【只有財務寫得進去】—— 牆在資料庫的 RLS，不在這一頁。
+        前端把區塊藏起來只是不要讓人白按。
+
+     ☢️ 職級存的是「從哪一天起」的異動史，不是一個開關。
+        規則第五篇 2：「職級於月中生效或停止時，以生效日前後的實際業績
+        分段套用相應比例。」直接改一個欄位的話，上個月已經結完的薪資
+        會跟著一起變 —— 那是重算歷史，不是改設定。 */
+
+  function gradeOn(empId, onDate) {
+    var best = null;
+    GRADES.forEach(function (g) {
+      if (g.employee_id !== empId) return;
+      if (g.effective_from > onDate) return;
+      if (!best || g.effective_from > best.effective_from) best = g;
+    });
+    return best ? best.grade : 'regular';   // 查不到＝一般教練（規則第五篇 2）
+  }
+
+  function cfgGradeRows() {
+    var d = twToday();
+    return EMPS.filter(function (e) { return e.can_teach && e.is_active !== false; })
+      .map(function (e) {
+        var g = gradeOn(e.id, d);
+        var mine = GRADES.filter(function (x) { return x.employee_id === e.id; })
+          .sort(function (a, b) { return a.effective_from < b.effective_from ? 1 : -1; });
+        var since = mine.length ? mine[0].effective_from : null;
+        return '<div class="cfg-r">' +
+          '<span class="cfg-nm">' + esc(e.display_name) + '</span>' +
+          '<span class="cfg-tag' + (g === 'supervisor' ? ' sup' : '') + '">' +
+            (g === 'supervisor' ? '主管階層 45%' : '一般教練 40%') + '</span>' +
+          (since ? '<span class="cfg-t">' + esc(since) + ' 起</span>'
+                 : '<span class="cfg-t">沒有核定紀錄</span>') +
+          '<button type="button" class="cfg-x" data-grade="' + esc(e.id) + '">改職級</button>' +
+          (CFGFORM === 'g:' + e.id ? cfgGradeForm(e, g) : '') +
+        '</div>';
+      }).join('');
+  }
+
+  function cfgGradeForm(e, cur) {
+    return '<div class="cfg-f">' +
+      '<div><label>職級</label>' +
+        '<select id="cfGrade">' +
+          '<option value="regular"' + (cur === 'regular' ? ' selected' : '') + '>一般教練　80,000 以內 40%</option>' +
+          '<option value="supervisor"' + (cur === 'supervisor' ? ' selected' : '') + '>主管階層教練　80,000 以內 45%</option>' +
+        '</select></div>' +
+      '<div><label>從哪一天開始生效</label>' +
+        '<input type="date" id="cfGradeFrom" value="' + esc(twToday()) + '"></div>' +
+      '<div class="note">☢️ 這是<b>新增一筆異動</b>，不是改掉舊的。' +
+        '生效日之前的業績仍然照舊職級計算 —— 已經結完的月份不會被動到。</div>' +
+      '<button type="button" class="cfg-go" data-gsave="' + esc(e.id) + '">存起來</button>' +
+      '<button type="button" class="cfg-no" data-cancel="1">取消</button>' +
+    '</div>';
+  }
+
+  function cfgAllowRows() {
+    if (!ALLOW.length) return '<div class="empty">還沒有任何職務加給</div>';
+    return ALLOW.slice().sort(function (a, b) {
+      return (a.emp_name || '') < (b.emp_name || '') ? -1 : 1;
+    }).map(function (a) {
+      return '<div class="cfg-r">' +
+        '<span class="cfg-nm">' + esc(a.emp_name) + '</span>' +
+        '<span class="cfg-t"><b>' + esc(a.item) + '</b>　' + money(a.monthly_amount) + ' ／月</span>' +
+        '<span class="cfg-t">' + esc(a.from_date) + ' 起' +
+          (a.to_date ? '　至 ' + esc(a.to_date) : '　<b>仍在任</b>') + '</span>' +
+        (a.to_date ? '' :
+          '<button type="button" class="cfg-x" data-end="' + esc(a.id) + '">結束</button>') +
+        (CFGFORM === 'e:' + a.id ? cfgEndForm(a) : '') +
+      '</div>';
+    }).join('');
+  }
+
+  function cfgEndForm(a) {
+    return '<div class="cfg-f">' +
+      '<div><label>最後在任的那一天</label>' +
+        '<input type="date" id="cfEnd" value="' + esc(twToday()) + '" min="' + esc(a.from_date) + '"></div>' +
+      '<div class="note">☢️ 這一天<b>算在任</b>（規則第五篇 5：起訖日均列入）。' +
+        '當月加給＝月加給 × 在任天數 ÷ 當月天數。</div>' +
+      '<button type="button" class="cfg-go" data-esave="' + esc(a.id) + '">結束這筆加給</button>' +
+      '<button type="button" class="cfg-no" data-cancel="1">取消</button>' +
+    '</div>';
+  }
+
+  function cfgAddForm() {
+    if (CFGFORM !== 'add') {
+      return '<button type="button" class="cfg-x" style="margin-left:0;margin-top:9px" ' +
+             'data-add="1">＋ 新增加給</button>';
+    }
+    return '<div class="cfg-f" style="margin-top:9px">' +
+      '<div><label>誰</label><select id="cfWho">' +
+        EMPS.filter(function (e) { return e.is_active !== false; })
+            .map(function (e) { return '<option value="' + esc(e.id) + '">' + esc(e.display_name) + '</option>'; })
+            .join('') +
+      '</select></div>' +
+      '<div><label>項目</label><input type="text" id="cfItem" placeholder="例：店長加給"></div>' +
+      '<div><label>每月金額</label><input type="number" id="cfAmt" inputmode="numeric" min="1" placeholder="5000"></div>' +
+      '<div><label>從哪一天開始</label><input type="date" id="cfFrom" value="' + esc(monthFirst()) + '"></div>' +
+      '<div class="note">☢️ 同一個人的同一項加給<b>不能有時間重疊的兩筆</b> —— ' +
+        '資料庫會擋下來（重疊會在月結時發兩份）。</div>' +
+      '<button type="button" class="cfg-go" data-asave="1">新增</button>' +
+      '<button type="button" class="cfg-no" data-cancel="1">取消</button>' +
+    '</div>';
+  }
+
+  function settingsBlock() {
+    return '<details class="cfg-box"' + (CFGOPEN ? ' open' : '') + ' id="cfgBox">' +
+      '<summary>設定：職級與職務加給<span class="cfg-cap">偶爾才需要動</span>' +
+        '<span class="cfg-ar"></span></summary>' +
+      '<div class="h">職級</div><div class="card">' + cfgGradeRows() +
+        '<div class="note">☢️ 規則第五篇 2：「職級以工作室正式核定與公告為準；' +
+        '<b>未正式核定為主管者，適用一般教練比例</b>。」所以沒有紀錄＝一般教練，' +
+        '那是對的狀態，不是待補。<br>只有<b>授課教練</b>會出現在這裡。</div></div>' +
+      '<div class="h">職務加給</div><div class="card">' + cfgAllowRows() + cfgAddForm() +
+        '<div class="note">加給<b>不屬於課程業績</b>，也不影響 80,000 元的抽成級距' +
+        '（規則第五篇 5）。結束一筆加給是<b>填結束日</b>，不是刪掉 —— ' +
+        '刪掉的話以前的月份會跟著少發。</div></div>' +
+    '</details>';
+  }
+
   function render() {
     elGate.hidden = true; elMain.hidden = false;
     elMain.innerHTML =
       pickerBlock() +
       (DATA ? (sumsBlock() + '<div class="h">每位教練</div>' + coachBlock() +
-               holdBlock() + warnBlock() + downloadBlock())
+               holdBlock() + warnBlock() + settingsBlock() + downloadBlock())
             : '<div class="card"><div class="empty">讀取中…</div></div>');
     wire();
   }
@@ -365,6 +525,23 @@
       };
     });
 
+    // ── 設定區（第 84 步）──────────────────────────────
+    var box = document.getElementById('cfgBox');
+    if (box) box.ontoggle = function () { CFGOPEN = box.open; };
+
+    function on(attr, fn) {
+      Array.prototype.forEach.call(elMain.querySelectorAll('[data-' + attr + ']'), function (b) {
+        b.onclick = function (ev) { ev.preventDefault(); fn(b.getAttribute('data-' + attr), b); };
+      });
+    }
+    on('grade',  function (id) { CFGFORM = (CFGFORM === 'g:' + id) ? null : 'g:' + id; render(); });
+    on('end',    function (id) { CFGFORM = (CFGFORM === 'e:' + id) ? null : 'e:' + id; render(); });
+    on('add',    function ()   { CFGFORM = 'add'; render(); });
+    on('cancel', function ()   { CFGFORM = null;  render(); });
+    on('gsave',  saveGrade);
+    on('esave',  endAllow);
+    on('asave',  addAllow);
+
     var dl = document.getElementById('dl');
     if (dl) dl.onclick = download;
     var lo = document.getElementById('logout');
@@ -373,11 +550,96 @@
     };
   }
 
+  /* ══ 設定的寫入（第 84 步）══════════════════════════════════════
+     ☢️ 這三支直接寫表，沒有包成 RPC —— 因為 coach_grades / coach_allowances
+        的 RLS policy 就是 is_finance()，牆已經在資料庫了。
+        再包一層 definer 函式只會多一個要維護的東西，不會多一分安全。
+     ☢️ 但錯誤一定要顯示出來。寫失敗卻靜靜地什麼都不做，
+        使用者會以為存好了 —— 下個月才發現薪水算錯。 */
+
+  function cfgDone(err, okMsg) {
+    CFGBUSY = false;
+    if (err) { toast(String(err.message || err), true); return false; }
+    CFGFORM = null;
+    toast(okMsg);
+    loadConfig().then(render);
+    return true;
+  }
+
+  function saveGrade(empId) {
+    if (CFGBUSY) return;
+    var g = (document.getElementById('cfGrade') || {}).value;
+    var d = (document.getElementById('cfGradeFrom') || {}).value;
+    if (!g || !d) { toast('職級和生效日都要填', true); return; }
+    CFGBUSY = true;
+    DB.from('coach_grades')
+      .upsert({ employee_id: empId, grade: g, effective_from: d },
+              { onConflict: 'employee_id,effective_from' })
+      .then(function (r) { cfgDone(r.error, '職級已更新'); },
+            function (e) { cfgDone(e); });
+  }
+
+  function endAllow(id) {
+    if (CFGBUSY) return;
+    var d = (document.getElementById('cfEnd') || {}).value;
+    if (!d) { toast('要填最後在任的那一天', true); return; }
+    CFGBUSY = true;
+    DB.from('coach_allowances').update({ to_date: d }).eq('id', id)
+      .then(function (r) { cfgDone(r.error, '已填上結束日'); },
+            function (e) { cfgDone(e); });
+  }
+
+  function addAllow() {
+    if (CFGBUSY) return;
+    var who  = (document.getElementById('cfWho')  || {}).value;
+    var item = ((document.getElementById('cfItem') || {}).value || '').trim();
+    var amt  = parseInt((document.getElementById('cfAmt') || {}).value, 10);
+    var from = (document.getElementById('cfFrom') || {}).value;
+    if (!who || !item || !from) { toast('人、項目、起始日都要填', true); return; }
+    if (!(amt > 0)) { toast('金額要大於 0', true); return; }
+    CFGBUSY = true;
+    DB.from('coach_allowances')
+      .insert({ employee_id: who, item: item, monthly_amount: amt, from_date: from })
+      .then(function (r) {
+        // ☢️ 區間重疊會被資料庫的 exclusion constraint 擋下來 ——
+        //    那個原文訊息看不懂，翻成人話。
+        if (r.error && /exclusion|overlap|conflicting/i.test(r.error.message || '')) {
+          cfgDone({ message: '這個人的同一項加給已經有時間重疊的一筆了。要改的話先把舊的填上結束日。' });
+          return;
+        }
+        cfgDone(r.error, '加給已新增');
+      }, function (e) { cfgDone(e); });
+  }
+
+  // 設定資料。☢️ 讀不到【不該擋住薪資報表】—— 那是兩件事。
+  function loadConfig() {
+    return Promise.all([
+      DB.from('employees').select('id,display_name,can_teach,is_active')
+        .then(function (r) { return (!r.error && r.data) ? r.data : []; }, function () { return []; }),
+      DB.from('coach_grades').select('id,employee_id,grade,effective_from')
+        .then(function (r) { return (!r.error && r.data) ? r.data : []; }, function () { return []; }),
+      DB.from('coach_allowances')
+        .select('id,employee_id,item,monthly_amount,from_date,to_date,employees(display_name)')
+        .then(function (r) { return (!r.error && r.data) ? r.data : []; }, function () { return []; })
+    ]).then(function (all) {
+      EMPS   = all[0] || [];
+      GRADES = all[1] || [];
+      ALLOW  = (all[2] || []).map(function (a) {
+        a.emp_name = (a.employees && a.employees.display_name) || '（查無此人）';
+        return a;
+      });
+    });
+  }
+
   /* ══ 讀資料 ══════════════════════════════════════════════════ */
   function load() {
     if (BUSY) return;
     BUSY = true;
     render();
+    // ☢️ 兩條線分開跑：設定讀不到不該擋住薪資報表。
+    //    ☢️ 但設定回來之後【一定要再畫一次】—— 只呼叫不重畫的話，
+    //       設定區永遠是空的，而且不會有任何錯誤。（實測踩到）
+    loadConfig().then(function () { if (DATA) render(); });
     DB.rpc('payroll_month', { p_month: MONTH + '-01' })
       .then(function (r) {
         BUSY = false;
