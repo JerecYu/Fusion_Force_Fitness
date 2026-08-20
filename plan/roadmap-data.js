@@ -34,8 +34,8 @@
 window.FFF_ROADMAP = {
 
   meta: {
-    updated: '2026-08-17 · GT 上線第二天 · 新增第 44～52 步（到課確認、教練後台、購課、舊表孤兒、封存堂數、後台重排）',
-    phaseName: '第一階段：官網 ＋ LINE 預約系統',
+    updated: '2026-08-20 · 第 85 步完成 · 第五幕拆出「開帳房」，並補上還沒蓋的第七幕「把錢收齊」',
+    phaseName: '劇院建造進度 · 第一～七幕',
     repo: 'https://github.com/JerecYu/Fusion_Force_Fitness'
   },
 
@@ -266,6 +266,7 @@ window.FFF_ROADMAP = {
           note:'<b>2026-08-11 完成 —— 但只存成草稿，沒有啟用。</b><br>檔案：<code>assets/brand/fff-richmenu.png</code>（2500×1686，六宮格）、<code>line-prototype/GT-booking.html</code>（新增 <code>?tab=m</code>）。<br><br><b>六格分別是：</b><ul><li>團體課預約 → <code>GT-booking.html</code></li><li>我的預約 → <code>GT-booking.html?tab=m</code>（同一頁，直接落在「我的預約」分頁）</li><li>私人教練課 → <code>PT-booking.html</code></li><li>私人團體班 → <code>PGT-booking.html</code></li><li>價目表 → <code>pricing.html</code></li><li>聯絡我們 → <b>文字</b>「我想詢問」（接上第 32 步設好的自動回應）</li></ul>前五格全部是 <code>https://liff.line.me/2011063116-QOxXN30h/…</code> —— 規則 17。<br><br><b>☢️ 為什麼不啟用。</b>圖文選單一啟用，<b>203 位客人的入口當場全部改變</b>。而現在 <code>app_settings.live</code> 還是 false，他們會看到「線上訂課尚未開放」，同時舊系統的入口已經不見了 —— <b>等於當場斷掉所有人的訂課管道</b>。啟用排進第 37 步。<br><br><b>☢️ LINE 的一則錯誤訊息救了一次：</b>「此使用期間已設有其他圖文選單」。查出來舊選單「預約系統1.0」的使用期間排到 <b>2028/08/08</b>，動作是連到舊系統 <code>https://fusionforcefit.netlify.app/</code>。<b>切換日一定要先把它的結束日改成當天，新選單才擠得進去。</b>已寫進第 37 步。' },
 
         { n:36, t:'PT／PGT 上線第一段：客人資料 ＋ 期初餘額', where:'決定', done:false, kind:'decide',
+          defer:true, deferWhy:'卡在人工作業 —— 24 位客人沒有手機、期初餘額要從流水帳一筆一筆算。不是程式問題。GT 那一側先穩定下來了，這一段還沒排。',
           summary:'☢️ 2026-08-16 改寫：原本的「平行週」前提已經不成立',
           body:'<b>做這一步之前要先清掉三個阻塞：</b><ol><li><b>補齊 24 位客人的手機</b> —— 只補「還有剩餘堂數」的那些人。餘額 0、早就不來的不用建，哪天回來櫃檯當場建就好</li><li><b>從流水帳算出每個人的期初餘額</b>（15,860 筆已健康化，但進度欄有已知失真，要從異動加總，不能直接讀「已銷課堂數」）</li><li>☢️ <b><code>credit_ledger</code> 加一個 <code>spec</code> 欄位</b>，<code>customer_credits</code> 改成 <code>group by customer_id, product, spec</code>。<b>必須在塞資料之前做</b> —— 塞完再改，兩張卡已經合併了</li></ol><b>這一步不寫程式（除了第 3 項），是人工作業。</b><br><br>舊系統繼續在檯面上跑七天，新系統維持 <code>app_settings.live = false</code>。這七天你用舊系統的查詢功能，把 PT／PGT 客人補進新系統。<br><br><b>只補「還有剩餘堂數」的人。</b>餘額歸零的、早就不來的，一個都不用建 —— 他們哪天回來，櫃檯當場建檔就好。<br><br><b>第 1～6 天：建「人」</b><br>姓名 ＋ 手機，寫進 <code>customers</code>。<br>⚠️ 很多 PT 客人也買過 GT —— 那些人第 27 步就已經建好了，<b>不要重複建</b>（<code>phone</code> 是 unique，重複會直接報錯，這是好事）。<br><br><b>第 7 天：填餘額</b><br>每人一筆 <code>credit_ledger</code>：<code>reason=\'adjust\'</code>、<code>product=\'PT\'</code> 或 <code>\'PGT\'</code>、<code>note=\'系統上線前結轉\'</code>。',
           warn:'⚠️ <b>餘額是移動標靶。</b>這七天舊系統還在跑，有人買課有人上課 —— 你週一填的「剩 7 堂」，週五可能變 5 堂。<br><b>所以人和餘額要分開做：前六天建人（人不會變），最後一天才填數字。</b><br><br>⚠️ 這一步做完就<b>沒有回頭路</b>了。填完的隔天舊系統就要設唯讀，否則兩邊會同時被改。',
@@ -284,7 +285,11 @@ window.FFF_ROADMAP = {
     /* ══════════ 第五幕 ══════════ */
     {
       key: 'a5', place: '前台櫃檯', no: '第五幕', name: '讓教練上工', theatre: '＝ 前台櫃檯數位化',
-      note: '前面四幕都在服務觀眾，這一幕開始服務工作人員 —— 也是<b>往 ERP 的第一步</b>。<br><br>☢️ <b>2026-08-12 執行順序改了：38 → 39 → 36 → 37。</b>原本這一幕排在切換日之後，代價是「切換完成到第 39 步做好」那段期間，每一堂課的扣課都要人工在 Table Editor 補。而<b>餘額是客人唯一會逐筆核對的數字</b>，把它交給手工正好押在最不該出錯的時間點。先做 38、39，切換那天系統就是完整的：訂課 → 上課 → 扣課全在線上。<br>步驟編號<b>沒有跟著改</b>（改了整份文件的交叉引用會全部對不上）—— 第 36、37 步的卡片上有提醒。',
+      note: '前面四幕都在服務觀眾，這一幕開始服務工作人員 —— 也是<b>往 ERP 的第一步</b>。<br><br>☢️ <b>2026-08-12 執行順序改了：38 → 39 → 36 → 37。</b>原本這一幕排在切換日之後，代價是「切換完成到第 39 步做好」那段期間，每一堂課的扣課都要人工在 Table Editor 補。而<b>餘額是客人唯一會逐筆核對的數字</b>，把它交給手工正好押在最不該出錯的時間點。先做 38、39，切換那天系統就是完整的：訂課 → 上課 → 扣課全在線上。<br>步驟編號<b>沒有跟著改</b>（改了整份文件的交叉引用會全部對不上）—— 第 36、37 步的卡片上有提醒。<br><br>☢️ <b>這一幕有一半是「開演之後才看得到的毛病」</b>（第 53 步以後）：手機排版、憑證過期、桌機的登出鍵、圖文選單、價格散在五個地方。<b>那些在沒有觀眾的時候一個都不會出現。</b>',
+      milestone: {
+        title: '▲ 第五幕結束 — 你現在擁有的',
+        text: '教練用 LINE 就能上工：現場點名、逾期未核銷的待辦、掃碼共同確認、櫃檯建客人、購課入帳。<b>從訂課到扣課到收錢，全部在線上，沒有一段要人工補。</b>☢️ 這一幕留下兩步暫緩：第 41 步（私人課需求畫面）和第 42 步（課前提醒推播）。'
+      },
       steps: [
         { n:38, t:'六位教練用 LINE 登入，填回 employees.auth_user_id', where:'Supabase', done:true,
           summary:'說明 ＋ 完成判準',
@@ -306,11 +311,13 @@ window.FFF_ROADMAP = {
           note:'<b>2026-08-12 完成。</b>檔案：<code>db/18-payout.sql</code>。<br>公式對照附錄四那張表，0～10 人全部相符。<br><br><b>☢️ 報表最右邊那一欄「還沒點名的課次」是它的良心。</b>不是 0 就代表這個月還沒點完，「鐘點費合計」是<b>少算的</b>，不能拿去發薪水。沒有那一欄的話，一張少算 1,100 元的報表和一張正確的報表<b>長得一模一樣</b>。<br><br><b>薪資只有本人和老闆看得到</b> —— <code>is_staff()</code> 在這裡不夠用，那會讓 Peter 看到 VC 領多少。用的是 <code>is_owner() or coach_id = my_employee_id()</code>，實測 Peter 只查得到自己那一列。<br><br><b>算的是實際點名結果，不是課次狀態</b> —— 搬遷資料裡有「課次 cancelled、但有人 attended」的組合，人既然上了課，教練就是帶了那一堂。<br><br>⚠️ <b>搬遷進來的歷史課次沒有教練</b>（<code>coach_id</code> 是空的），所以會掛在「（未指定教練）」底下。那段期間的鐘點費舊系統早就發過了，<b>發薪水時那一列直接略過</b>。' },
 
         { n:41, t:'教練端的私人課需求處理', where:'前端', done:false,
+          defer:true, deferWhy:'沒有排進來，也沒有卡住。需求單還是進得來，只是教練得自己翻 LINE 找。',
           summary:'說明 ＋ 完成判準',
           body:'看到 <code>pt_requests</code> 的待處理清單，聯繫客人、敲定時間、標記完成。',
           ck:'教練不用再翻 LINE 訊息找誰要約私人課。' },
 
         { n:42, t:'課前提醒推播', where:'SQL', done:false,
+          defer:true, deferWhy:'☢️ <b>已經解鎖了。</b>第 81 步把兩組 LINE ID 之間的橋架起來，推播找得到人了（停課通知就是走這條）。現在缺的只剩「課前一小時自動發」那段排程 —— 底下這段警告是解鎖<b>之前</b>寫的，留著當紀錄。',
           summary:'說明 ＋ 完成判準',
           body:'Edge Function ＋ LINE Messaging API。',
           warn:'☢️ <b>2026-08-11 發現的阻礙：官方帳號和 LINE Login channel 不在同一個 Provider。</b><br>官方帳號的 Messaging API channel（<code>2009245280</code>）不在 <code>FUSIONFORCE</code> 裡，而 <code>Linked LINE Official Account</code> 的下拉選單是空的 —— <b>跨 Provider 綁不起來</b>。<br><br><b>後果：</b>LIFF 拿到的 userId 跟 Messaging API 的 userId <b>不是同一組</b>，所以<b>推播找不到人</b>。<br>訂課、綁定、入帳、報表、圖文選單<b>全部不受影響</b> —— 只有這一步。<br><br><b>☢️ 2026-08-11 續查：那個 Provider 拿不回來了，而且是永久的。</b><br>官方文件寫死：<i>「Channels can\'t be moved to a different provider later.」</i>channel 建在哪個 provider 就永遠在那裡，官方帳號轉手時 channel 不會跟著走。林智謙跟你並列 <code>FUSIONFORCE</code> 的 Admin，他也拿不到 —— 這個官方帳號經過好幾手，provider 在某位前手的帳號底下。<br><br><b>✅ 但同一天發現：不需要那個 Provider 也做得到。</b><br>OA 後台「設定 → Messaging API」那一頁其實已經給了全部需要的東西：<b>Channel ID ＋ Channel secret</b>（看得到、複製得到）和 <b>Webhook 網址</b>（可編輯，目前是空的）。<br><ul><li><code>POST /oauth2/v3/token</code> 帶 <code>grant_type=client_credentials</code> ＋ Channel ID ＋ secret → 換到存取權杖。<b>推播 API 就能用了</b>（長期權杖才需要 Console，我們用短期的，每次排程前重換）</li><li>設 Webhook → 收得到訊息事件，事件裡帶的就是<b>官方帳號那一組 userId</b></li></ul><b>兩組 ID 之間的橋：</b>客人綁定完成後，畫面給一顆 <code>line.me/R/oaMessage</code> 按鈕，預填訊息裡帶一個一次性短碼。他按送出 → webhook 收到「這則訊息的 userId ＋ 那個短碼」→ 把兩組 ID 對起來，寫進 <code>customers.push_user_id</code>（要加的新欄位）。<b>全程不需要 Developers Console。</b><br><br><b>☢️ 那把 Channel secret 換不掉。</b>換發只能在 Developers Console。它在 2026-08-11 的對話截圖裡外洩過一次（沒有貼上公開網路）。風險是：有人能用你官方帳號的名義推訊息給那 203 位好友。哪天真的出事，唯一的解法是換一個官方帳號。<br><br>這一條同時是<b>架構失效警訊</b> —— 需要頻繁自動通知，就代表 GitHub Pages 這套開始不夠用了，該考慮搬去 Cloudflare 或更完整的系統鏈。',
@@ -495,7 +502,19 @@ window.FFF_ROADMAP = {
           body:'Jerec 2026-08-19 拍板兩件事：<br>① <b>舊堂數怎麼算額度 → 選 B：每 12 堂就給 2 次</b>，不分新舊。<i>「有些學員因工作關係，有一段時間沒上，但有許多餘課，把原本的權益拿掉，怕客戶反感；真正鑽漏洞的只有家庭成員，這樣的狀況極少。」</i><br>② <b>被分享人可以不留姓名手機，只留線索</b>（跟分享人的關係）。<br><br><b>額度怎麼算</b>：<code>floor(累計拿到的堂數 ÷ 12) × 2</code>，算在<b>付堂數的那個人</b>身上（不是報名的人）—— 因為被稀釋的是他的 10 送 2。<br><br><b>本人有沒有上，是這一步的關鍵。</b><code>attendee_count</code> 是「現場實際幾個人」，它分不出兩種情況：<table><tr><td>本人＋1 位朋友</td><td>2 人</td><td>用掉 <b>1</b> 個額度</td></tr><tr><td>兩個兒子來、媽媽沒來</td><td>2 人</td><td>用掉 <b>2</b> 個額度</td></tr></table>所以 <code>bookings</code> 多一欄 <code>owner_present</code>，點名頁多一個勾選框。<br><br><b>目前實際狀況</b>（動手時查的）：全系統只有 3 筆 2 人預約。吳佳芳那筆（8/19 12:20）是<b>兩個兒子上、她自己沒上</b>，所以 <code>owner_present</code> 補成 false、算 2 個額度 —— 她的額度剛好用完。',
           warn:'☢️ <b>這一步不動任何一筆錢。</b>扣堂數的規則完全沒改（還是 <code>check_in</code> 依 <code>attendee_count</code> 扣、扣在 <code>paid_by_customer_id</code> 身上）。做完之後三個人的餘額分毫未動：16／6／10，整個 GT 帳本 204 筆、淨 708 堂，跟做之前一模一樣。<br><br>☢️ <b>「用掉幾次」要從 <code>attendee_count</code> 算，不能數被分享人的筆數。</b>線索是選填的 —— 教練沒填的話筆數是 0，額度就會被少算，而扣堂數看的是 <code>attendee_count</code>。兩邊看同一個數字才不會對不起來。<br><br>☢️ <b>只有在人數【變多】的時候才檢查額度。</b>舊資料本來就可能超額（第 70 步之前沒有這條規則，實測有一位是 −1），如果連「不變」和「變少」都擋，教練會連改回去都做不到 —— <b>規則會把人鎖死在錯誤的狀態裡</b>。<br><br>☢️ <b>額度不夠不是「錯誤」，是規則擋下來</b>，所以走 <code>ok:false</code> 而不是丟例外。而且訊息要講<b>現在該怎麼辦</b>：櫃檯站著一個客人的時候，「這一筆最多只能填 2 人」比「額度不足」有用一百倍。<br><br>☢️☢️ <b><code>staff_roster</code> 又 drop 重建了一次</b> —— <b>GRANT 會跟著消失</b>（第 66 步就是這樣把點名頁弄壞的）。這次有重新 grant，而且用 <code>set local role authenticated</code> 帶真實身分驗過拿得到 66 筆。<br><br>☢️ <code>shared_attendees</code> <b>不是客人名單</b>。姓名手機可以全空，它只是「這個座位是誰」的線索。不要拿它當 <code>customers</code> 用。<br><br>☢️ <b>寫入完全不開 policy</b> —— 只有 select。所有異動一律走 RPC，跟第 39 步「動到規則的入口只有一個」同一個原則。',
           note:'<b>2026-08-19 完成。</b>檔案：<code>db/40-shared-classes.sql</code>（新）、<code>line-prototype/checkin.html</code>、<code>line-prototype/report.html</code>。<br><br><b>新東西</b>：<code>bookings.owner_present</code>、<code>shared_attendees</code> 表、<code>gt_share_quota()</code>／<code>gt_share_used()</code>、改寫的 <code>set_attendees(uuid, smallint, boolean)</code>、<code>set_share_labels()</code>、<code>staff_share_log</code> 檢視表。<br><br><b>驗證</b>：① 額度計算對三位真實客人核過 —— 累計 9 堂→額度 0（已用 1，超額 −1，誠實呈現）、22 堂→額度 2（已用 2）、12 堂→額度 2（已用 1）✓ ② 用真實職員身分跑四種情境（全部在交易裡跑完 rollback，沒動到正式資料）：超額被擋、剛好夠通過、再加一個被擋、變少不檢查 ✓ ③ 點名頁四種畫面實測：<b>單人預約完全看不到這一塊</b>（129 筆的畫面一個字沒變）、本人＋1 位、兩個兒子本人沒上、舊資料超額顯示 −1 ✓ ④ 8 個頁面無頭瀏覽器載入，零 JS 例外 ✓ ⑤ 餘額與帳本總數做前做後完全相同 ✓',
-          ck:'點名頁把某一筆按成 2 人，下面會出現「本人也有上這堂」的勾選框、一格「第 1 位」線索欄，右邊寫著還剩幾次可以分享；額度用完再按＋會跳出「這一筆最多只能填 N 人」。'},
+          ck:'點名頁把某一筆按成 2 人，下面會出現「本人也有上這堂」的勾選框、一格「第 1 位」線索欄，右邊寫著還剩幾次可以分享；額度用完再按＋會跳出「這一筆最多只能填 N 人」。'}
+      ]
+    },
+
+    /* ══════════ 第六幕 ══════════ */
+    {
+      key: 'a6', place: '帳房', no: '第六幕', name: '開帳房', theatre: '＝ 蓋帳房、把錢算清楚',
+      note: '前五幕都在讓「課」跑得動。這一幕開始管<b>錢</b> —— 誰付了多少、誰該領多少。<br><br>☢️ 這一幕有四步不是新功能，是<b>把已經算錯的帳找出來</b>（第 75～77、79 步）。帳務系統的價值不在算得快，在於<b>算錯的時候有人發現</b>。',
+      milestone: {
+        title: '▲ 第六幕結束 — 你現在擁有的',
+        text: '一本自己會對帳的 GT 帳本、一個能把外派／企業包班／私人課逐筆記進去的服務登記，以及一份四條線各自算清楚、最後才加起來的薪資報表。<b>錢從客人手上到教練手上，中間每一段都留得下紀錄。</b>☢️ 但帳房還沒接上金庫 —— 見第七幕。'
+      },
+      steps: [
 
         { n:71, t:'服務紀錄骨架 —— 外派、諧動活動、企業包班一次到位', where:'資料庫 ＋ 前端', done:true,
           summary:'PT／PGT 四年來只記在 Excel 裡，系統一筆上課紀錄都沒有',
@@ -613,17 +632,63 @@ window.FFF_ROADMAP = {
           note:'<b>2026-08-20 完成。</b>檔案：<code>tools/payroll-perf-check.sql</code>（新）。<br><br><b>數學（五項全過）：</b><table><tr><td>A 一般 90,000 一筆</td><td>37,000 ✓</td></tr><tr><td>B 主管 90,000 一筆</td><td>41,000 ✓</td></tr><tr><td>C 主管 30,000×3</td><td>41,000 ✓</td></tr><tr><td>D 月中升職 40,000＋50,000</td><td>39,000 ✓</td></tr><tr><td>E 待確認</td><td>0 ✓</td></tr></table>跑完確認資料庫乾淨：服務紀錄 0、服務教練 0、職級紀錄 0。<br><br><b>管線（Jerec 手機實跑）：</b>① 完成時間填未來 → 被擋「完成時間不能是未來」✓ ② 登記後是<b>待確認</b>，薪資報表合計 <b>42,300</b>、抽成 0，多出「<b>1 筆暫停自動計薪</b>」✓ ③ 按最終認列後合計 <b>42,700</b>，該教練出現「抽成 NT$400（業績 NT$1,000）」＝ 1,000×40% ✓ ④ 作廢後回到 42,300，紀錄變刪除線且留著作廢原因 ✓ ⑤ 測試紀錄刪除後 <code>service_records</code> 回到 0，八月合計 42,300、0 筆暫停 ✓',
           ck:'以後只要動過抽成級距、職級規則或 <code>payroll_lines</code>，把 <code>tools/payroll-perf-check.sql</code> 整份貼進 Supabase 的 SQL Editor 跑一次。<b>會跳紅色錯誤訊息，那是正常的</b> —— 訊息裡看到五個 OK 就是對的，出現「☢️錯」就是哪裡壞了。'}
       ]
+    },
+
+    /* ══════════ 第七幕 ══════════ */
+    {
+      key: 'a7', place: '帳房後間', no: '第七幕', name: '把錢收齊', theatre: '＝ 帳房還沒接上金庫',
+      note: '☢️ <b>這一幕還沒開始蓋。</b>下面六步是「帳務完整線上化」剩下的距離 —— 每一步都是<b>現在查得出來的缺口</b>，不是願望清單。<br><br>目前的狀態講白一點：<b>GT 那一側的錢是完整的</b>（購課金額、現金／匯款、待入帳、方案對帳都在），<b>服務登記那一側只記了「賺多少」，沒記「收到沒」</b>，而<b>支出除了教練薪資以外，系統一毛都不知道</b>。',
+      milestone: {
+        title: '▲ 第七幕結束 — 你會擁有的',
+        text: '一個月結束時按一顆鍵，就知道這個月收了多少、發了多少、剩多少。<b>而且那個數字結完就鎖住，不會被明天改的設定悄悄改掉。</b>☢️ 但「錢真的在線上收」不在這一幕裡 —— 那要先搬離 GitHub Pages，在地平線那一頭。'
+      },
+      steps: [
+        { n:86, t:'決定：一個月的「收入」算收到錢那天，還是上完課那天', where:'決定', done:false, kind:'decide',
+          summary:'這一條決定損益表每個月的數字長什麼樣',
+          body:'GT 是<b>預收</b>：客人八月付 12,000 買 12 堂，可能上到十二月才上完。這筆 12,000 要算成八月的收入，還是每上一堂認 1,000？<table><tr><td><b>收現制</b></td><td>收到錢那天算收入。簡單、跟銀行帳戶對得起來，但八月會很好看、十二月會很難看</td></tr><tr><td><b>權責制</b></td><td>上完課才認。每個月的數字才反映「這個月實際做了多少生意」，代價是要多顧一本「還欠客人幾堂」</td></tr></table>☢️ <b>兩種算法需要的資料我們都已經有了</b>（<code>credit_ledger.amount</code> 是收現那一側，<code>plans.per_credit</code> ＋ 逐堂認列是權責那一側）—— 所以這是<b>選擇</b>，不是能力問題。先選，後面三步才知道要算什麼。',
+          ck:'白紙黑字寫下來選哪一種，並且寫進財務規則文件。' },
+
+        { n:87, t:'服務登記要記「收到錢了沒、怎麼收的」', where:'資料庫 ＋ 前端', done:false,
+          summary:'私人課那一側只記了賺多少，沒記收到沒',
+          body:'<code>credit_ledger</code> 有 <code>amount</code>／<code>pay_method</code>／<code>paid_at</code> 三欄，所以 GT 那一側分得出「現金」「匯款」「還沒入帳」。<b><code>service_records</code> 一欄都沒有</b> —— 私人課、企業包班、外派活動只記得 <code>revenue_amount</code>（賺多少），完全不知道錢到了沒。',
+          warn:'☢️ <b>「待入帳的匯款」目前只認得 GT。</b>企業包班動輒幾萬塊，而且幾乎一定是匯款 —— 那筆錢沒進帳的話，現在<b>沒有任何一個畫面會提醒你</b>。<br><br>☢️ 欄位要跟 <code>credit_ledger</code> 用<b>同一組名字、同一組值</b>（<code>cash</code>／<code>transfer</code>）。不一樣的話，第 88 步合併兩邊時就要寫一張轉換表，而轉換表就是下一個對不起來的地方。',
+          ck:'服務登記多一欄付款方式；匯款但還沒入帳的那幾筆，會跟 GT 的匯款一起出現在對帳報表的「待入帳」區。' },
+
+        { n:88, t:'對帳報表納入服務登記的錢', where:'資料庫 ＋ 前端', done:false,
+          summary:'finance_report 目前只讀 credit_ledger 一張表',
+          body:'對帳報表（第 61 步）的每一段 —— 收款明細、每日現金／匯款小計、待入帳 —— <b>資料來源都只有 <code>credit_ledger</code></b>。也就是說<b>私人課、企業包班、外派活動的營收，一塊錢都沒出現在報表上</b>。<br><br>它們不是沒記，是記在另一張表（<code>service_records</code>），只是從來沒有人把兩邊加起來。',
+          warn:'☢️ <b>這是「有資料但沒人看得到」，最容易被誤判成生意變差。</b>八月的對帳報表看起來就是全店只有 GT 的收入 —— 而那個數字<b>看起來完全合理</b>，不是一個明顯的錯數字。<br><br>☢️ 加總時<b>作廢的不能算、沒有最終認列的要分開顯示</b>，規則要跟薪資那邊一致（第 85 步）。同一筆錢在兩張報表上算法不一樣，比少算還糟。',
+          ck:'挑一天同時有 GT 購課和一筆私人課，對帳報表那天的合計＝兩者相加，而且分得出哪一筆是哪一種。' },
+
+        { n:89, t:'支出簿 —— 薪水以外的錢', where:'資料庫 ＋ 前端', done:false,
+          summary:'房租、水電、器材、行銷、雜支，系統目前一毛都不知道',
+          body:'系統現在只認得<b>一種支出：教練薪資</b>。房租、水電、器材、行銷、清潔、保險、軟體訂閱 —— 全部在系統外面。<br><br>一張表就夠：日期、科目、金額、付款方式、給誰、備註、收據照片（選填）。<b>不要一開始就做核銷流程和預算控管</b> —— 先讓錢有地方記。',
+          warn:'☢️ <b>科目一開始就要定死，而且要少。</b>科目表一旦長出兩個意思相近的項目（「器材」和「設備」），以後每一份損益表都要先問「這兩個是不是同一件事」。<br><br>☢️ 這張表<b>只有負責人和財務看得到</b>，跟薪資報表同一道牆（<code>is_finance()</code>）。',
+          ck:'把上個月的房租和水電記進去，第 91 步的損益表就會把它們扣掉。' },
+
+        { n:90, t:'月結 —— 結完就鎖起來', where:'資料庫 ＋ 前端', done:false,
+          summary:'現在每一份報表都是「用今天的設定重算一次」',
+          body:'☢️ <code>payroll_month()</code> 和 <code>finance_report()</code> 都是<b>即時重算</b>。今天改一筆加給的結束日、作廢一筆服務紀錄、補一筆帳本調整 —— <b>上個月的數字會跟著變，而且沒有任何地方記得它原本是多少</b>。<br><br>要的是一個動作：<b>「八月結了」</b>。結的時候把當下算出來的每一行<b>存成快照</b>，之後再打開就是讀快照，不是重算。順便記下<b>薪水實際發了沒、哪天發的、發了多少</b> —— 那是目前完全不存在的資訊。',
+          warn:'☢️☢️ <b>沒有月結，就沒有「上個月」這個東西。</b>薪資單發給教練之後，只要有人動過任何設定，教練手上那張紙就跟系統對不起來 —— 而且<b>沒有人會知道是哪一次改的</b>。<br><br>☢️ <b>鎖起來不等於不能改。</b>要留一條「重開這個月」的路（誰重開的、為什麼、原本是多少），否則第一次結錯就死鎖。<b>但重開一定要留下痕跡</b>，不能安靜地重算掉。',
+          ck:'按下「結算八月」之後，把某位教練的職級改掉，再打開八月的薪資報表 —— <b>數字一毛都不動</b>。' },
+
+        { n:91, t:'損益表 —— 一個月一頁', where:'資料庫 ＋ 前端', done:false,
+          summary:'收入 − 支出。前面五步都是為了這一頁',
+          body:'一頁講完一個月：<b>收入</b>（GT／私人課／企業包班／外派，依第 86 步的決定認列）<b>減掉支出</b>（教練薪資 ＋ 第 89 步的支出簿）<b>等於這個月剩多少</b>。<br><br>再加兩個數字：<b>還欠客人幾堂</b>（預收餘額 —— 那是負債，不是收入）和<b>還沒收到的錢</b>（待入帳）。',
+          warn:'☢️ <b>這一頁的每一個數字都必須點得進去看逐筆。</b>看不到明細的總數沒有人敢信，也查不出錯 —— 第 80 步（薪資報表）已經學過一次這件事。',
+          ck:'打開任何一個月，看得到「收多少、花多少、剩多少」，而且每一格點下去都看得到是哪幾筆組成的。' }
+      ]
     }
   ],
 
   /* ── 地平線：ERP（刻意不編號、不排序） ──────────────────────── */
   horizon: [
-    { t:'金流與電子發票',   d:'一碰這個就必須搬離 GitHub Pages —— 條款明確禁止，沒有討論空間' },
-    { t:'教練排班與 PT 抽成薪資', d:'GT 人頭費第 40 步就做掉了。這裡剩下的是 PT 的 8 萬門檻抽成 —— 它需要每一堂 PT 都進系統' },
-    { t:'私人課 PT／PGT 完整流程', d:'目前只有 pt_requests（需求單）。要算抽成就得有「實際上了哪幾堂、每堂賣多少」' },
-    { t:'場地租借 RT',       d:'第一階段只預留 product 欄位。真的要做時，關鍵是「場地佔用」要跟課排在同一本行事曆上，不然會撞場' },
-    { t:'營收與出席報表',   d:'資料其實從 pg_cron 上工那天就開始累積了' },
-    { t:'會員關係與續約管理', d:'建在 customers 上。credit_ledger 本身就是一份消費行為紀錄' },
+    { t:'金流與電子發票',   d:'☢️ 一碰這個就必須搬離 GitHub Pages —— 條款明確禁止，沒有討論空間。這是「錢真的在線上收」跟第七幕「帳算得清楚」之間的分界線' },
+    { t:'教練排班',         d:'抽成薪資已經在第 78、84、85 步做完了（含 8 萬門檻累進）。這裡剩下的是<b>排班</b> —— 誰哪天上哪堂，目前還是人排' },
+    { t:'私人課 PT／PGT 完整流程', d:'第 71、85 步做出了「服務登記」，逐筆記得起來也算得出抽成。<b>還缺的是客人那一側</b>：期初餘額、扣預收、客人自己看得到剩幾堂（第 36 步暫緩中）' },
+    { t:'場地租借 RT',       d:'第一階段只預留 product 欄位。真的要做時，關鍵是「場地佔用」要跟課排在同一本行事曆上，不然會撞場。它也會變成第七幕損益表上的第五條收入線' },
+    { t:'出席與會員行為報表', d:'營收那一半在第七幕。這裡剩下的是「誰在流失、誰該續約」—— credit_ledger 本身就是一份消費行為紀錄' },
+    { t:'會員關係與續約管理', d:'建在 customers 上。要先有上面那份報表，不然是憑感覺打電話' },
     { t:'器材與庫存',       d:'目前完全沒動，也還看不出急迫性' },
     { t:'多店擴張',         d:'真的要走這條，資料表得先加「場館」欄位 —— 越晚加越痛' }
   ],
@@ -665,8 +730,14 @@ window.FFF_PROGRESS = (function (R) {
   const doneList = allSteps.filter(s => s.done);
   const done     = doneList.length;
 
-  // 目前這一步 = 第一個還沒完成的
-  const current  = allSteps.find(s => !s.done) || null;
+  // ☢️ 暫緩（defer:true）的步驟不算「前面還沒走到」——
+  //    它們是刻意放著的。不跳過的話，紅色定位釘會永遠卡在第 36 步，
+  //    而它後面五十幾步明明都做完了 —— 整張圖會變成假的。
+  const deferList = allSteps.filter(s => !s.done && s.defer);
+  const deferred  = deferList.length;
+
+  // 目前這一步 = 第一個「還沒完成、而且沒有被暫緩」的
+  const current  = allSteps.find(s => !s.done && !s.defer) || null;
 
   // 目前在哪一幕
   const currentActIndex = current
@@ -675,11 +746,13 @@ window.FFF_PROGRESS = (function (R) {
 
   // 每一幕的完成數
   const actStats = R.acts.map((a, i) => {
-    const d = a.steps.filter(s => s.done).length;
+    const d    = a.steps.filter(s => s.done).length;
+    const df   = a.steps.filter(s => !s.done && s.defer).length;
+    const live = a.steps.length - df;      // 這一幕實際要走的步數（扣掉暫緩的）
     return {
       key: a.key, no: a.no, name: a.name,
-      done: d, total: a.steps.length,
-      state: d === a.steps.length ? 'done' : (i === currentActIndex ? 'current' : 'todo')
+      done: d, total: a.steps.length, defer: df,
+      state: d === live ? 'done' : (i === currentActIndex ? 'current' : 'todo')
     };
   });
 
@@ -687,14 +760,15 @@ window.FFF_PROGRESS = (function (R) {
   const lastDone = doneList.length ? doneList[doneList.length - 1] : null;
   // 下下一步（給「前方」用）
   const afterCurrent = current
-    ? allSteps.find(s => !s.done && s.n > current.n) || null
+    ? allSteps.find(s => !s.done && !s.defer && s.n > current.n) || null
     : null;
 
   return {
-    total, done, current, lastDone, afterCurrent,
+    total, done, deferred, deferList, current, lastDone, afterCurrent,
     currentActIndex, actStats,
-    remaining: total - done - (current ? 1 : 0),
-    pctDone: (done / total) * 100,
-    pctCurrent: current ? (1 / total) * 100 : 0
+    remaining: total - done - deferred - (current ? 1 : 0),
+    pctDone:    (done / total) * 100,
+    pctCurrent: current ? (1 / total) * 100 : 0,
+    pctDefer:   (deferred / total) * 100
   };
 })(window.FFF_ROADMAP);

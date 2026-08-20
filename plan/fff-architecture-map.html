@@ -351,8 +351,8 @@
 
   <header class="top">
     <h1>FFF 架構地圖</h1>
-    <span class="v">v4.0</span>
-    <div class="sub">諧動空間 Fusion Force Fitness<br>一座正在蓋的劇院 · 2026-08-08</div>
+    <span class="v">v5.0</span>
+    <div class="sub">諧動空間 Fusion Force Fitness<br>一座正在蓋的劇院 · 圖形已重畫至 2026-08-20</div>
   </header>
 
   <div class="ctrl">
@@ -420,7 +420,8 @@
 
       <!-- 七張桌子＝七個上鎖的抽屜 -->
       <rect x="56" y="212" width="230" height="120" rx="2" fill="#fff" stroke="#2F6B54" stroke-width="1.4"/>
-      <text x="64" y="228" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#2F6B54">七張桌子 · 每一張都上了鎖</text>
+      <text x="64" y="228" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#2F6B54">23 張桌子 · 每一張都上了鎖</text>
+      <text x="56" y="347" font-family="'JetBrains Mono',monospace" font-size="8" fill="#5E6E7E">畫的是最早那七張；另外 16 張見下面的清單</text>
       <g fill="#F1F7F4" stroke="#A8C9BE" stroke-width="1.2">
         <rect x="64" y="236" width="52" height="42" rx="2"/><rect x="122" y="236" width="52" height="42" rx="2"/>
         <rect x="180" y="236" width="52" height="42" rx="2"/><rect x="238" y="236" width="40" height="42" rx="2"/>
@@ -447,24 +448,25 @@
       <text x="98" y="437" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10.5" font-weight="700" fill="#2F6B54">場記 pg_cron</text>
       <text x="98" y="452" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#5E6E7E">每天 00:00 巡場</text>
 
-      <!-- 驗票窗口 Edge Function（未動工） -->
-      <rect x="150" y="358" width="136" height="72" rx="2" fill="url(#hatchFog)" stroke="#8C9AA8" stroke-width="1.4" stroke-dasharray="5 4"/>
-      <text x="218" y="384" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="11.5" font-weight="700" fill="#5E6E7E">驗票窗口</text>
-      <text x="218" y="400" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8.5" fill="#8C9AA8">Edge Function</text>
-      <text x="218" y="418" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#8C9AA8">未動工</text>
+      <!-- 驗票窗口 Edge Function（2026-08-20：三支都上線了） -->
+      <rect x="150" y="358" width="136" height="72" rx="2" fill="#F1F7F4" stroke="#2F6B54" stroke-width="1.6"/>
+      <text x="218" y="382" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="11.5" font-weight="700" fill="#0E1B2C">驗票窗口</text>
+      <text x="218" y="397" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8.5" fill="#5E6E7E">Edge Function ×3</text>
+      <text x="218" y="411" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#5E6E7E">bind · hook · notify</text>
+      <text x="218" y="425" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#2F6B54">上線中</text>
 
       <!-- ══ 接線處：讀已通、寫還沒（2026-08-08 第二幕完成後改） ══ -->
       <rect x="300" y="150" width="32" height="156" fill="#EDF5F3"/>
-      <rect x="300" y="306" width="32" height="162" fill="#F4F6F8"/>
+      <rect x="300" y="306" width="32" height="162" fill="#EDF5F3"/>
       <line x1="303" y1="150" x2="303" y2="306" stroke="#2F6B54" stroke-width="2.6"/>
       <line x1="329" y1="150" x2="329" y2="306" stroke="#2F6B54" stroke-width="2.6"/>
       <text x="316" y="232" font-family="'Noto Sans TC',sans-serif" font-size="12" font-weight="900" fill="#2F6B54"
             transform="rotate(90 316 232)" text-anchor="middle" letter-spacing="3">讀　已接通</text>
       <circle cx="316" cy="306" r="4.5" fill="#2F6B54"/>
-      <line x1="303" y1="306" x2="303" y2="468" stroke="#8C9AA8" stroke-width="2.4" stroke-dasharray="7 5"/>
-      <line x1="329" y1="306" x2="329" y2="468" stroke="#8C9AA8" stroke-width="2.4" stroke-dasharray="7 5"/>
-      <text x="316" y="394" font-family="'Noto Sans TC',sans-serif" font-size="12" font-weight="900" fill="#5E6E7E"
-            transform="rotate(90 316 394)" text-anchor="middle" letter-spacing="3">寫　還沒通</text>
+      <line x1="303" y1="306" x2="303" y2="468" stroke="#2F6B54" stroke-width="2.6"/>
+      <line x1="329" y1="306" x2="329" y2="468" stroke="#2F6B54" stroke-width="2.6"/>
+      <text x="316" y="394" font-family="'Noto Sans TC',sans-serif" font-size="12" font-weight="900" fill="#2F6B54"
+            transform="rotate(90 316 394)" text-anchor="middle" letter-spacing="3">寫　已接通</text>
 
       <!-- ══ 舞台 GitHub Pages ══ -->
       <rect x="332" y="150" width="278" height="318" fill="#fff"/>
@@ -499,12 +501,15 @@
       <text x="523" y="312" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#2F6B54">讀真實課表</text>
       <circle cx="523" cy="334" r="10" fill="#2F6B54"/>
       <path d="M518 334 l3.6 3.8 L529 330" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="523" y="366" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#A9531D">只能看 · 訂課關著</text>
+      <text x="523" y="366" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#2F6B54">訂課已上線</text>
 
       <!-- 台板 -->
       <rect x="334" y="382" width="274" height="14" fill="#0E1B2C"/>
-      <text x="471" y="416" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10.5" fill="#5E6E7E">觀眾看得見的，只有這座台上的東西</text>
-      <text x="471" y="436" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#A9531D">零金鑰 → 永遠不能收金流</text>
+      <!-- 台上不只兩位演員了：職員那一側是 2026-08-12 之後長出來的 -->
+      <rect x="340" y="402" width="262" height="40" rx="2" fill="#F1F7F4" stroke="#2F6B54" stroke-width="1.4"/>
+      <text x="471" y="418" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10.5" font-weight="700" fill="#2F6B54">台上還有 6 個職員頁面</text>
+      <text x="471" y="433" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#5E6E7E">點名核銷 · 教練後台 · 服務登記 · 薪資 · 對帳 · 工具</text>
+      <text x="471" y="459" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" font-weight="700" fill="#A9531D">零金鑰 → 永遠不能收金流</text>
 
       <!-- ══ 觀眾席 ══ -->
       <rect x="610" y="150" width="222" height="318" fill="#F7FAFB"/>
@@ -544,17 +549,17 @@
       <rect x="832" y="150" width="126" height="318" fill="#EFF2F5"/>
       <rect x="832" y="150" width="126" height="30" fill="#8C9AA8"/>
       <text x="843" y="171" font-family="'Noto Sans TC',sans-serif" font-size="13" font-weight="700" fill="#fff">大門　LINE</text>
-      <text x="895" y="202" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="11" fill="#5E6E7E">整層尚未動工</text>
-      <rect x="848" y="222" width="94" height="196" rx="3" fill="url(#hatchFog)" stroke="#8C9AA8" stroke-width="1.8" stroke-dasharray="6 4"/>
-      <circle cx="930" cy="322" r="4.5" fill="#8C9AA8"/>
-      <rect x="864" y="246" width="62" height="76" rx="2" fill="#fff" stroke="#8C9AA8" stroke-width="1.3" stroke-dasharray="4 3"/>
-      <text x="895" y="278" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#5E6E7E">LIFF</text>
-      <text x="895" y="296" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#8C9AA8">通往舞台</text>
-      <text x="895" y="309" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#8C9AA8">的小門</text>
-      <text x="895" y="346" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10.5" font-weight="700" fill="#5E6E7E">圖文選單</text>
-      <text x="895" y="361" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#8C9AA8">＝門上指示牌</text>
-      <text x="895" y="388" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10.5" font-weight="700" fill="#5E6E7E">官方帳號</text>
-      <text x="895" y="403" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#8C9AA8">＝大門本身</text>
+      <text x="895" y="202" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="11" fill="#2F6B54">已開門 · 204 位好友</text>
+      <rect x="848" y="222" width="94" height="196" rx="3" fill="#F1F7F4" stroke="#2F6B54" stroke-width="1.8"/>
+      <circle cx="930" cy="322" r="4.5" fill="#2F6B54"/>
+      <rect x="864" y="246" width="62" height="76" rx="2" fill="#fff" stroke="#2F6B54" stroke-width="1.3"/>
+      <text x="895" y="278" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#0E1B2C">LIFF</text>
+      <text x="895" y="296" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#5E6E7E">通往舞台</text>
+      <text x="895" y="309" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#5E6E7E">的小門</text>
+      <text x="895" y="346" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10.5" font-weight="700" fill="#0E1B2C">圖文選單</text>
+      <text x="895" y="361" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#5E6E7E">客人一格 · 職員一格</text>
+      <text x="895" y="388" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10.5" font-weight="700" fill="#0E1B2C">官方帳號</text>
+      <text x="895" y="403" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="9" fill="#5E6E7E">＝大門本身</text>
       <text x="895" y="443" text-anchor="middle" font-family="'Noto Sans TC',sans-serif" font-size="10" font-weight="700" fill="#A9531D">客人從這裡進來</text>
 
       <!-- 地面 -->
@@ -563,17 +568,18 @@
     </svg>
     </div>
     <p class="cap">
-      <b>怎麼讀這張圖：</b>後台（左，實心綠）＝已完工。舞台（中）上兩位演員都在演了：官網正在上演，預約頁已經接上電、讀得到真實課表。
-      ☢️ <b>這張圖畫的是 2026-08-08（第二幕）的狀態，圖形本身還沒重畫。</b>
-      下面這段是 <b>2026-08-16 切換日之後的現況</b>，以文字為準：<br>
-      <b>「寫」已經通了</b> —— 第 31 步的驗票窗口（Edge Function）蓋好了，
-      第 32 步接上手機綁定，第 33 步打開訂課與取消，第 34 步讓私人課能送需求，
-      第 38～39 步讓六位教練用 LINE 登入並在現場點名核銷，第 40 步把鐘點費算了出來。<br>
-      <b>大門（LINE）也不再是灰色</b> —— 圖文選單六宮格在 2026-08-16 17:00 啟用，
-      舊系統同日退場（設唯讀保留三個月）。<br>
-      <b>還是灰色的：</b>PT／PGT 的線上預約與帳務（走 L2「教練放時段、客人挑」，見附錄四）、
-      RT 場租、課前提醒推播。
-      橘色的前台櫃檯畫在觀眾席旁邊，代表它<b>不會被自動化取代</b>，那是刻意的設計。<br>
+      <b>怎麼讀這張圖：</b>綠色＝蓋好而且在跑，灰色虛線＝還沒動工。
+      <b>2026-08-20 重畫過一次</b>，圖形本身就是現況：<br>
+      <b>後台（左）</b>整層完工，三支 Edge Function 上線中（<code>line-bind</code> 驗身分、<code>line-hook</code> 收訊息、<code>line-notify</code> 發停課通知）。<br>
+      <b>接線處</b>讀和寫<b>都通了</b> —— 訂課、取消、扣課、購課、服務登記、薪資，全部從舞台寫得進後台。<br>
+      <b>舞台（中）</b>台上不只兩位演員：客人看的官網和預約頁在演，
+      台板下面還有<b>六個職員頁面</b>（點名核銷、教練後台、服務登記、薪資報表、對帳報表、工具）——
+      那些是 2026-08-12 之後才長出來的。<br>
+      <b>大門（LINE）</b>已開，204 位好友；圖文選單客人一格、職員一格，走同一個入口。<br>
+      ☢️ <b>還是灰色的東西不在這張圖上，在地平線那一頭：</b>金流與電子發票（一碰就必須搬離 GitHub Pages）、
+      RT 場租、PT／PGT 客人端的線上預約。<br>
+      橘色的前台櫃檯畫在觀眾席旁邊，代表它<b>不會被自動化取代</b>，那是刻意的設計 ——
+      而且「零金鑰 → 永遠不能收金流」這條到今天還是真的。<br>
       <b>紅色定位釘會自己跑</b> —— 它釘在你目前那一幕所在的區塊，資料一改就跟著移。
     </p>
   </div>
@@ -693,7 +699,7 @@
             <b>版本編號規則</b>：大 1.x.x 動架構或加模組｜中 x.1.x 加新區塊或新功能｜小 x.x.1 改文字、價格、換照片。
           </div></details>
         </div>
-        <div class="cell sub wide"><b>booking/ — 預約頁<span class="st done">已接電</span><span class="st wip">訂課關著</span></b><small><code>GT-booking</code> 已改讀 <code>public_schedule</code>，上線在 GitHub Pages。另外四個原型還是記憶體版。</small>
+        <div class="cell sub wide"><b>booking/ — 預約頁<span class="st done">已上線</span></b><small><code>GT-booking</code> 2026-08-16 起真的在收訂單：訂課、取消、剩餘堂數、同學名單、課程異動通知。PT／PGT 兩頁仍是「送出需求」。</small>
           <details class="more"><summary>做完了什麼、還剩什麼</summary><div class="body">
             <b>✅ 第 19～20 步做完的：</b>
             <ul>
@@ -720,7 +726,7 @@
         </div>
 
         <div class="cell wide"><b>Supabase — 後台道具間＋名冊室<span class="st done">已完工</span></b><small>東京機房 · Free 方案 · 24 小時有人值班。</small></div>
-        <div class="cell sub wide"><b>七張桌子<span class="st done">已完工</span></b><small><code>employees</code>／<code>customers</code>／<code>class_templates</code>／<code>class_sessions</code>／<code>bookings</code>／<code>credit_ledger</code>／<code>pt_requests</code>　＋檢視表 <code>customer_credits</code></small>
+        <div class="cell sub wide"><b>七張桌子 → 現在 23 張<span class="st done">已完工</span></b><small><b>當初的七張：</b><code>employees</code>／<code>customers</code>／<code>class_templates</code>／<code>class_sessions</code>／<code>bookings</code>／<code>credit_ledger</code>／<code>pt_requests</code>　＋檢視表 <code>customer_credits</code><br><b>後來長出來的（第五、六幕）：</b><code>plans</code>／<code>plan_draws</code>／<code>plan_transfers</code>／<code>shared_attendees</code>／<code>service_records</code>／<code>service_coaches</code>／<code>coach_grades</code>／<code>coach_allowances</code>／<code>class_notices</code>／<code>push_links</code>／<code>legacy_credits</code>／<code>products</code>／<code>signup_requests</code>／<code>checkin_tokens</code>／<code>app_settings</code>／<code>line_messaging_ids</code></small>
           <details class="more"><summary>幾個設計決定的理由</summary><div class="body">
             <ul>
               <li><b><code>class_sessions</code> 複製範本欄位</b>而非每次查範本：範本會改，歷史紀錄不該跟著變</li>
@@ -752,7 +758,7 @@
             ☢️ <b>絕對不要下 <code>drop extension pg_cron;</code></b> —— 會把所有排程連同設定一起永久刪除，救不回來。要停用請用 <code>select cron.unschedule('daily-class-job');</code>
           </div></details>
         </div>
-        <div class="cell sub wide dim"><b>Edge Functions — 驗票窗口<span class="st todo">未動工</span></b><small>之後 LINE 登入的憑證要在這裡核對，密鑰也放這裡。沒有它，LIFF 拿到的身分就只是一串可以被改掉的字串。</small></div>
+        <div class="cell sub wide"><b>Edge Functions — 驗票窗口<span class="st done">3 支上線中</span></b><small><code>line-bind</code> 驗 LINE 憑證換 Supabase session（第 31 步）｜<code>line-hook</code> 收官方帳號的訊息、把兩組 userId 對起來（第 81 步）｜<code>line-notify</code> 停課只通知那堂課的人（第 81 步）。密鑰只放在這裡，前端一把都沒有。</small></div>
       </div>
       <div class="holds">
         <div class="ht">✓ 這裡只放外洩也不至於出事的東西</div>
@@ -776,8 +782,8 @@
         <div class="cell"><b>面對面驗身分</b><small>比線上驗證可靠，而且免費</small></div>
         <div class="cell"><b>課卡異動</b><small>開卡 · 加堂 · 退費 · 補堂</small></div>
         <div class="cell"><b>收款</b><small>現金或刷卡，當面完成</small></div>
-        <div class="cell wide"><b>課後點名核銷<span class="st todo">未動工</span></b><small>扣課時機在課後，由教練現場點名。缺席不扣課。</small></div>
-        <div class="cell wide"><b>私人課敲定<span class="st todo">未動工</span></b><small>客人只能「送出需求」，教練聯繫後才敲定 —— 那不是預約。</small></div>
+        <div class="cell wide"><b>課後點名核銷<span class="st done">已上線</span></b><small>第 39 步。扣課只有一個入口（<code>check_in()</code>），教練對 <code>credit_ledger</code> 沒有任何權限 —— 頁面就算壞掉也寫不出一筆錯的帳。</small></div>
+        <div class="cell wide"><b>私人課<span class="st done">帳已通</span><span class="st wip">客人端暫緩</span></b><small>錢那一側做完了：服務登記逐筆記、最終認列才進薪資、累進抽成驗算過（第 71、85 步）。客人那一側還是只能「送出需求」，教練聯繫後才敲定。</small></div>
         <div class="cell wide"><b>會員端永遠只能送出請求</b><small>所有異動進待處理清單，等教練按下確認才生效。</small></div>
         <div class="cell wide"><b>九條已定案的業務規則</b><small>取消：課前 1 小時｜結算：當天 00:00｜缺席不扣課｜課後點名核銷｜預約無上限｜剩 0 堂也能訂｜不做候補｜額滿只提醒不硬擋｜私人課只送需求</small>
           <details class="more"><summary>00:00 那一刻真正發生的事</summary><div class="body">
@@ -807,13 +813,13 @@
     <section class="line-gate">
       <div class="dev-head">
         <span class="flr">樓層 1</span><h3>LINE 官方帳號</h3><span class="thr">＝ 劇院大門</span>
-        <em>整層尚未動工 —— 但它會決定客人怎麼進場</em>
+        <em>整層已完工 —— 客人現在真的從這裡進來</em>
       </div>
       <div class="lg-grid">
-        <div class="gate"><b>官方帳號<span class="st todo">未開</span></b><small>大門本身。客人加好友＝走到門口。</small></div>
-        <div class="gate"><b>圖文選單<span class="st todo">未動工</span></b><small>大門上的指示牌：訂課／我的課／剩幾堂。</small></div>
-        <div class="gate"><b>LIFF<span class="st todo">未動工</span></b><small>大門裡通往舞台的小門。在 LINE 內開一層網頁蓋在對話上 —— 客人全程不離開 LINE，但本質仍是網頁。</small></div>
-        <div class="gate key"><b>身分怎麼驗<span class="st todo">最關鍵</span></b><small><b>這一步做錯，後面所有的鎖都只是裝飾。</b></small>
+        <div class="gate"><b>官方帳號<span class="st done">已開</span></b><small>大門本身。目前 204 位好友。</small></div>
+        <div class="gate"><b>圖文選單<span class="st done">已啟用</span></b><small>2026-08-16 17:00 上線。同一格：客人按了是傳訊息，職員按了是進後台（第 67 步）。</small></div>
+        <div class="gate"><b>LIFF<span class="st done">已完工</span></b><small>大門裡通往舞台的小門。在 LINE 內開一層網頁蓋在對話上 —— 客人全程不離開 LINE，但本質仍是網頁。</small></div>
+        <div class="gate key"><b>身分怎麼驗<span class="st done">已完工</span></b><small><b>這一步做錯，後面所有的鎖都只是裝飾。</b>下面寫的「對的做法」就是現在實際在跑的那一條。</small>
           <details class="more"><summary>正確與錯誤的做法</summary><div class="body">
             ❌ <b>錯</b>：LIFF 取得 <code>line_user_id</code>，前端直接拿它查資料庫 → 任何人改一個字串就能查別人的資料<br><br>
             ✅ <b>對</b>：<br>
@@ -943,11 +949,13 @@
   const R = window.FFF_ROADMAP, P = window.FFF_PROGRESS;
   const act = R.acts[P.currentActIndex];
   const cur = P.current, prev = P.lastDone, next = P.afterCurrent;
-  const actLeft = act.steps.filter(s => !s.done).length;
+  const actLeft = act.steps.filter(s => !s.done && !s.defer).length;   // 暫緩的不算「還剩」
 
   // 定位釘：把它移到「目前這一幕」所在的區塊上方（SVG 基準 x = 316）
-  // 幕序 → 剖面圖上的 x：後台名冊室 / 接線處 / 後台名冊室 / LINE 大門 / 前台櫃檯
-  const PIN_X = [248, 316, 248, 895, 720];
+  // 幕序 → 剖面圖上的 x：後台名冊室 / 接線處 / 後台名冊室 / LINE 大門 /
+  //                     前台櫃檯 / 舞台（職員頁面） / 前台櫃檯（收錢的地方）
+  // ☢️ 這個陣列要跟 R.acts 一樣長。少一格的話那一幕的釘子會掉回預設位置。
+  const PIN_X = [248, 316, 248, 895, 720, 471, 720];
   const pin = document.getElementById('svg-pin');
   if (pin) {
     const dx = (PIN_X[P.currentActIndex] || 316) - 316;
@@ -955,13 +963,14 @@
   }
 
   document.getElementById('here-co').textContent =
-    cur ? ('第 ' + cur.n + ' 步 · ' + act.no + ' · ' + act.place) : '第一階段全部完成';
+    cur ? ('第 ' + cur.n + ' 步 · ' + act.no + ' · ' + act.place) : '七幕全部演完';
 
   document.getElementById('here-line').innerHTML = cur ? (
-    '第一階段 ' + P.total + ' 步，你已經走完 <b>' + P.done + ' 步</b>。<br>' +
+    '劇院七幕共 ' + P.total + ' 步，你已經走完 <b>' + P.done + ' 步</b>' +
+    (P.deferred ? '（另有 ' + P.deferred + ' 步暫緩）' : '') + '。<br>' +
     '現在站的位置是<b>' + act.place + '</b> —— ' + act.no + '「' + act.name + '」，這一幕還剩 ' + actLeft + ' 步。<br>' +
     '腳下這一步是<b>第 ' + cur.n + ' 步：' + cur.t + '</b>'
-  ) : ('第一階段 ' + P.total + ' 步全部走完。接下來是地平線那一頭的 ERP —— 該重新畫一張新地圖了。');
+  ) : ('七幕 ' + P.total + ' 步全部走完。接下來是地平線那一頭的 ERP —— 該重新畫一張新地圖了。');
 
   document.getElementById('here-bar').innerHTML =
     '<span>' + P.done + ' / ' + P.total + '</span>' +

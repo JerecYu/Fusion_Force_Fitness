@@ -16,6 +16,7 @@
     --auto-line:#A8C9BE;
     --pin:#D8342B; --pin-deep:#A4211A; --pin-bg:#FDECEA;
     --fog:#8C9AA8; --fog-bg:#EFF2F5; --done-bg:#F2F6F8;
+    --plum:#6B4E8E; --gold:#9A6B14;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--paper);color:var(--ink);
@@ -34,7 +35,9 @@
   .trail{margin-top:14px;background:#fff;border:1px solid var(--line);
     border-top:4px solid var(--ink);border-radius:3px;padding:8px 10px 12px}
   .trail .frame{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .trail svg{display:block;width:100%;min-width:760px;height:auto}
+  /* ☢️ 七幕之後 viewBox 從 1000 變成 1300，min-width 也要跟著放大 ——
+     不然手機上整張圖被壓到 760px 寬，幕名的字會小到看不清楚。 */
+  .trail svg{display:block;width:100%;min-width:1040px;height:auto}
   .trail .cap{font-size:12px;color:var(--muted);padding:8px 6px 0;line-height:1.6;
     border-top:1px solid #EDF1F4;margin-top:6px}
   .trail .cap b{color:var(--pin-deep)}
@@ -50,11 +53,14 @@
   .bar i{display:block;height:100%;font-style:normal}
   .bar .fill{background:var(--green)}
   .bar .cur{background:var(--pin)}
+  .bar .dfr{background:repeating-linear-gradient(45deg,#D3DBE2,#D3DBE2 3px,#EFF2F5 3px,#EFF2F5 7px)}
   .prog .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--muted)}
   .prog .legend span{display:flex;align-items:center;gap:5px}
   .prog .legend i{width:11px;height:11px;border-radius:2px;display:block}
   .prog .legend .g{background:var(--green)} .prog .legend .r{background:var(--pin)}
   .prog .legend .e{background:var(--fog-bg);border:1px solid var(--line)}
+  .prog .legend .d{background:repeating-linear-gradient(45deg,#D3DBE2,#D3DBE2 3px,#EFF2F5 3px,#EFF2F5 7px);
+    border:1px solid var(--line)}
 
   .ctrl{display:flex;gap:7px;align-items:center;margin-top:12px;flex-wrap:wrap}
   .ctrl b{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:700;
@@ -122,6 +128,8 @@
   .act.a3 .act-head{border-bottom-color:var(--navy)}  .act.a3 .act-head .no{background:var(--navy)}
   .act.a4 .act-head{border-bottom-color:var(--orange)}.act.a4 .act-head .no{background:var(--orange)}
   .act.a5 .act-head{border-bottom-color:var(--teal)}  .act.a5 .act-head .no{background:var(--teal)}
+  .act.a6 .act-head{border-bottom-color:var(--plum)}  .act.a6 .act-head .no{background:var(--plum)}
+  .act.a7 .act-head{border-bottom-color:var(--gold)}  .act.a7 .act-head .no{background:var(--gold)}
   .act-note{font-size:12.5px;color:var(--muted);margin:8px 0 10px;line-height:1.65}
   .act-note b{color:var(--ink)}
   .act-note code{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--navy)}
@@ -161,6 +169,18 @@
   li.step.decide .n{background:#FBE9DA;color:var(--orange-deep);border-color:#EBC4A0}
   li.step.decide:not(.now) .t::before{content:"要你決定 · ";color:var(--orange-deep);
     font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.04em}
+
+  /* 暫緩 —— 刻意放著不做的步驟。
+     ☢️ 一定要寫在 .decide 後面：第 36 步同時是「要你決定」和「暫緩」，
+        兩條 ::before 打平的時候是後面那條贏。它現在的狀態是暫緩，不是待決定。 */
+  li.step.defer{border-left-color:var(--fog);background:#FAFBFC}
+  li.step.defer .n{background:var(--fog-bg);color:var(--muted);border-color:var(--line)}
+  li.step.defer .t{color:var(--muted);font-weight:400}
+  li.step.defer:not(.now) .t::before{content:"暫緩 · ";color:var(--fog);
+    font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.04em}
+  li.step.defer .why{margin-top:6px;font-size:12px;line-height:1.65;color:var(--muted);
+    background:var(--fog-bg);border:1px solid var(--line);border-radius:2px;padding:7px 10px}
+  li.step.defer .why b{color:var(--ink)}
 
   .mile{margin:9px 0 12px;background:#EDF5F3;border:1px solid var(--auto-line);
     border-left:3px solid var(--green);border-radius:2px;padding:9px 12px;font-size:12.5px;line-height:1.6}
@@ -290,15 +310,19 @@
   }
 
   /* ═══ 路線圖 SVG ═══ */
-  // 六個站的座標：五幕 ＋ 地平線的 ERP
+  // 八個站的座標：七幕 ＋ 地平線的 ERP
+  // ☢️ 站的數量是從 R.acts 來的，這裡只是座標表。加一幕就要在這裡補一個座標，
+  //    不然那一幕會畫不出來（STATIONS[i] 是 undefined）。
   const STATIONS = [
-    { x: 95,  y:144, color:'#2F6B54' },
-    { x: 272, y:116, color:'#D8342B' },
-    { x: 450, y:132, color:'#2C4E7D' },
-    { x: 628, y:106, color:'#DE7A38' },
-    { x: 790, y:122, color:'#2E8B94' }
+    { x:  95, y:144, color:'#2F6B54' },
+    { x: 258, y:116, color:'#D8342B' },
+    { x: 422, y:132, color:'#2C4E7D' },
+    { x: 585, y:106, color:'#DE7A38' },
+    { x: 748, y:126, color:'#2E8B94' },
+    { x: 912, y:100, color:'#6B4E8E' },
+    { x:1075, y:118, color:'#9A6B14' }
   ];
-  const ERP = { x:930, y:98 };
+  const ERP = { x:1215, y:96 };
   const ORIGIN = { x:42, y:156 };
 
   function seg(a, b) {           // 兩點之間畫一段平滑曲線
@@ -319,15 +343,17 @@
   let ahead = 'M ' + aheadPts[0].x + ' ' + aheadPts[0].y;
   for (let i = 1; i < aheadPts.length; i++) ahead += ' ' + seg(aheadPts[i-1], aheadPts[i]);
 
-  const LBL_Y = 196, SUB_Y = 213;
-  let svg = '<svg viewBox="0 0 1000 246" role="img" aria-label="五幕路線圖">' +
+  // ☢️ 幕數變多之後，一行擠不下「第五幕　讓教練上工」這種長度的標籤 ——
+  //    改成兩行（幕名一行、名字一行），才不會跟隔壁那一幕的字黏在一起。
+  const LBL_Y = 192, NAME_Y = 211, SUB_Y = 228;
+  let svg = '<svg viewBox="0 0 1300 268" role="img" aria-label="七幕路線圖">' +
     '<defs><marker id="tip" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">' +
     '<path d="M0 0 L6 3 L0 6 z" fill="#8C9AA8"/></marker></defs>' +
     // 地平線與山
-    '<path d="M844 96 L884 58 L916 84 L946 46 L1000 96 Z" fill="#DDE3E9"/>' +
-    '<path d="M898 96 L932 66 L968 96 Z" fill="#CFD7DF"/>' +
-    '<line x1="828" y1="96" x2="1000" y2="96" stroke="#8C9AA8" stroke-width="1.4" stroke-dasharray="5 4"/>' +
-    '<text x="994" y="88" text-anchor="end" font-family="\'JetBrains Mono\',monospace" font-size="9.5" font-weight="700" fill="#8C9AA8">地平線</text>' +
+    '<path d="M1144 96 L1184 58 L1216 84 L1246 46 L1300 96 Z" fill="#DDE3E9"/>' +
+    '<path d="M1198 96 L1232 66 L1268 96 Z" fill="#CFD7DF"/>' +
+    '<line x1="1128" y1="96" x2="1300" y2="96" stroke="#8C9AA8" stroke-width="1.4" stroke-dasharray="5 4"/>' +
+    '<text x="1294" y="88" text-anchor="end" font-family="\'JetBrains Mono\',monospace" font-size="9.5" font-weight="700" fill="#8C9AA8">地平線</text>' +
     // 路徑
     '<path d="' + walked + '" fill="none" stroke="#2F6B54" stroke-width="5" stroke-linecap="round"/>' +
     '<path d="' + ahead + '" fill="none" stroke="#8C9AA8" stroke-width="3.4" stroke-dasharray="9 7" stroke-linecap="round" marker-end="url(#tip)"/>' +
@@ -343,7 +369,7 @@
   });
   svg += '</g>';
 
-  // 五幕的站
+  // 七幕的站
   P.actStats.forEach((a, i) => {
     const s = STATIONS[i];
     if (a.state === 'done') {
@@ -361,33 +387,56 @@
              '<text x="' + s.x + '" y="' + (s.y+5) + '" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="11" font-weight="700" fill="' + s.color + '">' + (i+1) + '</text>';
     }
     const labColor = a.state === 'done' ? '#2F6B54' : (a.state === 'current' ? '#A4211A' : s.color);
-    svg += '<text x="' + s.x + '" y="' + LBL_Y + '" text-anchor="middle" font-family="\'Noto Sans TC\',sans-serif" font-size="13.5" font-weight="700" fill="' + labColor + '">' + a.no + '　' + a.name + '</text>' +
-           '<text x="' + s.x + '" y="' + SUB_Y + '" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="10" font-weight="' + (a.state==='todo'?'400':'700') + '" fill="' + (a.state==='todo' ? '#5E6E7E' : labColor) + '">' +
-           a.done + ' / ' + a.total + (a.state === 'done' ? '　全部完成' : '') + '</text>';
+    const tail = a.state !== 'done' ? '' : (a.defer ? '　已走完' : '　全部完成');
+    svg += '<text x="' + s.x + '" y="' + LBL_Y + '" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="12" font-weight="700" fill="' + labColor + '">' + a.no + '</text>' +
+           '<text x="' + s.x + '" y="' + NAME_Y + '" text-anchor="middle" font-family="\'Noto Sans TC\',sans-serif" font-size="16" font-weight="700" fill="' + labColor + '">' + a.name + '</text>' +
+           '<text x="' + s.x + '" y="' + SUB_Y + '" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="11.5" font-weight="' + (a.state==='todo'?'400':'700') + '" fill="' + (a.state==='todo' ? '#5E6E7E' : labColor) + '">' +
+           a.done + ' / ' + a.total + tail + '</text>';
     if (a.state === 'current') {
-      svg += '<rect x="' + (s.x-60) + '" y="222" width="120" height="20" rx="3" fill="#D8342B"/>' +
-             '<text x="' + s.x + '" y="236" text-anchor="middle" font-family="\'Noto Sans TC\',sans-serif" font-size="11.5" font-weight="900" fill="#fff" letter-spacing="1.5">你在這裡</text>';
+      svg += '<rect x="' + (s.x-58) + '" y="240" width="116" height="21" rx="3" fill="#D8342B"/>' +
+             '<text x="' + s.x + '" y="255" text-anchor="middle" font-family="\'Noto Sans TC\',sans-serif" font-size="12" font-weight="900" fill="#fff" letter-spacing="1.5">你在這裡</text>';
     }
   });
 
   // ERP
   svg += '<circle cx="' + ERP.x + '" cy="' + ERP.y + '" r="14" fill="#EFF2F5" stroke="#8C9AA8" stroke-width="1.6" stroke-dasharray="3 3"/>' +
          '<text x="' + ERP.x + '" y="' + (ERP.y+5) + '" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="12" font-weight="700" fill="#8C9AA8">✳</text>' +
-         '<text x="' + ERP.x + '" y="' + LBL_Y + '" text-anchor="middle" font-family="\'Noto Sans TC\',sans-serif" font-size="13.5" font-weight="700" fill="#8C9AA8">ERP</text>' +
-         '<text x="' + ERP.x + '" y="' + SUB_Y + '" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="10" fill="#8C9AA8">不編號</text>' +
+         '<text x="' + ERP.x + '" y="' + NAME_Y + '" text-anchor="middle" font-family="\'Noto Sans TC\',sans-serif" font-size="16" font-weight="700" fill="#8C9AA8">ERP</text>' +
+         '<text x="' + ERP.x + '" y="' + SUB_Y + '" text-anchor="middle" font-family="\'JetBrains Mono\',monospace" font-size="11.5" fill="#8C9AA8">不編號</text>' +
          '</svg>';
 
   document.getElementById('trail-frame').innerHTML = svg;
+
+  /* ☢️ 幕數變多之後整條路線一定放不下小螢幕。開頁時要自己捲到「你在這裡」那一站 ——
+     不捲的話使用者第一眼看到的是第一幕，而他想知道的那一格在畫面外面。
+     ☢️ 「要不要提示可以左右滑」也要用量的，不能只靠 media query：
+        1000px 的筆電同樣放不下，但它不符合 max-width:760px。（第 53 步同一個坑） */
+  (function () {
+    var frame = document.getElementById('trail-frame');
+    var hint  = document.querySelector('.swipe');
+    var focusX = (STATIONS[P.currentActIndex] || ERP).x;
+    function place() {
+      var over = frame.scrollWidth - frame.clientWidth > 4;
+      if (hint) hint.style.display = over ? 'block' : 'none';
+      if (!over) return;
+      var scale = frame.scrollWidth / 1300;          // viewBox 座標 → 實際像素
+      frame.scrollLeft = Math.max(0, focusX * scale - frame.clientWidth / 2);
+    }
+    place();
+    window.addEventListener('resize', place);
+  })();
 
   /* ═══ 進度條 ═══ */
   document.getElementById('prog').innerHTML =
     '<div class="prog-top"><b>' + R.meta.phaseName + '</b>' +
     '<span class="num">' + P.done + ' / ' + P.total + ' 完成</span></div>' +
     '<div class="bar"><i class="fill" style="width:' + P.pctDone.toFixed(1) + '%"></i>' +
-    '<i class="cur" style="width:' + P.pctCurrent.toFixed(1) + '%"></i></div>' +
+    '<i class="cur" style="width:' + P.pctCurrent.toFixed(1) + '%"></i>' +
+    '<i class="dfr" style="width:' + P.pctDefer.toFixed(1) + '%"></i></div>' +
     '<div class="legend">' +
       '<span><i class="g"></i>已完成 ' + P.done + ' 步</span>' +
       '<span><i class="r"></i>你現在這一步</span>' +
+      '<span><i class="d"></i>暫緩 ' + P.deferred + ' 步</span>' +
       '<span><i class="e"></i>還沒走的 ' + P.remaining + ' 步</span>' +
     '</div>';
 
@@ -405,15 +454,17 @@
       '</div></details>' : '') +
     '</div>'
   ) : (
-    '<div class="focus-top"><span class="pin"></span><h2>36 步全部走完了</h2></div>' +
-    '<div class="focus-body">第一階段結束。接下來是地平線那一頭的 ERP —— 該重新畫一張新地圖了。</div>'
+    '<div class="focus-top"><span class="pin"></span><h2>' + P.total + ' 步全部走完了</h2></div>' +
+    '<div class="focus-body">七幕演完，劇院蓋好了。接下來是地平線那一頭的 ERP —— 該重新畫一張新地圖了。</div>'
   );
 
-  /* ═══ 五幕 ═══ */
+  /* ═══ 七幕 ═══ */
   let html = '';
   R.acts.forEach((a, ai) => {
     const st = P.actStats[ai];
-    const cntTxt = st.state === 'done' ? (st.done + ' / ' + st.total + ' 全部完成')
+    const cntTxt = st.state === 'done'
+                     ? (st.defer ? (st.done + ' / ' + st.total + ' 已走完 · ' + st.defer + ' 步暫緩')
+                                 : (st.done + ' / ' + st.total + ' 全部完成'))
                  : st.state === 'current' ? (st.done + ' / ' + st.total + ' · 你在這裡')
                  : (st.done + ' / ' + st.total);
     html += '<section class="act ' + a.key + '">' +
@@ -423,12 +474,17 @@
 
     a.steps.forEach(s => {
       const isNow = cur && s.n === cur.n;
-      const cls = ['step', s.done ? 'done' : (isNow ? 'now' : 'todo'), s.kind === 'decide' ? 'decide' : '']
+      const isDefer = !s.done && s.defer;
+      const cls = ['step', s.done ? 'done' : (isNow ? 'now' : 'todo'),
+                   s.kind === 'decide' ? 'decide' : '', isDefer ? 'defer' : '']
                     .filter(Boolean).join(' ');
       html += '<li class="' + cls + '"><div class="row">' +
         '<span class="n">' + String(s.n).padStart(2, '0') + '</span>' +
         '<span class="t">' + s.t + '</span>' +
         '<span class="where">' + s.where + '</span></div>';
+      // 暫緩的步驟一定要說「為什麼放著」。只寫「未完成」的話，
+      // 過三個月沒有人記得起來它是卡住還是刻意不做。
+      if (isDefer && s.deferWhy) html += '<div class="why">' + s.deferWhy + '</div>';
       if (s.body || s.ck || s.warn || s.note) {
         html += '<details class="more"' + (isNow ? ' open' : '') + '>' +
           '<summary>' + (s.summary || '說明') + '</summary><div class="body">' +
