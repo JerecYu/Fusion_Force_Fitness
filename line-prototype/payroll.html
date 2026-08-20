@@ -618,9 +618,20 @@
         .then(function (r) { return (!r.error && r.data) ? r.data : []; }, function () { return []; }),
       DB.from('coach_grades').select('id,employee_id,grade,effective_from')
         .then(function (r) { return (!r.error && r.data) ? r.data : []; }, function () { return []; }),
+      // ☢️☢️ 一定要指名外鍵。coach_allowances 有【兩條】指向 employees：
+      //    employee_id（誰領這筆加給）和 created_by（誰設定的）。
+      //    只寫 employees(...) 的話 PostgREST 不知道走哪一條，整個查詢回錯 ——
+      //    然後下面那個 (!r.error && r.data) 會把錯誤吞掉、回一個空陣列，
+      //    畫面上顯示「還沒有任何職務加給」。☢️ 資料明明在，但看不到。
+      //    ☢️ 這跟 line-notify 那個 bug 是【同一個】陷阱（見第 81 步）——
+      //       兩天內踩兩次，所以規則要記死：<b>嵌套查詢一律指名外鍵</b>。
       DB.from('coach_allowances')
-        .select('id,employee_id,item,monthly_amount,from_date,to_date,employees(display_name)')
-        .then(function (r) { return (!r.error && r.data) ? r.data : []; }, function () { return []; })
+        .select('id,employee_id,item,monthly_amount,from_date,to_date,' +
+                'employees!coach_allowances_employee_id_fkey(display_name)')
+        .then(function (r) {
+          if (r.error) { toast('讀不到加給設定：' + (r.error.message || ''), true); return []; }
+          return r.data || [];
+        }, function () { return []; })
     ]).then(function (all) {
       EMPS   = all[0] || [];
       GRADES = all[1] || [];
