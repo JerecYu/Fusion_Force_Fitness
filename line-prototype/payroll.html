@@ -244,6 +244,13 @@
                                        hour:'2-digit', minute:'2-digit', hour12:false });
   }
 
+  /* ☢️ 新系統的帳從 2026-08 開始。
+     在那之前的月份，系統裡只有搬遷進來的課次 —— 沒有職務加給、沒有服務紀錄、
+     沒有職級核定。硬算會跑出一個【看起來像答案的錯數字】，而且沒有任何地方
+     會說它不完整。
+     決定（Jerec 2026-08-20）：八月起正式計算，舊的封存在系統外的檔案庫。 */
+  var SYSTEM_START = '2026-08';
+
   function monthFirst() { return twMonth() + '-01'; }
 
   var MONTH = twMonth();
@@ -253,15 +260,33 @@
   /* ══ 畫面 ══════════════════════════════════════════════════════ */
   function pickerBlock() {
     var cur = twMonth(), prev = prevMonth(cur);
+    // ☢️ 上個月如果早於系統起點，那顆鍵不要出現 —— 出現卻按不出正確答案更糟
+    var showPrev = prev >= SYSTEM_START;
     return '<div class="card">' +
       '<div class="chips">' +
         '<button type="button" class="chip' + (MONTH===cur?' on':'') + '" data-m="' + cur + '">這個月</button>' +
-        '<button type="button" class="chip' + (MONTH===prev?' on':'') + '" data-m="' + prev + '">上個月</button>' +
+        (showPrev
+          ? '<button type="button" class="chip' + (MONTH===prev?' on':'') + '" data-m="' + prev + '">上個月</button>'
+          : '') +
       '</div>' +
       '<div class="dates"><span>月份</span>' +
-        '<input type="month" id="dM" value="' + esc(MONTH) + '" max="' + esc(cur) + '">' +
+        '<input type="month" id="dM" value="' + esc(MONTH) + '" ' +
+          'min="' + esc(SYSTEM_START) + '" max="' + esc(cur) + '">' +
       '</div>' +
     '</div>';
+  }
+
+  // ☢️ input 的 min 只是「不好挑」，不是「挑不到」——
+  //    手動打字、或瀏覽器不支援 min 的時候還是進得來。所以這裡再擋一次。
+  function tooEarlyBlock() {
+    if (MONTH >= SYSTEM_START) return '';
+    return '<div class="card" style="background:var(--err-bg);border-color:var(--err-line)">' +
+      '<div style="font-size:14px;font-weight:800;color:var(--err)">☢️ ' + esc(MONTH) +
+        ' 在新系統上線之前，這個數字不能拿來計薪</div>' +
+      '<div class="note">系統的帳從 <b>' + SYSTEM_START + '</b> 開始。在那之前只有搬遷進來的課次 ——' +
+        '<b>沒有職務加給、沒有服務紀錄、沒有職級核定</b>。' +
+        '下面算得出東西，但它不完整，而且不完整的地方不會自己顯示出來。<br>' +
+        '舊月份的薪資在系統外的檔案庫。</div></div>';
   }
 
   function sumsBlock() {
@@ -504,7 +529,7 @@
     elGate.hidden = true; elMain.hidden = false;
     elMain.innerHTML =
       pickerBlock() +
-      (DATA ? (sumsBlock() + '<div class="h">每位教練</div>' + coachBlock() +
+      (DATA ? (tooEarlyBlock() + sumsBlock() + '<div class="h">每位教練</div>' + coachBlock() +
                holdBlock() + warnBlock() + settingsBlock() + downloadBlock())
             : '<div class="card"><div class="empty">讀取中…</div></div>');
     wire();
