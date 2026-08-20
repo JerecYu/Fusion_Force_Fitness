@@ -56,21 +56,34 @@
 
   var CHECKING = false;
 
-  // 已經開好了嗎？開好了就把整張卡收起來。
+  /* 已經開好了嗎？開好了就把整張卡收起來。
+
+     ☢️☢️ 一定要用 auth_user_id 篩自己那一列，不能只 .limit(1)。
+        customers 上有兩條 SELECT policy：「客人只能讀自己」和
+        【員工可讀全部客人】。所以同時是教練又是客人的人（Jerec、VC）
+        讀到的是【全部 95 位客人】—— .limit(1) 拿到的是隨便一個人的
+        push_user_id。今天全部是 null 所以看起來正常，等第一位客人開通之後，
+        這張卡就會對著教練隨機出現或消失，而且不會有任何錯誤。 */
   function refresh() {
     if (CHECKING) return;
     var A = window.FFF_AUTH;
     if (!A || A.state !== 'bound' || !window.fffDB) { show(false); return; }
     CHECKING = true;
-    window.fffDB.from('customers').select('push_user_id').limit(1)
-      .then(function (r) {
-        CHECKING = false;
-        // ☢️ 錯誤和「沒有資料」在 supabase-js 裡都會拿到空的，意思相反。（規則 14）
-        //    讀不到就【不要】把卡打開 —— 對一個已經開好的人再喊一次「快去開」，
-        //    比什麼都不顯示更糟。
-        if (r.error || !r.data || !r.data.length) { show(false); return; }
-        show(!r.data[0].push_user_id);
-      }, function () { CHECKING = false; show(false); });
+    window.fffDB.auth.getUser().then(function (u) {
+      var uid = u && u.data && u.data.user && u.data.user.id;
+      if (!uid) { CHECKING = false; show(false); return; }
+      return window.fffDB.from('customers')
+        .select('push_user_id').eq('auth_user_id', uid).limit(1)
+        .then(function (r) {
+          CHECKING = false;
+          // ☢️ 錯誤和「沒有資料」在 supabase-js 裡都會拿到空的，意思相反。（規則 14）
+          //    讀不到就【不要】把卡打開 —— 對一個已經開好的人再喊一次
+          //    「快去開」，比什麼都不顯示更糟。
+          if (r.error || !r.data || !r.data.length) { show(false); return; }
+          show(!r.data[0].push_user_id);
+        });
+    }, function () { CHECKING = false; show(false); })
+      .catch(function () { CHECKING = false; show(false); });
   }
 
   function click() {
@@ -106,7 +119,12 @@
     el.go.onclick = click;
 
     if (!window.FFF_AUTH || !window.FFF_AUTH.ready) return;
+    // ☢️ 不能只看 ready 那一次。liff-auth 在某些路徑（換憑證、重新登入）
+    //    會【先 resolve、稍後才把 state 改成 bound】—— 只查一次的話，
+    //    那些人永遠看不到這張卡，而且不會有錯誤。多試兩次，成本是兩個查詢。
     window.FFF_AUTH.ready.then(refresh, function () {});
+    setTimeout(refresh, 1500);
+    setTimeout(refresh, 4000);
 
     // ☢️ 從 LINE 聊天室切回來的時候要再看一次 —— 那正是他剛按完送出的時刻。
     //    liff-auth.js 的 onResume 已經被別的頁面用掉了，所以這裡自己接
