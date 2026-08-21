@@ -953,9 +953,10 @@
 
   // 定位釘：把它移到「目前這一幕」所在的區塊上方（SVG 基準 x = 316）
   // 幕序 → 剖面圖上的 x：後台名冊室 / 接線處 / 後台名冊室 / LINE 大門 /
-  //                     前台櫃檯 / 舞台（職員頁面） / 前台櫃檯（收錢的地方）
+  //                     前台櫃檯 / 舞台（職員頁面） / 後台名冊室（把資料搬進來）/
+  //                     前台櫃檯（收錢的地方）
   // ☢️ 這個陣列要跟 R.acts 一樣長。少一格的話那一幕的釘子會掉回預設位置。
-  const PIN_X = [248, 316, 248, 895, 720, 471, 720];
+  const PIN_X = [248, 316, 248, 895, 720, 471, 248, 720];
   const pin = document.getElementById('svg-pin');
   if (pin) {
     const dx = (PIN_X[P.currentActIndex] || 316) - 316;
@@ -963,14 +964,14 @@
   }
 
   document.getElementById('here-co').textContent =
-    cur ? ('第 ' + cur.n + ' 步 · ' + act.no + ' · ' + act.place) : '七幕全部演完';
+    cur ? ('第 ' + cur.n + ' 步 · ' + act.no + ' · ' + act.place) : '八幕全部演完';
 
   document.getElementById('here-line').innerHTML = cur ? (
-    '劇院七幕共 ' + P.total + ' 步，你已經走完 <b>' + P.done + ' 步</b>' +
+    '劇院八幕共 ' + P.total + ' 步，你已經走完 <b>' + P.done + ' 步</b>' +
     (P.deferred ? '（另有 ' + P.deferred + ' 步暫緩）' : '') + '。<br>' +
     '現在站的位置是<b>' + act.place + '</b> —— ' + act.no + '「' + act.name + '」，這一幕還剩 ' + actLeft + ' 步。<br>' +
     '腳下這一步是<b>第 ' + cur.n + ' 步：' + cur.t + '</b>'
-  ) : ('七幕 ' + P.total + ' 步全部走完。接下來是地平線那一頭的 ERP —— 該重新畫一張新地圖了。');
+  ) : ('八幕 ' + P.total + ' 步全部走完。接下來是地平線那一頭的 ERP —— 該重新畫一張新地圖了。');
 
   document.getElementById('here-bar').innerHTML =
     '<span>' + P.done + ' / ' + P.total + '</span>' +

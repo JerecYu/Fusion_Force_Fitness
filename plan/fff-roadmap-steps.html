@@ -16,7 +16,7 @@
     --auto-line:#A8C9BE;
     --pin:#D8342B; --pin-deep:#A4211A; --pin-bg:#FDECEA;
     --fog:#8C9AA8; --fog-bg:#EFF2F5; --done-bg:#F2F6F8;
-    --plum:#6B4E8E; --gold:#9A6B14;
+    --plum:#6B4E8E; --gold:#9A6B14; --rust:#A85438;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--paper);color:var(--ink);
@@ -130,6 +130,7 @@
   .act.a5 .act-head{border-bottom-color:var(--teal)}  .act.a5 .act-head .no{background:var(--teal)}
   .act.a6 .act-head{border-bottom-color:var(--plum)}  .act.a6 .act-head .no{background:var(--plum)}
   .act.a7 .act-head{border-bottom-color:var(--gold)}  .act.a7 .act-head .no{background:var(--gold)}
+  .act.a8 .act-head{border-bottom-color:var(--rust)}  .act.a8 .act-head .no{background:var(--rust)}
   .act-note{font-size:12.5px;color:var(--muted);margin:8px 0 10px;line-height:1.65}
   .act-note b{color:var(--ink)}
   .act-note code{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--navy)}
@@ -310,17 +311,18 @@
   }
 
   /* ═══ 路線圖 SVG ═══ */
-  // 八個站的座標：七幕 ＋ 地平線的 ERP
+  // 九個站的座標：八幕 ＋ 地平線的 ERP
   // ☢️ 站的數量是從 R.acts 來的，這裡只是座標表。加一幕就要在這裡補一個座標，
   //    不然那一幕會畫不出來（STATIONS[i] 是 undefined）。
   const STATIONS = [
     { x:  95, y:144, color:'#2F6B54' },
-    { x: 258, y:116, color:'#D8342B' },
-    { x: 422, y:132, color:'#2C4E7D' },
-    { x: 585, y:106, color:'#DE7A38' },
-    { x: 748, y:126, color:'#2E8B94' },
-    { x: 912, y:100, color:'#6B4E8E' },
-    { x:1075, y:118, color:'#9A6B14' }
+    { x: 235, y:116, color:'#D8342B' },
+    { x: 375, y:132, color:'#2C4E7D' },
+    { x: 515, y:106, color:'#DE7A38' },
+    { x: 655, y:126, color:'#2E8B94' },
+    { x: 795, y:100, color:'#6B4E8E' },
+    { x: 935, y:122, color:'#9A6B14' },
+    { x:1075, y:102, color:'#A85438' }
   ];
   const ERP = { x:1215, y:96 };
   const ORIGIN = { x:42, y:156 };
@@ -346,7 +348,7 @@
   // ☢️ 幕數變多之後，一行擠不下「第五幕　讓教練上工」這種長度的標籤 ——
   //    改成兩行（幕名一行、名字一行），才不會跟隔壁那一幕的字黏在一起。
   const LBL_Y = 192, NAME_Y = 211, SUB_Y = 228;
-  let svg = '<svg viewBox="0 0 1300 268" role="img" aria-label="七幕路線圖">' +
+  let svg = '<svg viewBox="0 0 1300 268" role="img" aria-label="八幕路線圖">' +
     '<defs><marker id="tip" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">' +
     '<path d="M0 0 L6 3 L0 6 z" fill="#8C9AA8"/></marker></defs>' +
     // 地平線與山
@@ -369,7 +371,7 @@
   });
   svg += '</g>';
 
-  // 七幕的站
+  // 八幕的站
   P.actStats.forEach((a, i) => {
     const s = STATIONS[i];
     if (a.state === 'done') {
@@ -455,10 +457,10 @@
     '</div>'
   ) : (
     '<div class="focus-top"><span class="pin"></span><h2>' + P.total + ' 步全部走完了</h2></div>' +
-    '<div class="focus-body">七幕演完，劇院蓋好了。接下來是地平線那一頭的 ERP —— 該重新畫一張新地圖了。</div>'
+    '<div class="focus-body">八幕演完，劇院蓋好了。接下來是地平線那一頭的 ERP —— 該重新畫一張新地圖了。</div>'
   );
 
-  /* ═══ 七幕 ═══ */
+  /* ═══ 八幕 ═══ */
   let html = '';
   R.acts.forEach((a, ai) => {
     const st = P.actStats[ai];
