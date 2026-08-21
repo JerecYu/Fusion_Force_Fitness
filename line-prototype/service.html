@@ -130,6 +130,13 @@
   .tag.pen{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
 
   .note{font-size:11.5px;color:var(--dim);margin-top:8px}
+  /* 待確認專區。☢️ 這一區【不受 20 筆上限影響】—— 沒認列的紀錄不會進薪資，
+     被清單長度藏起來的話，那筆錢就永遠沒有人去處理。 */
+  .h.pend{color:var(--warn)}
+  .card.pend{border-color:var(--warn-line);border-left:4px solid var(--warn)}
+  .card.pend .note{color:var(--warn)}
+  .loaderr{background:var(--err-bg);border:1px solid var(--err-line);color:var(--err);
+    border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.6;margin-top:8px}
   .empty{text-align:center;color:var(--faint);font-size:13px;padding:16px 4px}
   .gate{padding:56px 20px;text-align:center}
   .gate .g1{font-size:17px;font-weight:800;color:var(--ink)}
@@ -178,7 +185,10 @@
 
   var DB = null, ME = null, BUSY = false;
   var PRICES = { PT: [], PGT: [], CORP: [] };
-  var COACHES = [], LIST = [], STAFF = [];
+  var COACHES = [], LIST = [], STAFF = [], PEND = [], LOAD_ERR = '';
+  var SVC_COLS = 'id,service_type,done_date,done_time,customer_name,company_name,headcount,' +
+                 'billed_hours,revenue_amount,travel_fee,perf_amount,total_amount,' +
+                 'fin_status,voided,void_reason,coach_names,created_by_name,note,manual_note';
   var elGate = document.getElementById('gate');
   var elMain = document.getElementById('main');
   var elWho  = document.getElementById('who');
@@ -487,42 +497,62 @@
     '</div>';
   }
 
+  function rowHtml(x) {
+    var fin = x.fin_status === 'final';
+    return '<div class="row' + (x.voided ? ' void' : '') + '">' +
+      '<div class="r1"><span class="nm">' + esc(typeName(x.service_type)) + '</span>' +
+        '<span class="tag ' + (fin ? 'fin' : 'pen') + '">' +
+          (fin ? '已認列' : '待確認') + '</span>' +
+        (x.voided ? '<span class="tag">已作廢</span>' : '') +
+        '<span class="amt">' + money(x.total_amount) + '</span></div>' +
+      '<div class="r2">' + esc(x.done_date) + ' ' + esc(x.done_time) +
+        '　·　' + esc(x.coach_names || '—') +
+        (x.customer_name ? '　·　' + esc(x.customer_name) : '') +
+        (x.company_name ? '　·　' + esc(x.company_name) : '') +
+        (x.billed_hours ? '　·　' + x.billed_hours + ' 小時' : '') +
+        (x.headcount ? '　·　' + x.headcount + ' 人' : '') +
+        '　·　業績 ' + money(x.perf_amount) +
+        '　·　' + esc(x.created_by_name || '') + ' 登的' +
+        (x.voided && x.void_reason ? '<br>作廢原因：' + esc(x.void_reason) : '') +
+        // 待確認的那幾筆一定要看得到「為什麼待確認」—— 那就是要你決定的東西
+        (x.fin_status !== 'final' && !x.voided && x.note ? '<br>' + esc(x.note) : '') +
+        (x.fin_status !== 'final' && !x.voided && x.manual_note ? '<br>' + esc(x.manual_note) : '') +
+      '</div>' +
+      (ME && ME.can_finance && !x.voided
+        ? '<div class="r3">' +
+          (fin ? '' : '<button type="button" class="go" data-fin="' + esc(x.id) + '">最終認列</button>') +
+          '<button type="button" data-void="' + esc(x.id) + '">作廢</button></div>'
+        : '') +
+    '</div>';
+  }
+
+  /* 待確認專區。
+     ☢️ 2026-08-21 匯入 231 筆之後才發現的洞：清單只抓 20 筆，
+        那一筆待確認的排在第 100 多名，畫面上<b>根本找不到</b>——
+        而找不到就等於那筆錢永遠不會進薪資。所以待確認自己一區、不設上限。 */
+  function pendBlock() {
+    if (!PEND.length) return '';
+    return '<div class="h pend">待確認（' + PEND.length + '）· 還沒進薪資</div>' +
+      '<div class="card pend">' + PEND.map(rowHtml).join('') +
+      '<div class="note">☢️ 這些<b>沒有</b>算進任何人的薪資。按「最終認列」才會進去。</div></div>';
+  }
+
   function listBlock() {
+    var err = LOAD_ERR ? '<div class="loaderr">☢️ 清單讀取失敗：' + esc(LOAD_ERR) +
+              '<br>畫面上的「沒有紀錄」<b>不代表真的沒有</b>，先把這句話截給工程師。</div>' : '';
     if (!LIST.length) {
-      return '<div class="h">最近登記</div><div class="card"><div class="empty">還沒有任何服務紀錄</div></div>';
+      return '<div class="h">最近登記</div><div class="card">' +
+             (err || '<div class="empty">還沒有任何服務紀錄</div>') + '</div>';
     }
-    return '<div class="h">最近登記（' + LIST.length + '）</div><div class="card">' +
-      LIST.map(function (x) {
-        var fin = x.fin_status === 'final';
-        return '<div class="row' + (x.voided ? ' void' : '') + '">' +
-          '<div class="r1"><span class="nm">' + esc(typeName(x.service_type)) + '</span>' +
-            '<span class="tag ' + (fin ? 'fin' : 'pen') + '">' +
-              (fin ? '已認列' : '待確認') + '</span>' +
-            (x.voided ? '<span class="tag">已作廢</span>' : '') +
-            '<span class="amt">' + money(x.total_amount) + '</span></div>' +
-          '<div class="r2">' + esc(x.done_date) + ' ' + esc(x.done_time) +
-            '　·　' + esc(x.coach_names || '—') +
-            (x.customer_name ? '　·　' + esc(x.customer_name) : '') +
-            (x.company_name ? '　·　' + esc(x.company_name) : '') +
-            (x.billed_hours ? '　·　' + x.billed_hours + ' 小時' : '') +
-            (x.headcount ? '　·　' + x.headcount + ' 人' : '') +
-            '　·　業績 ' + money(x.perf_amount) +
-            '　·　' + esc(x.created_by_name || '') + ' 登的' +
-            (x.voided && x.void_reason ? '<br>作廢原因：' + esc(x.void_reason) : '') +
-          '</div>' +
-          (ME && ME.can_finance && !x.voided
-            ? '<div class="r3">' +
-              (fin ? '' : '<button type="button" class="go" data-fin="' + esc(x.id) + '">最終認列</button>') +
-              '<button type="button" data-void="' + esc(x.id) + '">作廢</button></div>'
-            : '') +
-        '</div>';
-      }).join('') +
-      '<div class="note">☢️「最終認列」只有財務按得動。沒有認列的紀錄<b>不會進薪資</b>。</div></div>';
+    return '<div class="h">最近登記（最近 ' + LIST.length + ' 筆）</div><div class="card">' +
+      LIST.map(rowHtml).join('') + err +
+      '<div class="note">☢️「最終認列」只有財務按得動。沒有認列的紀錄<b>不會進薪資</b>。<br>' +
+      '這一區只列<b>最近 20 筆</b>（照上課時間排，新的在上面）—— 要找更早的請用對帳報表。</div></div>';
   }
 
   function render() {
     elGate.hidden = true; elMain.hidden = false;
-    elMain.innerHTML = typeBlock() + formBlock() + listBlock();
+    elMain.innerHTML = typeBlock() + formBlock() + pendBlock() + listBlock();
     wire();
   }
 
@@ -763,6 +793,7 @@
 
   /* ══ 讀資料 ══════════════════════════════════════════════════ */
   function load() {
+    LOAD_ERR = '';   // 每次重讀都要清掉，不然修好了還一直掛著紅字
     // ☢️ 價格與教練名單讀不到，不該讓整頁掛掉 —— 但要讓人看得出少了東西。
     return Promise.all([
       DB.rpc('list_prices', { p_product: 'PT' })
@@ -786,13 +817,28 @@
         .order('display_name')
         .then(function (r) { STAFF = (!r.error && r.data) ? r.data : []; },
               function () { STAFF = []; }),
-      DB.from('staff_services')
-        .select('id,service_type,done_date,done_time,customer_name,company_name,headcount,' +
-                'billed_hours,revenue_amount,travel_fee,perf_amount,total_amount,' +
-                'fin_status,voided,void_reason,coach_names,created_by_name')
-        .order('created_at', { ascending: false }).limit(20)
-        .then(function (r) { LIST = (!r.error && r.data) ? r.data : []; },
-              function () { LIST = []; })
+      // ☢️ 不能用 created_at 排序。批次匯入的 231 筆【共用同一個 created_at】
+      //    （同一個交易裡的 now() 是同一個值），所以它們之間的先後是<b>沒有定義</b>的，
+      //    實測回來的是 8/01 那批 —— 看起來像「最近登記」，其實是最舊的 20 筆。
+      //    照 done_date／done_time 排才是人腦裡的「最近」。
+      DB.from('staff_services').select(SVC_COLS)
+        .order('done_date', { ascending: false })
+        .order('done_time', { ascending: false })
+        .limit(20)
+        .then(function (r) {
+          LIST = r.data || [];
+          if (r.error) LOAD_ERR = r.error.message;   // ☢️ 錯誤不吞：空清單和讀不到長得一樣
+        }, function (e) { LIST = []; LOAD_ERR = String(e && e.message || e); }),
+      // 待確認自己撈一次，不受上面那 20 筆的限制
+      DB.from('staff_services').select(SVC_COLS)
+        .neq('fin_status', 'final').eq('voided', false)
+        .order('done_date', { ascending: false })
+        .order('done_time', { ascending: false })
+        .limit(200)
+        .then(function (r) {
+          PEND = r.data || [];
+          if (r.error) LOAD_ERR = r.error.message;
+        }, function (e) { PEND = []; LOAD_ERR = String(e && e.message || e); })
     ]).then(function () {
       if (!F.done) F.done = nowLocal();
       render();
