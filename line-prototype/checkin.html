@@ -136,6 +136,10 @@
   .sb-go{width:100%;margin-top:9px;background:var(--err);color:#fff;border:0;border-radius:2px;
     padding:12px;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer}
   .sb-go:disabled{opacity:.5}
+  /* 第 88 步：重新開課。☢️ 前綴 rp- —— 動手前先在整份檔案搜過，沒有撞名。 */
+  .rp-go{width:100%;margin-top:10px;background:var(--ok);color:#fff;border:0;border-radius:2px;
+    padding:11px;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer}
+  .rp-go:disabled{opacity:.5}
   .sb-no{width:100%;margin-top:6px;background:none;border:0;color:var(--dim);
     font-family:inherit;font-size:12.5px;cursor:pointer;padding:6px}
 
@@ -1061,7 +1065,9 @@
     var html = '<div class="head">' +
       '<div class="h1">' + dstr(s.session_date) + '　' + hhmm(s.start_time) + '　' + esc(s.title) + '</div>' +
       '<div class="h2">' + esc(s.coach_name || '未指定教練') + '　·　' + (LV[s.level] || s.level) + '</div>' +
-      (dead ? '<div class="banner dead">這堂課已經取消，點不了名。<br>如果實際上有上課，請找 Jerec 在後台改課次狀態。</div>' : '') +
+      (dead ? '<div class="banner dead">這堂課已經取消，點不了名。<br>' +
+        '如果實際上有上課，按下面這顆把它重新打開。</div>' +
+        '<button type="button" class="rp-go" id="rpGo">重新開課</button>' : '') +
       (soon ? '<div class="banner soon">還太早 —— <b>課前 15 分鐘</b>才能開始點名。<br>現在可以先把臨時要來的人加進名單。</div>' : '') +
       stopArea(s, dead) +
       qrArea(s, lock) +
@@ -1084,6 +1090,43 @@
     elRoster.innerHTML = html;
     wireRoster(dead);   // 搜尋框只有「已取消」才關；未來的課可以先加人
     stopWire();
+    reopenWire();
+  }
+
+  /* ══ 重新開課（第 88 步）════════════════════════════════════════
+     ☢️ 點名頁從第 39 步就寫著「請找 Jerec 在後台改課次狀態」——
+        但後台【根本沒有那個開關】。那句話兩個多月來都是假的。
+     ☢️ 客人自己取消的預約【不會】跟著回來。他真的不想來，
+        系統不該替他決定。回來的只有「職員取消課次時連帶取消」的那些。 */
+  var RP_BUSY = false;
+  function reopenWire() {
+    var b = document.getElementById('rpGo');
+    if (!b) return;
+    b.onclick = function () {
+      if (RP_BUSY) return;
+      var why = window.prompt('重新開課的原因（會留在紀錄上）');
+      if (why == null) return;
+      if (!why.trim()) { toast('要寫原因', true); return; }
+      RP_BUSY = true; b.disabled = true; b.textContent = '處理中…';
+      DB.rpc('reopen_session', { p_session: CUR.session_id, p_why: why.trim() })
+        .then(function (r) {
+          RP_BUSY = false;
+          if (r.error) throw new Error(r.error.message);
+          var d = r.data || {};
+          if (d.ok === false) throw new Error(d.msg || '重新開課不成功');
+          var msg = '已重新開課';
+          if (d.restored_bookings > 0) msg += '，' + d.restored_bookings + ' 筆預約也回來了';
+          if (d.self_cancelled > 0) msg += '。☢️ 另外 ' + d.self_cancelled + ' 位是自己取消的，要自己再訂一次';
+          toast(msg);
+          return openSession(CUR.session_id);
+        })
+        .catch(function (e) {
+          RP_BUSY = false;
+          var b2 = document.getElementById('rpGo');
+          if (b2) { b2.disabled = false; b2.textContent = '重新開課'; }
+          toast(String(e && e.message || e), true);
+        });
+    };
   }
 
   /* ══ 停課／請假通知（第 81 步）══════════════════════════════════

@@ -518,10 +518,15 @@
         (x.fin_status !== 'final' && !x.voided && x.note ? '<br>' + esc(x.note) : '') +
         (x.fin_status !== 'final' && !x.voided && x.manual_note ? '<br>' + esc(x.manual_note) : '') +
       '</div>' +
-      (ME && ME.can_finance && !x.voided
-        ? '<div class="r3">' +
-          (fin ? '' : '<button type="button" class="go" data-fin="' + esc(x.id) + '">最終認列</button>') +
-          '<button type="button" data-void="' + esc(x.id) + '">作廢</button></div>'
+      (ME && ME.can_finance
+        ? (x.voided
+            // ☢️ 作廢在畫面上原本是【單行道】。2026-08-21 真的被誤按了一次
+            //    （原因欄填「爽」），只能進資料庫改 —— 所以補這一顆。
+            //    它一樣要寫原因，而且作廢的歷史不會被抹掉。
+            ? '<div class="r3"><button type="button" data-undo="' + esc(x.id) + '">還原</button></div>'
+            : '<div class="r3">' +
+              (fin ? '' : '<button type="button" class="go" data-fin="' + esc(x.id) + '">最終認列</button>') +
+              '<button type="button" data-void="' + esc(x.id) + '">作廢</button></div>')
         : '') +
     '</div>';
   }
@@ -648,6 +653,9 @@
     });
     each('[data-void]', function (b) {
       b.onclick = function () { voidOne(b.getAttribute('data-void')); };
+    });
+    each('[data-undo]', function (b) {
+      b.onclick = function () { restoreOne(b.getAttribute('data-undo')); };
     });
   }
 
@@ -786,6 +794,25 @@
         if (r.error) throw new Error(r.error.message);
         if (!r.data || r.data.ok === false) throw new Error((r.data && r.data.msg) || '作廢不成功');
         toast('已作廢');
+        return load();
+      })
+      .catch(function (e) { BUSY = false; toast(String(e && e.message || e), true); });
+  }
+
+  // ☢️ 還原【也要寫原因】。作廢要理由、還原不用的話，帳上就會出現
+  //    「有人作廢了，然後不知道為什麼又回來了」—— 那比原本的錯更難查。
+  function restoreOne(id) {
+    if (BUSY) return;
+    var why = window.prompt('還原原因（會跟原本的作廢紀錄一起留著）');
+    if (why == null) return;
+    if (!why.trim()) { toast('要寫還原原因', true); return; }
+    BUSY = true;
+    DB.rpc('restore_service', { p_id: id, p_why: why.trim() })
+      .then(function (r) {
+        BUSY = false;
+        if (r.error) throw new Error(r.error.message);
+        if (!r.data || r.data.ok === false) throw new Error((r.data && r.data.msg) || '還原不成功');
+        toast('已還原，這筆會回到薪資裡');
         return load();
       })
       .catch(function (e) { BUSY = false; toast(String(e && e.message || e), true); });
