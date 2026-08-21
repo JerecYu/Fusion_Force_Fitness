@@ -199,6 +199,26 @@
     display:inline-flex;align-items:center}
 
   /* ══ 主要動作區：購課 ═════════════════════════════════════ */
+  /* ── 導覽磚（第 92 步之後改的）──
+     ☢️ 兩欄，而且每一塊底下一定要有一句「進去做什麼」。
+        只寫「對帳」「支出」的話，不是每天用的人分不出差別 ——
+        他會兩個都點開看一次，那就等於沒有分組。 */
+  .navg{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .tile{display:flex;flex-direction:column;justify-content:center;gap:2px;
+    background:var(--surface);border:1px solid var(--line);border-radius:13px;
+    padding:11px 12px;text-decoration:none;color:var(--ink);min-height:60px}
+  .tile:active{background:var(--surface2)}
+  .tile b{font-size:14.5px;font-weight:800;display:flex;align-items:center;line-height:1.35}
+  .tile i{font-size:11px;color:var(--dim);font-style:normal;line-height:1.5}
+  .tile.wide{grid-column:1 / -1}
+
+  /* 調整堂數的表單（沿用沖銷那一套 .vf） */
+  .vf .vfi + .vfi{margin-top:6px}
+  .adjb{flex:0 0 auto;background:none;border:1px solid var(--line);color:var(--dim);
+    border-radius:7px;padding:2px 8px;font-family:inherit;font-size:11px;
+    font-weight:700;cursor:pointer;margin-left:4px}
+  .adjb:active{background:var(--surface2)}
+
   .lead{background:var(--surface);border:1.5px solid var(--blue);border-radius:16px;
     padding:14px;margin-bottom:10px;box-shadow:0 6px 18px -12px rgba(46,134,171,.75)}
   .lead h2{font-size:15.5px;font-weight:800;letter-spacing:.03em}
@@ -397,19 +417,13 @@
        不會有捲軸、也不會有任何提示。Jerec 就是這樣按不到「重新整理」的。
        包起來之後：寬螢幕一列排完，窄螢幕整組掉到第二列自己排。 -->
   <div class="nav">
-    <!-- ☢️ 順序是有意義的：導覽鍵在左、重新整理固定在最右。
-         checkin.html 的 [← 課表][重新整理] 也是這個順序 ——
-         兩頁同樣兩顆鍵左右相反的話，人會按錯。 -->
-    <a class="iconbtn" href="https://jerecyu.github.io/Fusion_Force_Fitness/"
-       target="_blank" rel="noopener">官網</a>
-    <a class="iconbtn" href="checkin.html">點名<span class="nv-long">核銷</span><span class="ar"></span></a>
-    <!-- PT／PGT／外派／諧動活動／企業包班的登記入口（第 71 步）。
-         ☢️ GT 不走這裡 —— GT 在點名核銷那一頁。 -->
-    <a class="iconbtn" href="service.html">服務<span class="nv-long">登記</span><span class="ar"></span></a>
-    <!-- 只有 can_finance（負責人／VC）才會現身 -->
-    <a class="iconbtn" id="rptLink" href="report.html" hidden>對帳<span class="ar"></span></a>
-    <a class="iconbtn" id="expLink" href="expenses.html" hidden>支出<span class="ar"></span></a>
-    <a class="iconbtn" id="payLink" href="payroll.html" hidden>薪資<span class="ar"></span></a>
+    <!-- ☢️ 2026-08-22：這裡【只留兩顆】。
+         第 92 步之後頁面變成七個，全部塞進頂部列有八顆鍵 ——
+         手機一列排不下、換行之後又佔掉快兩百像素，
+         而其中六顆是「一天按一次」的導覽，不是「隨時要按」的操作。
+         導覽改成內容區的分組磚（navBlock），照【用途】分，
+         每一塊底下寫一句「進去做什麼」。
+         頂部列只留真正隨時會按的：重新整理、登出。 -->
     <button type="button" class="iconbtn" id="reload"><span class="nv-long">重新整理</span><span class="nv-short">重整</span></button>
     <!-- ☢️ 只在瀏覽器裡出現。在 LINE App 裡按了會自動登入回來，等於沒作用。 -->
     <button type="button" class="iconbtn" id="logout" hidden>登出</button>
@@ -808,6 +822,38 @@
            「還有幾件事」，按下去直接捲過去。
      ═══════════════════════════════════════════════════════════ */
 
+  /* 導覽磚。
+     ☢️ 2026-08-22 Jerec：「功能越來越多，系統後台開始資訊膨脹」。
+        分組的依據是【誰、多久用一次】，不是功能相似度：
+          日常 —— 教練每天都會進去（點名核銷、服務登記）
+          帳務 —— 只有負責人和財務，一週到一個月一次
+        ☢️ 帳務那一組【不是把鍵藏起來就算了】——
+           真正的牆在資料庫的 is_finance()，這裡只是不要讓人白按。 */
+  function navBlock() {
+    var fin = !!(ME && ME.can_finance);
+    var h = '<div class="sec">日常</div><div class="navg">' +
+      '<a class="tile" href="checkin.html"><b>點名核銷<span class="ar"></span></b>' +
+        '<i>團體課出席、扣堂、開課</i></a>' +
+      '<a class="tile" href="service.html"><b>服務登記<span class="ar"></span></b>' +
+        '<i>私人課、企業包班、外派</i></a>' +
+      '</div>';
+    if (fin) {
+      h += '<div class="sec">帳務　·　只有你和財務看得到</div><div class="navg">' +
+        '<a class="tile" href="report.html"><b>對帳報表<span class="ar"></span></b>' +
+          '<i>收了多少、誰還沒付</i></a>' +
+        '<a class="tile" href="expenses.html"><b>支出簿<span class="ar"></span></b>' +
+          '<i>花了多少、哪筆還沒付</i></a>' +
+        '<a class="tile wide" href="payroll.html"><b>薪資報表<span class="ar"></span></b>' +
+          '<i>教練這個月的業績、抽成與加給</i></a>' +
+        '</div>';
+    }
+    h += '<div class="sec">其他</div><div class="navg">' +
+      '<a class="tile wide" href="https://jerecyu.github.io/Fusion_Force_Fitness/" ' +
+        'target="_blank" rel="noopener"><b>官網<span class="ar"></span></b>' +
+        '<i>客人看到的對外頁面（另開分頁）</i></a></div>';
+    return h;
+  }
+
   // 一行講完還剩幾件事。沒事就整條不出現。
   function alertBar() {
     var bits = [];
@@ -1084,13 +1130,15 @@
         '<div id="hits" style="margin-top:10px"></div>' +
       '</div>';
 
-    // ② 新增客人 —— 收起來，要用才展開
-    html += newCustomerFold();
+    // ② 去哪一頁 —— 導覽磚，照用途分組
+    html += navBlock();
 
-    // ②-b 課程轉讓 —— 只有財務看得到，而且收起來
+    // ③ 偶爾才用的兩塊，收起來
+    html += '<div class="sec">偶爾才用</div>';
+    html += newCustomerFold();
     html += transferFold();
 
-    // ③④⑤ 偶爾才處理一次的三塊，外加一塊「正常時完全不存在」的異常提醒
+    // ④ 待處理：正常的時候這幾塊【完全不存在】，出現就是有事要辦
     html += '<div id="overBox">' + overBlock() + '</div>';
     html += '<div id="unpaidBox">' + unpaidBlock() + '</div>';
     html += '<div id="stuckBox">' + stuckBlock() + '</div>';
@@ -1284,7 +1332,87 @@
       });
   }
 
+  /* 調整堂數。
+     ☢️ 跟沖銷同一個做法：兩段式，而且理由必填。
+        沖銷是「這件事根本沒發生過」，調整是「這件事發生了，但數字記錯了」——
+        兩者都是往回改已經記進帳的東西，所以都不給一鍵。
+     ☢️ 這裡【不重畫整個清單】。改完就地把「剩 N 堂」換掉，
+        因為使用者常常要連續調好幾個人（例如一堂課漏扣四位），
+        每改一次就重查一次會把他打到一半的搜尋字清掉。 */
+  function wireAdjust(box) {
+    Array.prototype.forEach.call(box.querySelectorAll('[data-adj]'), function (b) {
+      b.onclick = function () {
+        var wrap = b.closest('.hitwrap');
+        var old = wrap.querySelector('.vf');
+        if (old) { old.remove(); return; }
+        var f = document.createElement('div');
+        f.className = 'vf';
+        f.innerHTML =
+          '<div class="vfh">調整「' + esc(b.getAttribute('data-n')) + '」的堂數' +
+            '　·　現在剩 ' + b.getAttribute('data-b') + ' 堂</div>' +
+          '<input type="number" class="vfi ajn" inputmode="numeric" ' +
+            'placeholder="要加減幾堂？補扣打 -1，補回打 1">' +
+          '<input type="text" class="vfi ajw" maxlength="80" autocomplete="off" ' +
+            'placeholder="為什麼？（必填，要寫得出是哪一天哪一堂）">' +
+          '<div class="vfa"><button type="button" class="vfno">取消</button>' +
+            '<button type="button" class="vfgo">確定調整</button></div>' +
+          '<div class="vfr"><div class="res" style="background:var(--surface2);color:var(--dim);border:1px solid var(--line)">' +
+            '☢️ 這一筆會留下你的名字和理由，而且<b>不能刪除</b>。' +
+            '寫「調整一下」會被資料庫擋下來 —— 三個月後那句話查不出任何東西。</div></div>';
+        wrap.appendChild(f);
+        f.querySelector('.ajn').focus({ preventScroll: true });
+        f.querySelector('.vfno').onclick = function () { f.remove(); };
+        f.querySelector('.vfgo').onclick = function () {
+          doAdjust(b.getAttribute('data-adj'), f, b);
+        };
+      };
+    });
+  }
+
+  function doAdjust(id, f, btn) {
+    var go = f.querySelector('.vfgo'), res = f.querySelector('.vfr');
+    var n = Number(f.querySelector('.ajn').value);
+    var why = String(f.querySelector('.ajw').value || '').trim();
+    if (!n) {
+      res.innerHTML = '<div class="res bad">☢️ 要加或要扣幾堂？補扣打 -1，補回打 1。</div>'; return;
+    }
+    if (why.length < 4) {
+      res.innerHTML = '<div class="res bad">☢️ 理由至少四個字，而且要寫得出「為什麼」。' +
+                      '例：<b>2026-07-31 Jessica 交叉肌力訓練課後漏扣</b></div>'; return;
+    }
+    go.disabled = true; go.textContent = '調整中…';
+    DB.rpc('adjust_credits', { p_customer: id, p_delta: n, p_why: why })
+      .then(function (r) {
+        // ☢️ 錯誤不能吞掉（規則 14）。吞掉的話畫面就是「按了沒反應」。
+        if (r.error) throw new Error(r.error.message);
+        var d = r.data || {};
+        if (!d.ok) {
+          res.innerHTML = '<div class="res bad">☢️ ' + esc(d.msg || d.why || '調整不了') + '</div>';
+          go.disabled = false; go.textContent = '確定調整';
+          return;
+        }
+        toast(d.name + '　' + (d.delta > 0 ? '＋' : '') + d.delta + ' 堂　·　現在剩 ' + d.after + ' 堂');
+        go.textContent = '已調整';
+        var no = f.querySelector('.vfno'); if (no) no.textContent = '關閉';
+        res.innerHTML = '<div class="res ok">' + esc(d.name) + '：' + d.before + ' → <b>' + d.after +
+          ' 堂</b>' + (d.negative ? '　☢️ <b>調完是負的</b> —— 確認一下是不是還有一筆沒補' : '') +
+          '<br><span class="mini">理由：' + esc(why) + '　·　登記人：' + esc(ME.display_name) + '</span></div>';
+        // 就地把清單上的「剩 N 堂」換掉，不重畫整個搜尋結果
+        var bal = btn.parentNode.querySelector('.bal');
+        if (bal) {
+          bal.textContent = '剩 ' + d.after + ' 堂';
+          bal.className = 'bal' + (d.after <= 0 ? ' low' : '');
+        }
+        btn.setAttribute('data-b', d.after);
+      })
+      .catch(function (e) {
+        res.innerHTML = '<div class="res bad">☢️ ' + esc(String(e && e.message || e)) + '</div>';
+        go.disabled = false; go.textContent = '確定調整';
+      });
+  }
+
   function wireHits(box) {
+    wireAdjust(box);
     Array.prototype.forEach.call(box.querySelectorAll('[data-open]'), function (b) {
       b.onclick = function () {
         var id = b.getAttribute('data-open');
@@ -1606,6 +1734,11 @@
                 '<span class="tl">' + esc(c.phone_tail) + '</span>' +
                 '<span class="bd ' + (c.bound ? 'y">已綁定' : 'n">未綁定') + '</span>' +
                 '<span class="bal' + (b <= 0 ? ' low' : '') + '">剩 ' + b + ' 堂</span>' +
+                // ☢️ 調整堂數是【財務限定】。一堂等於錢，而且它沒有課次名單背書，
+                //    只有理由 —— 所以跟薪資、對帳同一道牆。
+                ((ME && ME.can_finance && c.is_active !== false)
+                  ? '<button type="button" class="adjb" data-adj="' + esc(c.id) +
+                    '" data-n="' + esc(c.name) + '" data-b="' + b + '">調整</button>' : '') +
               '</span>' +
             '</span>' +
             (c.is_active === false ? '' :
@@ -1689,15 +1822,8 @@
             }
             elWho.textContent = ME.display_name;
             elSub.textContent = '教練後台';
-            // ☢️ 藏起來只是不要讓人白按 —— 真正的牆在資料庫的 is_finance()。
-            if (ME.can_finance) {
-              var rl = document.getElementById('rptLink');
-              if (rl) rl.hidden = false;
-              var xl = document.getElementById('expLink');
-              if (xl) xl.hidden = false;
-              var pl = document.getElementById('payLink');
-              if (pl) pl.hidden = false;
-            }
+            // ☢️ 帳務那三塊改由 navBlock() 依 ME.can_finance 決定要不要畫出來。
+            //    藏起來只是不要讓人白按 —— 真正的牆在資料庫的 is_finance()。
             gate('', '讀取中…', '');
             return loadSignups()
               .then(loadPurchaseBits)
