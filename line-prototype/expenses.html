@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>支出簿 · FFF</title>
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  支出簿 —— 第 92 步 · 2026-08-21
+
+  網址：https://liff.line.me/2011063116-QOxXN30h/expenses.html
+
+  ☢️ 這一頁【沒有薪資】。教練薪資由 payroll_month() 算，
+     記在這裡損益表會扣兩遍。科目表裡也沒有 salary 這個代碼。
+
+  ☢️ 區間看的是【發生日】，不是付款日。
+     八月的房租十月才付，成本還是八月的（第 89 步權責制）。
+
+  ☢️ 「內部提撥」（備用金）不算成本。錢從公司的一個口袋進另一個口袋，
+     它還在公司手上。畫面上獨立一塊，而且【不進「進損益的支出」】。
+
+  ☢️ 一筆錢可以拆成幾列（房租：匯款給房東＋二代健保補充保費＋
+     租金所得扣繳稅款）。三塊錢的付款對象與時間都不同，
+     記成一列的話「扣繳稅款還沒繳」永遠看不到。
+     畫面上預設【折起來只顯示一列總額】，點開才看細項。
+
+  ☢️ 改錯的路徑是【作廢 ＋ 重記】。唯一的例外是
+     「還沒付」的可以改金額 —— 變動帳單每期不同，不能改的話
+     複製鈕等於沒用。
+
+  ☢️ 這一頁【不寫任何金額進原始碼】。倉庫是公開的。
+  ═══════════════════════════════════════════════════════════════════
+-->
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --ink:#0E2A3B; --ink2:#1C4257; --blue:#2E86AB; --teal:#6FBAC9;
+    --bg:#F4F8FA; --surface:#FFF; --surface2:#EDF4F7;
+    --line:#DCE8EE; --dim:#587589; --faint:#93AEBD;
+    --ok:#2F6B54; --ok-bg:#E4F0EA; --ok-line:#B9D8C8;
+    --warn:#B4661F; --warn-bg:#FBEFE2; --warn-line:#EBC4A0;
+    --err:#A4211A; --err-bg:#FBE9E7; --err-line:#F3C9C5;
+    --vio:#573B94; --vio-bg:#EDE8F8; --vio-line:#D3C7EA;
+  }
+  body{background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:44px}
+
+  .top{background:var(--ink);color:#fff;padding:13px 13px;display:flex;align-items:center;gap:6px}
+  .who{font-size:16px;font-weight:800;letter-spacing:.03em}
+  .sub{font-size:11px;color:#A9C6D4;margin-top:1px}
+  .sp{flex:1}
+  .who,.sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ar{display:inline-block;flex:0 0 auto;width:9px;height:9px;
+    border-right:2.6px solid currentColor;border-top:2.6px solid currentColor;
+    border-radius:1.5px;transform:rotate(45deg);
+    font-size:0;line-height:0;vertical-align:middle;margin:0 3px 1px 5px}
+  .iconbtn{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:9px;
+    padding:9px 10px;font-family:inherit;font-size:12.5px;font-weight:700;white-space:nowrap;
+    text-decoration:none;display:inline-flex;align-items:center;flex:0 0 auto;
+    cursor:pointer;line-height:1.5}
+  .iconbtn:active{background:rgba(255,255,255,.25)}
+
+  .wrap{max-width:520px;margin:0 auto;padding:14px 14px 0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:13px 13px;margin-bottom:12px}
+  .h{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--faint);margin:16px 3px 8px}
+
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .chip{background:var(--surface2);border:1px solid var(--line);color:var(--ink2);
+    border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:700;
+    font-family:inherit;cursor:pointer}
+  .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .dates{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim)}
+  .dates input{flex:1;min-width:0;font-family:inherit;font-size:14px;color:var(--ink);
+    background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:9px 10px}
+
+  .sums{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .sum{background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:10px 11px}
+  .sum .k{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--dim)}
+  .sum .v{font-size:21px;font-weight:800;margin-top:1px;font-variant-numeric:tabular-nums}
+  .sum .n{font-size:11.5px;color:var(--faint);margin-top:-2px}
+  .sum.wide{grid-column:1 / -1}
+  .sum.big{grid-column:1 / -1;background:var(--ok-bg);border-color:var(--ok-line)}
+  .sum.big .v{color:var(--ok);font-size:26px}
+  .sum.bad{grid-column:1 / -1;background:var(--err-bg);border-color:var(--err-line)}
+  .sum.bad .v{color:var(--err);font-size:17px}
+  .sum.calm{grid-column:1 / -1;background:var(--vio-bg);border-color:var(--vio-line)}
+  .sum.calm .v{color:var(--vio);font-size:19px}
+
+  .row{border-top:1px solid var(--line);padding:9px 2px}
+  .row:first-child{border-top:0}
+  .row.kid{padding-left:12px;border-top:1px dashed var(--line);background:#FAFCFD}
+  .r1{display:flex;align-items:baseline;gap:7px}
+  .nm{font-size:14.5px;font-weight:800}
+  .nm.sm{font-size:13.5px;font-weight:700}
+  .tl{font-size:11.5px;color:var(--faint)}
+  .amt{margin-left:auto;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+  .r2{font-size:12px;color:var(--dim);margin-top:1px}
+  .r3{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;
+    border:1px solid var(--line);background:var(--surface2);color:var(--ink2);margin-left:5px}
+  .tag.cash{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok)}
+  .tag.tr{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
+  .tag.card{background:var(--vio-bg);border-color:var(--vio-line);color:var(--vio)}
+  .tag.due{background:var(--err-bg);border-color:var(--err-line);color:var(--err)}
+  .tag.wh{background:var(--vio-bg);border-color:var(--vio-line);color:var(--vio)}
+  .tag.fix{background:var(--surface2);border-color:var(--line);color:var(--faint)}
+  .row.void{opacity:.62}
+  .row.void .amt{text-decoration:line-through;color:var(--err)}
+
+  /* 摺疊：一筆錢拆成幾列時，預設只顯示一列總額 */
+  .fold{background:none;border:0;padding:0;font-family:inherit;cursor:pointer;
+    color:var(--blue);font-size:11.5px;font-weight:800;display:inline-flex;align-items:center;gap:3px}
+  .cv{display:inline-block;width:0;height:0;border-left:5px solid currentColor;
+    border-top:4px solid transparent;border-bottom:4px solid transparent;
+    transition:transform .12s}
+  .fold.on .cv{transform:rotate(90deg)}
+  .why{font-size:11.5px;color:var(--vio);background:var(--vio-bg);
+    border:1px solid var(--vio-line);border-radius:8px;padding:7px 9px;margin:7px 0 3px}
+
+  .btn{width:100%;background:var(--ink);color:#fff;border:0;border-radius:11px;
+    padding:14px;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:4px}
+  .btn:active{background:var(--ink2)}
+  .btn:disabled{opacity:.5}
+  .btn.ghost{background:none;color:var(--dim);border:1px solid var(--line);
+    font-size:13.5px;padding:11px;margin-top:10px}
+  .mini{background:var(--surface2);border:1px solid var(--line);color:var(--ink2);
+    border-radius:8px;padding:6px 12px;font-family:inherit;font-size:12.5px;
+    font-weight:700;cursor:pointer}
+  .mini.go{background:var(--ink);border-color:var(--ink);color:#fff}
+  .mini.bad{color:var(--err);border-color:var(--err-line)}
+
+  .fld{margin-top:9px}
+  .fld > label{display:block;font-size:11.5px;font-weight:700;color:var(--dim);margin-bottom:3px}
+  .fld input,.fld select,.fld textarea{width:100%;font-family:inherit;font-size:14.5px;
+    color:var(--ink);background:var(--surface2);border:1px solid var(--line);
+    border-radius:9px;padding:10px 11px}
+  .fld textarea{resize:vertical;min-height:52px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);
+    margin-top:10px;font-weight:700}
+  .chk input{width:19px;height:19px;flex:0 0 auto}
+  .part{border:1px solid var(--line);border-radius:11px;padding:9px 10px;margin-top:9px;
+    background:#FAFCFD}
+  .part > .ph{display:flex;align-items:center;font-size:11.5px;font-weight:800;color:var(--faint)}
+  .part > .ph .sp{flex:1}
+
+  .note{font-size:11.5px;color:var(--dim);margin-top:8px}
+  .bad{color:var(--err);font-weight:700}
+  .empty{text-align:center;color:var(--faint);font-size:13px;padding:16px 4px}
+  .gate{padding:56px 20px;text-align:center}
+  .gate .g1{font-size:17px;font-weight:800;color:var(--ink)}
+  .gate.err .g1{color:var(--err)}
+  .gate .g2{font-size:12.5px;color:var(--dim);margin-top:6px}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:11px 17px;border-radius:11px;
+    font-size:13px;font-weight:600;max-width:88%;text-align:center;z-index:50}
+  .toast.bad{background:var(--err)}
+  [hidden]{display:none !important}
+
+  @media (min-width:1000px){
+    :root{--col:640px}
+    .top,.wrap{zoom:1.22}
+    .wrap{max-width:var(--col)}
+    .top{padding-inline:max(13px, calc((100% - var(--col)) / 2 + 14px))}
+  }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div>
+    <div class="who" id="who">支出簿</div>
+    <div class="sub" id="whoSub">辨識中…</div>
+  </div>
+  <div class="sp"></div>
+  <a class="iconbtn" href="staff-tools.html">後台<span class="ar"></span></a>
+  <a class="iconbtn" href="report.html">對帳<span class="ar"></span></a>
+  <button type="button" class="iconbtn" id="reload">重新整理</button>
+</div>
+
+<div class="wrap">
+  <div id="gate" class="gate"><div class="g1">辨識中…</div><div class="g2">跟資料庫確認你是誰</div></div>
+  <div id="main" hidden></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="liff-auth.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  var DB = null, ME = null, DATA = null, CATS = [], BUSY = false;
+  var ADDING = false, DRAFT = null, FORM_ERR = '', COPY = null, OPEN = {};
+  var elGate = document.getElementById('gate');
+  var elMain = document.getElementById('main');
+  var elWho  = document.getElementById('who');
+  var elSub  = document.getElementById('whoSub');
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function gate(cls, t1, t2) {
+    elMain.hidden = true; elGate.hidden = false;
+    elGate.className = 'gate' + (cls ? ' ' + cls : '');
+    elGate.innerHTML = '<div class="g1">' + esc(t1) + '</div><div class="g2">' + esc(t2) + '</div>';
+  }
+  function toast(msg, bad) {
+    var t = document.createElement('div');
+    t.className = 'toast' + (bad ? ' bad' : ''); t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, bad ? 4200 : 2200);
+  }
+  function money(n) { return 'NT$' + Number(n || 0).toLocaleString('en-US'); }
+
+  /* ══ 日期 ══════════════════════════════════════════════════════ */
+  // ☢️ 不要用本地時區的 toISOString()，那會退回 UTC 日期（規則 16）。
+  function twToday() {
+    return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+  }
+  function monthStart(iso) { return iso.slice(0, 8) + '01'; }
+  function monthEnd(iso) {
+    return new Date(Date.UTC(+iso.slice(0,4), +iso.slice(5,7), 0)).toISOString().slice(0, 10);
+  }
+  function shiftMonth(iso, n) {
+    return new Date(Date.UTC(+iso.slice(0,4), +iso.slice(5,7) - 1 + n, 1)).toISOString().slice(0, 10);
+  }
+
+  var PRESETS = [
+    { k:'this', t:'這個月', f:function () { var t = twToday(); return [monthStart(t), monthEnd(t)]; } },
+    { k:'last', t:'上個月', f:function () { var s = shiftMonth(monthStart(twToday()), -1);
+                                            return [s, monthEnd(s)]; } },
+    { k:'year', t:'今年',   f:function () { var t = twToday(); return [t.slice(0,4) + '-01-01', t]; } }
+  ];
+  var PRESET = 'this';
+  var _p0 = PRESETS[0].f(), FROM = _p0[0], TO = _p0[1];
+
+  var RECUR = [['none','不固定'], ['monthly','每月'], ['bimonthly','每兩個月']];
+  var METHODS = [['','還沒付'], ['cash','現金'], ['transfer','匯款'], ['card','刷卡'], ['other','其他']];
+
+  function cat(code) {
+    for (var i = 0; i < CATS.length; i++) if (CATS[i].code === code) return CATS[i];
+    return null;
+  }
+
+  /* ══ 畫面 ══════════════════════════════════════════════════════ */
+  function pickerBlock() {
+    return '<div class="card">' +
+      '<div class="chips">' +
+        PRESETS.map(function (p) {
+          return '<button type="button" class="chip' + (PRESET === p.k ? ' on' : '') +
+                 '" data-pre="' + p.k + '">' + p.t + '</button>';
+        }).join('') +
+      '</div>' +
+      '<div class="dates">' +
+        '<input type="date" id="dFrom" value="' + FROM + '">' +
+        '<span>到</span>' +
+        '<input type="date" id="dTo" value="' + TO + '">' +
+      '</div>' +
+      '<div class="note">☢️ 這裡看的是<b>發生日</b>（這筆算哪個月的成本），不是付款日。' +
+      '八月的房租十月才付，它還是八月的成本。</div>' +
+    '</div>';
+  }
+
+  function sumsBlock() {
+    var s = (DATA && DATA.sum) || {};
+    var h = '<div class="sums">' +
+      '<div class="sum big"><div class="k">這段期間的支出</div>' +
+        '<div class="v">' + money(s.pl_amt) + '</div>' +
+        '<div class="n">固定 ' + money(s.fixed_amt) + '　·　變動 ' + money(s.var_amt) +
+        '　·　不含教練薪資</div></div>' +
+      '<div class="sum"><div class="k">已經付掉</div><div class="v">' + money(s.paid_amt) + '</div></div>' +
+      '<div class="sum"><div class="k">還沒付</div><div class="v">' + money(s.unpaid_amt) + '</div></div>';
+    // ☢️ 內部提撥自己一塊，而且【不在上面的合計裡】。
+    //    混進去的話損益表每個月會憑空少一筆，而那筆錢還在公司手上。
+    if (s.transfer_amt) {
+      h += '<div class="sum calm"><div class="k">內部提撥（不算成本）</div>' +
+           '<div class="v">' + money(s.transfer_amt) + '</div>' +
+           '<div class="n">錢從公司的一個口袋進另一個口袋 —— <b>沒有算在上面</b>。' +
+           '花掉的時候才是支出</div></div>';
+    }
+    if (s.void_n) {
+      h += '<div class="sum wide"><div class="k">這段期間有作廢</div>' +
+           '<div class="v">' + s.void_n + ' 筆　' + money(s.void_amt) + '</div>' +
+           '<div class="n">已經從上面扣掉了，明細裡有畫線那幾筆</div></div>';
+    }
+    return h + '</div>';
+  }
+
+  /* 記一筆。
+     ☢️ render() 會重畫整塊 innerHTML —— 打到一半的東西會不見。
+        所以每次重畫之前先把表單抓進 DRAFT，畫完再放回去。
+        （第 90 步在服務登記的收款框上踩過同一個坑。） */
+  function partHtml(r, i, n) {
+    return '<div class="part">' +
+      '<div class="ph"><span>第 ' + (i + 1) + ' 筆</span><span class="sp"></span>' +
+        (n > 1 ? '<button type="button" class="mini" data-del="' + i + '">刪掉</button>' : '') +
+      '</div>' +
+      '<div class="two">' +
+        '<div class="fld"><label>給誰</label>' +
+          '<input type="text" data-r="payee" data-i="' + i + '" value="' + esc(r.payee || '') + '"></div>' +
+        '<div class="fld"><label>金額</label>' +
+          '<input type="number" inputmode="numeric" data-r="amt" data-i="' + i + '" value="' + esc(r.amt || '') + '"></div>' +
+      '</div>' +
+      '<div class="two">' +
+        '<div class="fld"><label>付款方式</label><select data-r="method" data-i="' + i + '">' +
+          METHODS.map(function (m) {
+            return '<option value="' + m[0] + '"' + ((r.method || '') === m[0] ? ' selected' : '') + '>' + m[1] + '</option>';
+          }).join('') + '</select></div>' +
+        '<div class="fld"><label>付款日</label>' +
+          '<input type="date" data-r="paid" data-i="' + i + '" value="' + esc(r.paid || '') + '"></div>' +
+      '</div>' +
+      '<div class="fld"><label>備註（選填）</label>' +
+        '<input type="text" data-r="note" data-i="' + i + '" value="' + esc(r.note || '') + '"></div>' +
+      (n > 1
+        ? '<label class="chk"><input type="checkbox" data-r="wh" data-i="' + i + '"' +
+          (r.wh ? ' checked' : '') + '>暫代扣（這筆錢原本是對方的，我們先扣下來替他繳）</label>'
+        : '') +
+    '</div>';
+  }
+
+  function addBlock() {
+    if (!ADDING) {
+      return '<div class="card"><button type="button" class="btn" id="addOpen">＋ 記一筆支出</button></div>';
+    }
+    var d = DRAFT || {};
+    var rows = d.rows && d.rows.length ? d.rows : [{}];
+    var c = cat(d.cat);
+    var total = rows.reduce(function (a, x) { return a + (Number(x.amt) || 0); }, 0);
+    return '<div class="card">' +
+      (FORM_ERR ? '<div class="note bad">☢️ ' + esc(FORM_ERR) + '</div>' : '') +
+      '<div class="fld"><label>科目</label><select id="fCat"><option value="">請選</option>' +
+        CATS.map(function (x) {
+          return '<option value="' + esc(x.code) + '"' + (d.cat === x.code ? ' selected' : '') + '>' +
+            esc(x.label) + (x.kind === 'transfer' ? '（內部提撥）' : '') + '</option>';
+        }).join('') + '</select></div>' +
+      (c && c.note ? '<div class="note">' + esc(c.note) + '</div>' : '') +
+      '<div class="two">' +
+        '<div class="fld"><label>發生日（算哪個月的）</label>' +
+          '<input type="date" id="fOn" value="' + esc(d.on || twToday()) + '"></div>' +
+        '<div class="fld"><label>週期</label><select id="fRecur">' +
+          RECUR.map(function (r) {
+            return '<option value="' + r[0] + '"' + ((d.recur || 'none') === r[0] ? ' selected' : '') + '>' + r[1] + '</option>';
+          }).join('') + '</select></div>' +
+      '</div>' +
+      rows.map(function (r, i) { return partHtml(r, i, rows.length); }).join('') +
+      (rows.length > 1
+        ? '<div class="note"><b>這一組合計 ' + money(total) + '</b>　·　' +
+          '這幾筆會綁成一組，畫面上只顯示一列總額，點開才看細項。<br>' +
+          '☢️ 作廢的時候<b>整組一起作廢</b> —— 只廢一列會留下金額對不起來的半筆帳。</div>'
+        : '') +
+      '<div class="r3" style="margin-top:11px">' +
+        '<button type="button" class="mini" id="addMore">＋ 再拆一筆</button>' +
+        '<span class="sp" style="flex:1"></span>' +
+      '</div>' +
+      '<div class="note">拆的用途：<b>同一筆成本分幾個方向付出去</b>。' +
+      '例如租金要分別付給房東、健保署（二代健保補充保費，租金達 2 萬時按 2.11% 扣取）、' +
+      '國稅局（租金所得扣繳稅款，境內個人原則上按 10% 扣繳）—— ' +
+      '後兩筆是<b>暫代扣</b>：錢原本是房東的，公司先扣下來再替他繳。<br>' +
+      '☢️ 拆開是為了讓「哪一筆還沒繳」看得到。合計仍然是這個月的成本，<b>不會重複計算</b>。</div>' +
+      '<div class="r3" style="margin-top:12px">' +
+        '<button type="button" class="mini go" id="addGo">記進去</button>' +
+        '<button type="button" class="mini" id="addCancel">取消</button>' +
+      '</div>' +
+      '<div class="note">☢️ 付款方式留「還沒付」的，會進下面的<b>應付未付</b>。' +
+      '<br>☢️ 這裡<b>沒有薪資</b> —— 教練薪資系統已經在算，記在這裡會扣兩遍。</div>' +
+    '</div>';
+  }
+
+  /* 產生這個月的固定支出。
+     ☢️ 一定要先預演給人看再寫 —— 「一鍵產生」按下去看不到結果，
+        是最容易產生重複帳的操作。 */
+  function copyBlock() {
+    if (FROM.slice(0, 7) !== TO.slice(0, 7)) {
+      return '<div class="card"><div class="note">「產生這個月的固定支出」只在<b>看單一月份</b>時出現 —— ' +
+             '區間跨月的話不知道要產生到哪個月。</div></div>';
+    }
+    var tgt = FROM.slice(0, 7);
+    var h = '<div class="card">' +
+      '<button type="button" class="btn ghost" id="copyPre" style="margin-top:0">' +
+        '產生 ' + tgt + ' 的固定支出</button>';
+    if (COPY && COPY.to_month === tgt) {
+      var rows = COPY.rows || [], skip = COPY.skipped || [];
+      h += '<div class="note" style="margin-top:11px">';
+      if (!rows.length) {
+        h += '<b>沒有要產生的。</b>' +
+             (skip.length ? '　這個月該產生的 ' + skip.length + ' 筆<b>都已經產生過了</b>。'
+                          : '　上一期沒有任何標成「每月／每兩個月」的支出。');
+      } else {
+        h += '<b>會新增 ' + rows.length + ' 筆，合計 ' + money(COPY.amount) + '：</b>';
+      }
+      h += '</div>';
+      if (rows.length) {
+        h += rows.map(function (x) {
+          return '<div class="row"><div class="r1">' +
+            '<span class="nm sm">' + esc(x.category_label) + '</span>' +
+            '<span class="tl">' + esc(x.new_incurred_on) + '</span>' +
+            '<span class="amt">' + money(x.amount) + '</span></div>' +
+            '<div class="r2">' + (x.payee ? esc(x.payee) + '　·　' : '') +
+              (x.recur === 'bimonthly' ? '每兩個月' : '每月') +
+              (x.withheld ? '<span class="tag wh">代扣</span>' : '') + '</div>' +
+          '</div>';
+        }).join('') +
+        (skip.length ? '<div class="note">已經產生過、這次跳過 ' + skip.length + ' 筆。</div>' : '') +
+        '<div class="r3" style="margin-top:11px">' +
+          '<button type="button" class="mini go" id="copyGo">確認產生</button>' +
+          '<button type="button" class="mini" id="copyCancel">取消</button></div>' +
+        '<div class="note">☢️ 產生出來的<b>付款日與金額都要自己確認</b>：付款日是空的（還沒付），' +
+        '金額沿用上一期 —— 電費水費這種每期不同的，記得按「改金額」。</div>';
+      }
+    }
+    return h + '</div>';
+  }
+
+  /* 應付未付。☢️ 不受上面的日期影響 —— 兩個月前的扣繳稅款到現在還沒繳，
+     那才是最該看到的一筆。跟對帳報表的「待入帳」同一個道理。 */
+  function unpaidBlock() {
+    var u = (DATA && DATA.unpaid) || [];
+    if (!u.length) return '';
+    var sum = u.reduce(function (a, x) { return a + (x.amount || 0); }, 0);
+    var wh  = u.filter(function (x) { return x.withheld; });
+    return '<div class="h">🔴 應付未付（' + u.length + '）</div>' +
+      '<div class="card">' +
+      '<div class="sums"><div class="sum bad"><div class="k">記了，但還沒付出去</div>' +
+        '<div class="v">' + u.length + ' 筆　' + money(sum) + '</div>' +
+        '<div class="n">不受上面的日期影響 —— 拖最久的那幾筆才是最該看到的</div></div></div>' +
+      u.map(function (x) {
+        return '<div class="row">' +
+          '<div class="r1"><span class="nm">' + esc(x.category_label) + '</span>' +
+            '<span class="tl">' + esc(x.incurred_on) + '</span>' +
+            '<span class="amt">' + money(x.amount) + '</span></div>' +
+          '<div class="r2">' + (x.payee ? esc(x.payee) + '　·　' : '') +
+            '已過 ' + x.waited_days + ' 天' + (x.note ? '　·　' + esc(x.note) : '') +
+            (x.withheld ? '<span class="tag wh">代扣代繳</span>' : '') + '</div>' +
+          '<div class="r3"><button type="button" class="mini go" data-pay="' + esc(x.id) + '">付了</button>' +
+            '<button type="button" class="mini" data-amt="' + esc(x.id) + '" data-was="' + x.amount + '">改金額</button></div>' +
+        '</div>';
+      }).join('') +
+      (wh.length ? '<div class="why">☢️ 有 ' + wh.length + ' 筆是<b>代扣代繳</b>：這筆錢原本是對方的（例如房東的稅），' +
+                   '公司先從應付款裡扣下來，之後要<b>替他繳給政府</b>。漏繳是會被罰的。</div>' : '') +
+      '<div class="note">收到帳單付掉之後按「付了」，這裡就會消失。</div>' +
+    '</div>';
+  }
+
+  function kindLabel(k) { return k === 'fixed' ? '固定' : k === 'transfer' ? '內部提撥' : '變動'; }
+
+  function catBlock() {
+    var g = (DATA && DATA.by_category) || [];
+    if (!g.length) return '';
+    var groups = [['fixed','固定支出'], ['variable','變動支出'], ['transfer','內部提撥（不算成本）']];
+    var h = '<div class="h">科目小計</div><div class="card">';
+    groups.forEach(function (gp) {
+      var list = g.filter(function (x) { return x.kind === gp[0]; });
+      if (!list.length) return;
+      var tot = list.reduce(function (a, x) { return a + (x.amount || 0); }, 0);
+      h += '<div class="row"><div class="r1">' +
+        '<span class="nm">' + gp[1] + '</span>' +
+        '<span class="amt">' + money(tot) + '</span></div></div>';
+      h += list.map(function (x) {
+        return '<div class="row kid"><div class="r1">' +
+          '<span class="nm sm">' + esc(x.category_label) + '</span>' +
+          '<span class="tl">' + x.n + ' 筆</span>' +
+          '<span class="amt">' + money(x.amount) + '</span></div>' +
+          (x.unpaid_amount ? '<div class="r2">其中 ' + money(x.unpaid_amount) + ' 還沒付</div>' : '') +
+        '</div>';
+      }).join('');
+    });
+    return h + '</div>';
+  }
+
+  function methodCls(m) {
+    return m === 'cash' ? 'cash' : m === 'transfer' ? 'tr' : m === 'card' ? 'card' : '';
+  }
+
+  function oneRow(x, kid) {
+    return '<div class="row' + (kid ? ' kid' : '') + (x.voided ? ' void' : '') + '">' +
+      '<div class="r1">' +
+        '<span class="nm' + (kid ? ' sm' : '') + '">' +
+          esc(kid ? (x.payee || x.category_label) : x.category_label) + '</span>' +
+        '<span class="tl">' + esc(kid ? '' : x.incurred_on) + '</span>' +
+        '<span class="amt">' + money(x.amount) + '</span>' +
+      '</div>' +
+      '<div class="r2">' +
+        (kid ? '' : (x.payee ? esc(x.payee) + '　·　' : '')) +
+        (x.paid_on ? '已付 ' + esc(x.paid_on) : '<b>還沒付</b>') +
+        '　·　' + esc(x.created_by_name || '—') + ' 記的' +
+        (x.note ? '　·　' + esc(x.note) : '') +
+        (x.method ? '<span class="tag ' + methodCls(x.method) + '">' + esc(x.method_label) + '</span>'
+                  : '<span class="tag due">未付</span>') +
+        (x.withheld ? '<span class="tag wh">代扣</span>' : '') +
+        (x.recur_label ? '<span class="tag fix">' + esc(x.recur_label) + '</span>' : '') +
+        (x.voided ? '<span class="tag">已作廢：' + esc(x.void_reason || '') + '</span>' : '') +
+      '</div>' +
+      (x.voided ? '' :
+        '<div class="r3">' +
+          (x.paid_on ? '' :
+            '<button type="button" class="mini go" data-pay="' + esc(x.id) + '">付了</button>' +
+            '<button type="button" class="mini" data-amt="' + esc(x.id) + '" data-was="' + x.amount + '">改金額</button>') +
+          '<button type="button" class="mini bad" data-void="' + esc(x.id) + '">作廢</button>' +
+        '</div>') +
+    '</div>';
+  }
+
+  /* 逐筆明細。
+     ☢️ 同一個 bundle 的預設【折起來只顯示一列總額】——
+        房租一次就是三列，不折的話畫面上每個月會多出兩列雜訊，
+        而真正要看的「這個月房租多少」反而要自己心算。 */
+  function rowsBlock() {
+    var r = (DATA && DATA.rows) || [];
+    if (!r.length) return '<div class="card"><div class="empty">這段期間沒有支出紀錄</div></div>';
+
+    var out = [], seen = {};
+    r.forEach(function (x) {
+      if (!x.bundle) { out.push(oneRow(x, false)); return; }
+      if (seen[x.bundle]) return;
+      seen[x.bundle] = true;
+      var kids = r.filter(function (y) { return y.bundle === x.bundle; });
+      var tot   = kids.reduce(function (a, y) { return a + y.amount; }, 0);
+      var paid  = kids.filter(function (y) { return y.paid_on; })
+                      .reduce(function (a, y) { return a + y.amount; }, 0);
+      var allV  = kids.every(function (y) { return y.voided; });
+      var hasWh = kids.some(function (y) { return y.withheld; });
+      var op    = !!OPEN[x.bundle];
+      out.push(
+        '<div class="row' + (allV ? ' void' : '') + '">' +
+          '<div class="r1">' +
+            '<span class="nm">' + esc(x.category_label) + '</span>' +
+            '<span class="tl">' + esc(x.incurred_on) + '</span>' +
+            '<span class="amt">' + money(tot) + '</span>' +
+          '</div>' +
+          '<div class="r2">' +
+            (paid >= tot ? '全部付清' : '已付 ' + money(paid) + '　·　<b>還差 ' + money(tot - paid) + '</b>') +
+            (x.recur_label ? '<span class="tag fix">' + esc(x.recur_label) + '</span>' : '') +
+            (allV ? '<span class="tag">已整組作廢</span>' : '') +
+          '</div>' +
+          '<div class="r3">' +
+            '<button type="button" class="fold' + (op ? ' on' : '') + '" data-fold="' + esc(x.bundle) + '">' +
+              '<span class="cv"></span>' + (op ? '收起來' : '拆成 ' + kids.length + ' 筆付，點開看') +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+        (op
+          ? (hasWh ? '<div class="why">☢️ <b>代扣代繳</b>：這幾筆錢原本是對方的，公司先從應付款裡扣下來，' +
+                     '之後<b>替對方繳給政府</b>。加起來才是這個月真正的成本。</div>' : '') +
+            kids.map(function (y) { return oneRow(y, true); }).join('')
+          : '')
+      );
+    });
+
+    return '<div class="card">' + out.join('') +
+      '<div class="note">☢️ 記錯了請<b>作廢再重記</b> —— 只有「還沒付」的能改金額。' +
+      '第 93 步月結之後就地改一筆，上個月的損益表會安靜地變掉。</div></div>';
+  }
+
+  function footBlock() {
+    return '<div class="card"><div class="note">資料時間：' + esc(DATA.made_at) +
+      '<br>☢️ 這一頁<b>沒有教練薪資</b> —— 那一側由薪資報表算。第 94 步的損益表會把兩邊加起來。</div>' +
+      (window.FFF_AUTH.canLogout
+        ? '<button type="button" class="btn ghost" id="logout">登出這台電腦</button>' : '') +
+    '</div>';
+  }
+
+  function render() {
+    elGate.hidden = true; elMain.hidden = false;
+    elMain.innerHTML =
+      pickerBlock() + addBlock() +
+      (DATA ? (sumsBlock() + copyBlock() + unpaidBlock() + catBlock() +
+               '<div class="h">逐筆明細</div>' + rowsBlock() + footBlock())
+            : '<div class="card"><div class="empty">讀取中…</div></div>');
+    wire();
+  }
+
+  /* ══ 事件 ══════════════════════════════════════════════════════ */
+  function readDraft() {
+    if (!document.getElementById('fCat')) return;
+    var g = function (id) { var e = document.getElementById(id); return e ? e.value : ''; };
+    var rows = [];
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-r]'), function (el) {
+      var i = +el.getAttribute('data-i'), k = el.getAttribute('data-r');
+      if (!rows[i]) rows[i] = {};
+      rows[i][k] = (el.type === 'checkbox') ? el.checked : el.value;
+    });
+    DRAFT = { cat:g('fCat'), on:g('fOn'), recur:g('fRecur'),
+              rows: rows.length ? rows : [{}] };
+  }
+
+  function wire() {
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-pre]'), function (b) {
+      b.onclick = function () {
+        var p = PRESETS.filter(function (x) { return x.k === b.getAttribute('data-pre'); })[0];
+        if (!p) return;
+        readDraft();
+        var v = p.f(); FROM = v[0]; TO = v[1]; PRESET = p.k; COPY = null;
+        load();
+      };
+    });
+    var f = document.getElementById('dFrom'), t = document.getElementById('dTo');
+    function manual() {
+      if (!f.value || !t.value) return;
+      readDraft();
+      FROM = f.value < t.value ? f.value : t.value;
+      TO   = f.value < t.value ? t.value : f.value;
+      PRESET = ''; COPY = null;
+      load();
+    }
+    if (f) f.onchange = manual;
+    if (t) t.onchange = manual;
+
+    var ao = document.getElementById('addOpen');
+    if (ao) ao.onclick = function () { ADDING = true; DRAFT = null; FORM_ERR = ''; render(); };
+    var ac = document.getElementById('addCancel');
+    if (ac) ac.onclick = function () { ADDING = false; DRAFT = null; FORM_ERR = ''; render(); };
+    var ag = document.getElementById('addGo');
+    if (ag) ag.onclick = submitAdd;
+    var am = document.getElementById('addMore');
+    if (am) am.onclick = function () { readDraft(); DRAFT.rows.push({}); render(); };
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-del]'), function (b) {
+      b.onclick = function () {
+        readDraft(); DRAFT.rows.splice(+b.getAttribute('data-del'), 1); render();
+      };
+    });
+    // 換科目時自動帶出預設週期（沒選過週期才帶，不要覆蓋人的選擇）
+    var fc = document.getElementById('fCat');
+    if (fc) fc.onchange = function () {
+      readDraft();
+      var c = cat(DRAFT.cat);
+      if (c) DRAFT.recur = c.default_recur;
+      render();
+    };
+
+    var cp = document.getElementById('copyPre');
+    if (cp) cp.onclick = previewCopy;
+    var cg = document.getElementById('copyGo');
+    if (cg) cg.onclick = doCopy;
+    var cc = document.getElementById('copyCancel');
+    if (cc) cc.onclick = function () { COPY = null; render(); };
+
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-fold]'), function (b) {
+      b.onclick = function () {
+        var k = b.getAttribute('data-fold');
+        OPEN[k] = !OPEN[k];
+        readDraft(); render();
+      };
+    });
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-pay]'), function (b) {
+      b.onclick = function () { payOne(b.getAttribute('data-pay'), b); };
+    });
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-amt]'), function (b) {
+      b.onclick = function () { editAmount(b.getAttribute('data-amt'), b.getAttribute('data-was'), b); };
+    });
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-void]'), function (b) {
+      b.onclick = function () { voidOne(b.getAttribute('data-void'), b); };
+    });
+
+    var lo = document.getElementById('logout');
+    if (lo) lo.onclick = function () {
+      lo.textContent = '登出中…'; lo.disabled = true; window.FFF_AUTH.logout();
+    };
+  }
+
+  function submitAdd() {
+    readDraft();
+    var d = DRAFT || {}, rows = d.rows || [];
+    FORM_ERR = '';
+    if (!d.cat) FORM_ERR = '要選科目';
+    else if (!d.on) FORM_ERR = '要填發生日';
+    else {
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        if (!(Number(r.amt) > 0)) { FORM_ERR = '第 ' + (i+1) + ' 筆的金額要大於 0'; break; }
+        if (r.method && !r.paid)  { FORM_ERR = '第 ' + (i+1) + ' 筆選了付款方式，就要填付款日'; break; }
+        if (!r.method && r.paid)  { FORM_ERR = '第 ' + (i+1) + ' 筆填了付款日，就要選付款方式'; break; }
+      }
+    }
+    if (FORM_ERR) { render(); return; }
+
+    var payload = rows.map(function (r) {
+      return { amount: Number(r.amt), payee: r.payee || null, method: r.method || null,
+               paid_on: r.paid || null, note: r.note || null, withheld: !!r.wh };
+    });
+    var btn = document.getElementById('addGo');
+    btn.disabled = true; btn.textContent = '記錄中…';
+    DB.rpc('add_expense', { p_category: d.cat, p_incurred_on: d.on,
+                            p_rows: payload, p_recur: d.recur || 'none' })
+      .then(function (r) {
+        // ☢️ 錯誤不能吞掉。吞掉的話畫面看起來就是「按了沒反應」。（規則 14）
+        if (r.error) { FORM_ERR = r.error.message || '寫不進去'; render(); return; }
+        if (!r.data || !r.data.ok) {
+          FORM_ERR = (r.data && (r.data.msg || r.data.why)) || '寫不進去'; render(); return;
+        }
+        ADDING = false; DRAFT = null; FORM_ERR = '';
+        toast('記好了：' + r.data.category_label + ' ' + money(r.data.total) +
+              (r.data.n > 1 ? '（' + r.data.n + ' 筆一組）' : ''));
+        load();
+      }, function (e) { FORM_ERR = String(e && e.message || e); render(); });
+  }
+
+  function previewCopy() {
+    var b = document.getElementById('copyPre');
+    b.disabled = true; b.textContent = '查看要產生哪幾筆…';
+    DB.rpc('copy_recurring_expenses', { p_to_month: monthStart(FROM), p_dry_run: true })
+      .then(function (r) {
+        if (r.error) { toast('查不到：' + r.error.message, true); render(); return; }
+        COPY = r.data; render();
+      }, function (e) { toast(String(e && e.message || e), true); render(); });
+  }
+
+  function doCopy() {
+    var b = document.getElementById('copyGo');
+    b.disabled = true; b.textContent = '產生中…';
+    DB.rpc('copy_recurring_expenses', { p_to_month: monthStart(FROM), p_dry_run: false })
+      .then(function (r) {
+        if (r.error) { toast('產生失敗：' + r.error.message, true); render(); return; }
+        COPY = null;
+        toast('產生了 ' + r.data.n + ' 筆，合計 ' + money(r.data.amount));
+        load();
+      }, function (e) { toast(String(e && e.message || e), true); render(); });
+  }
+
+  function payOne(id, btn) {
+    var when = window.prompt('哪一天付的？（YYYY-MM-DD，直接按確定＝今天）', twToday());
+    if (when === null) return;
+    when = (when || '').trim() || twToday();
+    var m = window.prompt('怎麼付的？填 現金／匯款／刷卡／其他', '匯款');
+    if (m === null) return;
+    var map = { '現金':'cash', '匯款':'transfer', '刷卡':'card', '其他':'other' };
+    var code = map[(m || '').trim()];
+    if (!code) { toast('付款方式只能填 現金／匯款／刷卡／其他', true); return; }
+    btn.disabled = true; btn.textContent = '標記中…';
+    DB.rpc('mark_expense_paid', { p_id: id, p_paid: when, p_method: code })
+      .then(function (r) { after(r, btn, '已標記付款：'); },
+            function (e) { toast(String(e && e.message || e), true); render(); });
+  }
+
+  function editAmount(id, was, btn) {
+    var v = window.prompt('新的金額？（只有還沒付的才能改）', was || '');
+    if (v === null) return;
+    if (!(Number(v) > 0)) { toast('金額要大於 0', true); return; }
+    btn.disabled = true; btn.textContent = '修改中…';
+    DB.rpc('update_unpaid_expense', { p_id: id, p_amount: Number(v), p_payee: null, p_note: null })
+      .then(function (r) {
+        if (r.error) { toast('改不了：' + r.error.message, true); render(); return; }
+        if (!r.data || !r.data.ok) {
+          toast((r.data && (r.data.msg || r.data.why)) || '改不了', true); render(); return;
+        }
+        toast('改好了：' + money(r.data.was) + ' → ' + money(r.data.now));
+        load();
+      }, function (e) { toast(String(e && e.message || e), true); render(); });
+  }
+
+  function voidOne(id, btn) {
+    var why = window.prompt('作廢原因？（一定要寫，之後查得到。整組的會一起作廢）', '');
+    if (why === null) return;
+    if (!why.trim()) { toast('要寫作廢原因', true); return; }
+    btn.disabled = true; btn.textContent = '作廢中…';
+    DB.rpc('void_expense', { p_id: id, p_why: why.trim() })
+      .then(function (r) {
+        if (r.error) { toast('作廢失敗：' + r.error.message, true); render(); return; }
+        if (!r.data || !r.data.ok) {
+          toast((r.data && (r.data.msg || r.data.why)) || '作廢失敗', true); render(); return;
+        }
+        toast('已作廢 ' + r.data.n + ' 筆：' + money(r.data.amount));
+        load();
+      }, function (e) { toast(String(e && e.message || e), true); render(); });
+  }
+
+  function after(r, btn, ok) {
+    if (r.error) { toast('失敗：' + r.error.message, true); render(); return; }
+    if (!r.data || !r.data.ok) {
+      toast((r.data && (r.data.msg || r.data.why)) || '失敗', true); render(); return;
+    }
+    toast(ok + money(r.data.amount));
+    load();
+  }
+
+  /* ══ 讀資料 ══════════════════════════════════════════════════════ */
+  function load() {
+    if (BUSY) return;
+    BUSY = true;
+    render();
+    Promise.all([
+      DB.rpc('expense_report', { p_from: FROM, p_to: TO }),
+      DB.from('expense_categories').select('code,label,kind,default_recur,sort_order,note')
+        .eq('is_active', true).order('sort_order', { ascending: true })
+    ]).then(function (all) {
+      BUSY = false;
+      var r = all[0], c = all[1];
+      // ☢️ 錯誤和「沒有資料」在 supabase-js 裡都會讓你拿到空的東西，
+      //    但意思完全相反 —— 一個是被擋下來，一個是這段期間沒花錢。（規則 14）
+      if (r.error) { gate('err', '讀不到支出簿', r.error.message || ''); return; }
+      if (c.error) { gate('err', '讀不到科目表', c.error.message || ''); return; }
+      DATA = r.data || null; CATS = c.data || [];
+      if (!DATA) { gate('err', '讀不到支出簿', '回來的是空的'); return; }
+      if (!CATS.length) { gate('err', '科目表是空的', '請確認 db/63-expenses.sql 有跑過'); return; }
+      elSub.textContent = (FROM === TO ? FROM : FROM + ' ~ ' + TO);
+      render();
+    }, function (e) {
+      BUSY = false;
+      gate('err', '讀不到支出簿', String(e && e.message || e));
+    });
+  }
+
+  /* ══ 開場 ══════════════════════════════════════════════════════ */
+  function boot() {
+    if (!window.FFF_AUTH || !window.FFF_AUTH.ready) {
+      gate('err', '身分程式沒載進來', 'liff-auth.js 沒跑起來'); return;
+    }
+    window.FFF_AUTH.ready.then(function () {
+      var st = window.FFF_AUTH.state;
+      if (st === 'browsing') {
+        elSub.textContent = '未登入';
+        gate('err', '要先登入', '請從教練登入頁進來（staff.html）'); return;
+      }
+      if (st === 'checking') {
+        elSub.textContent = '重新登入中';
+        gate('', '正在重新登入…', '登入過期了，馬上跳到 LINE 幫你換一張'); return;
+      }
+      if (st === 'error') {
+        elSub.textContent = '辨識失敗';
+        if (window.FFF_AUTH.canLogin) {
+          gate('', '登入過期了',
+               (window.FFF_AUTH.errorNote || '按下面重新登入就好。') +
+               '（' + (window.FFF_AUTH.error || '') + '）');
+          var rb = document.createElement('button');
+          rb.type = 'button'; rb.className = 'btn';
+          rb.style.cssText = 'max-width:280px;margin:18px auto 0';
+          rb.textContent = '重新登入';
+          rb.onclick = function () {
+            rb.textContent = '正在開啟 LINE 登入…'; rb.disabled = true;
+            if (!window.FFF_AUTH.login()) {
+              rb.textContent = '開不起來，請改從 LINE 裡面開'; rb.disabled = false;
+            }
+          };
+          elGate.appendChild(rb);
+          return;
+        }
+        gate('err', '辨識失敗',
+             (window.FFF_AUTH.errorNote ? window.FFF_AUTH.errorNote + '　' : '') +
+             (window.FFF_AUTH.error || '')); return;
+      }
+      if (!window.fffDB) { gate('err', '資料庫連線沒建立', 'no_fffDB'); return; }
+      DB = window.fffDB;
+
+      DB.auth.getUser().then(function (u) {
+        if (u.error || !u.data || !u.data.user) {
+          gate('err', '拿不到登入身分', (u.error && u.error.message) || 'no_user'); return;
+        }
+        return DB.from('employees')
+          .select('id,display_name,role,is_active,can_finance')
+          .eq('auth_user_id', u.data.user.id)
+          .then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            if (!r.data || !r.data.length) {
+              elSub.textContent = '未開通';
+              gate('err', '你的帳號還沒開通', '先開 staff.html 把登入代號給 Jerec'); return;
+            }
+            ME = r.data[0];
+            if (ME.is_active === false) {
+              gate('err', ME.display_name + '　已停用', '如果這是誤設，請找 Jerec'); return;
+            }
+            // ☢️ 這裡擋一次只是為了給看得懂的訊息。
+            //    真正的牆在資料庫 —— 就算跳過這一段，函式也會丟例外。
+            if (!ME.can_finance) {
+              elSub.textContent = '沒有權限';
+              gate('err', '支出簿只有負責人和財務看得到', '如果你需要看，請找 Jerec 開權限'); return;
+            }
+            elWho.textContent = ME.display_name;
+            elSub.textContent = '支出簿';
+            return load();
+          }, function (e) {
+            gate('err', '查不到員工名單', String(e && e.message || e));
+          });
+      });
+    });
+  }
+
+  document.getElementById('reload').onclick = function () { if (DB) { COPY = null; load(); } };
+  window.FFF_AUTH.onResume = function () { if (DB && ME) load(); };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+</body>
+</html>

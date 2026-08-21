@@ -420,7 +420,7 @@
 
       <!-- 七張桌子＝七個上鎖的抽屜 -->
       <rect x="56" y="212" width="230" height="120" rx="2" fill="#fff" stroke="#2F6B54" stroke-width="1.4"/>
-      <text x="64" y="228" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#2F6B54">24 張桌子 · 每一張都上了鎖</text>
+      <text x="64" y="228" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#2F6B54">26 張桌子 · 每一張都上了鎖</text>
       <text x="56" y="347" font-family="'JetBrains Mono',monospace" font-size="8" fill="#5E6E7E">畫的是最早那七張；另外 16 張見下面的清單</text>
       <g fill="#F1F7F4" stroke="#A8C9BE" stroke-width="1.2">
         <rect x="64" y="236" width="52" height="42" rx="2"/><rect x="122" y="236" width="52" height="42" rx="2"/>
@@ -573,7 +573,7 @@
       <b>後台（左）</b>整層完工，三支 Edge Function 上線中（<code>line-bind</code> 驗身分、<code>line-hook</code> 收訊息、<code>line-notify</code> 發停課通知）。<br>
       <b>接線處</b>讀和寫<b>都通了</b> —— 訂課、取消、扣課、購課、服務登記、薪資，全部從舞台寫得進後台。<br>
       <b>舞台（中）</b>台上不只兩位演員：客人看的官網和預約頁在演，
-      台板下面還有<b>六個職員頁面</b>（點名核銷、教練後台、服務登記、薪資報表、對帳報表、工具）——
+      台板下面還有<b>七個職員頁面</b>（點名核銷、教練後台、服務登記、薪資報表、對帳報表、支出簿、工具）——
       那些是 2026-08-12 之後才長出來的。<br>
       <b>大門（LINE）</b>已開，204 位好友；圖文選單客人一格、職員一格，走同一個入口。<br>
       ☢️ <b>還是灰色的東西不在這張圖上，在地平線那一頭：</b>金流與電子發票（一碰就必須搬離 GitHub Pages）、
@@ -726,7 +726,7 @@
         </div>
 
         <div class="cell wide"><b>Supabase — 後台道具間＋名冊室<span class="st done">已完工</span></b><small>東京機房 · Free 方案 · 24 小時有人值班。</small></div>
-        <div class="cell sub wide"><b>七張桌子 → 現在 24 張<span class="st done">已完工</span></b><small><b>當初的七張：</b><code>employees</code>／<code>customers</code>／<code>class_templates</code>／<code>class_sessions</code>／<code>bookings</code>／<code>credit_ledger</code>／<code>pt_requests</code>　＋檢視表 <code>customer_credits</code><br><b>後來長出來的（第五、六幕）：</b><code>plans</code>／<code>plan_draws</code>／<code>plan_transfers</code>／<code>shared_attendees</code>／<code>service_records</code>／<code>service_coaches</code>／<code>coach_grades</code>／<code>coach_allowances</code>／<code>class_notices</code>／<code>push_links</code>／<code>legacy_credits</code>／<code>products</code>／<code>signup_requests</code>／<code>checkin_tokens</code>／<code>app_settings</code>／<code>line_messaging_ids</code>／<code>service_payments</code></small>
+        <div class="cell sub wide"><b>七張桌子 → 現在 26 張<span class="st done">已完工</span></b><small><b>當初的七張：</b><code>employees</code>／<code>customers</code>／<code>class_templates</code>／<code>class_sessions</code>／<code>bookings</code>／<code>credit_ledger</code>／<code>pt_requests</code>　＋檢視表 <code>customer_credits</code><br><b>後來長出來的（第五、六幕）：</b><code>plans</code>／<code>plan_draws</code>／<code>plan_transfers</code>／<code>shared_attendees</code>／<code>service_records</code>／<code>service_coaches</code>／<code>coach_grades</code>／<code>coach_allowances</code>／<code>class_notices</code>／<code>push_links</code>／<code>legacy_credits</code>／<code>products</code>／<code>signup_requests</code>／<code>checkin_tokens</code>／<code>app_settings</code>／<code>line_messaging_ids</code>／<code>service_payments</code>／<code>expenses</code>／<code>expense_categories</code></small>
           <details class="more"><summary>幾個設計決定的理由</summary><div class="body">
             <ul>
               <li><b><code>class_sessions</code> 複製範本欄位</b>而非每次查範本：範本會改，歷史紀錄不該跟著變</li>
