@@ -167,18 +167,30 @@ Deno.serve(async (req) => {
     }
 
     // ── ④ 找人：手機要完全一致，姓名或暱稱對上任一個 ──────────
-    const { data: cust } = await admin
+    // ☢️ 這裡原本是 .maybeSingle()，而且【錯誤被吞掉】——
+    //    只要查詢回錯（不只是查無此人），cust 就是 null，客人一律看到
+    //    「查無此人」。空結果和讀不到長得一模一樣，意思卻完全相反。
+    //    2026-08-21 改成撈清單 ＋ 錯誤照實回報。
+    //
+    //    規則上 customers.phone 是 UNIQUE，所以這裡最多只會回一列 ——
+    //    寫成清單不是為了支援共用手機（那條路 2026-08-21 評估後放棄了），
+    //    是為了【唯一鍵哪天真的破了，這支會退化成「查無此人」而不是整個壞掉】。
+    const { data: cands, error: cErr } = await admin
       .from('customers')
       .select('id, name, nickname, line_user_id, auth_user_id, is_active')
       .eq('phone', phone)
-      .maybeSingle()
+
+    if (cErr) return json({ ok: false, reason: 'lookup_failed', detail: cErr.message }, 500)
+
+    const hits = ((cands ?? []) as any[]).filter(c => nameMatches(c.name, c.nickname, name))
 
     // ☢️ 手機查無、和姓名對不上，一律回同一個 reason。
-    //    如果分開講，這支就變成「輸入手機就能查出這個人叫什麼名字」的工具。
-    if (!cust || !nameMatches(cust.name, cust.nickname, name)) {
+    //    分開講的話，這支就變成「輸入手機就能查出這個人叫什麼名字」的工具。
+    if (hits.length !== 1) {
       await leaveNote(lineUserId, name, phone)
       return json({ ok: false, reason: 'not_found' })
     }
+    const cust = hits[0]
 
     if (cust.is_active === false) return json({ ok: false, reason: 'inactive' })
 
