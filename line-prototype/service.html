@@ -147,6 +147,9 @@
   .paytag.ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok)}
   .paytag.wait{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
   .paytag.no{background:var(--err-bg);border-color:var(--err-line);color:var(--err)}
+  /* ☢️ 「這一堂本來就不在現場收錢」要跟「還沒開始收」長得不一樣。
+     兩種都留白的話，20 筆裡有 15 筆是空的 —— 看起來像功能壞了。 */
+  .r2.paydim{color:var(--faint)}
   .paybox{margin-top:8px;border:1px solid var(--line);background:var(--surface2);
     border-radius:10px;padding:10px}
   .paybox .f{margin-bottom:8px}
@@ -210,7 +213,7 @@
   var PAYF = { method:'cash', amount:'', paid:true, payer:'', note:'' };
   var SVC_COLS = 'id,service_type,done_date,done_time,customer_name,company_name,headcount,' +
                  'billed_hours,revenue_amount,travel_fee,perf_amount,total_amount,' +
-                 'fin_status,voided,void_reason,coach_names,created_by_name,note,manual_note';
+                 'fin_status,voided,void_reason,coach_names,created_by_name,note,manual_note,charge_method';
   var elGate = document.getElementById('gate');
   var elMain = document.getElementById('main');
   var elWho  = document.getElementById('who');
@@ -572,7 +575,11 @@
     var tag = gap > 0 ? '<span class="paytag no">還差 ' + money(gap) + '</span>'
             : p.pending_amount > 0 ? '<span class="paytag wait">錢還沒到</span>'
             : p.paid_amount > 0 ? '<span class="paytag ok">已收齊</span>' : '';
-    if (!bits.length && !tag) return '';
+    if (!bits.length && !tag) {
+      if (x.charge_method === 'plan') return '<div class="r2 paydim">預收扣抵 —— 這一堂不在現場收錢</div>';
+      if (x.charge_method === 'free') return '<div class="r2 paydim">體驗／贈課 —— 不收費</div>';
+      return '';
+    }
     return '<div class="r2">' + bits.join('　·　') + (bits.length && tag ? '　' : '') + tag + '</div>';
   }
 
