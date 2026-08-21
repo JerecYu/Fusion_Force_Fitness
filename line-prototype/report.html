@@ -78,6 +78,7 @@
   .sum .v{font-size:21px;font-weight:800;letter-spacing:.01em;margin-top:1px;
     font-variant-numeric:tabular-nums}
   .sum .n{font-size:11.5px;color:var(--faint);margin-top:-2px}
+  .sum.wide{grid-column:1 / -1}
   .sum.big{grid-column:1 / -1;background:var(--ok-bg);border-color:var(--ok-line)}
   .sum.big .v{color:var(--ok);font-size:26px}
   .sum.bad{grid-column:1 / -1;background:var(--err-bg);border-color:var(--err-line)}
@@ -95,6 +96,10 @@
     border:1px solid var(--line);background:var(--surface2);color:var(--ink2);margin-left:5px}
   .tag.cash{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok)}
   .tag.tr{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
+  /* 政府補助自己一個顏色 —— 它不是現金也不是匯款，混色就會被當成其中一種 */
+  .tag.sub{background:#EDE8F8;border-color:#D3C7EA;color:#573B94}
+  .tag.src{background:var(--surface2);border-color:var(--line);color:var(--faint)}
+  .tag.pend{background:var(--err-bg);border-color:var(--err-line);color:var(--err)}
   .row.void{opacity:.62}
   .row.void .amt{text-decoration:line-through;color:var(--err)}
 
@@ -124,8 +129,9 @@
     .top,.wrap{zoom:1.22}
     .wrap{max-width:var(--col)}
     .top{padding-inline:max(13px, calc((100% - var(--col)) / 2 + 14px))}
-    /* ☢️ 合計格【不要】改成三欄。現金和匯款只有兩塊，第三格會是空的，
-          而下面的「合計」是整列寬 —— 看起來就像少了一塊東西沒載出來。 */
+    /* ☢️ 合計格【不要】改成三欄。半格的只有現金和匯款兩塊，第三格會是空的，
+          而下面的「合計」是整列寬 —— 看起來就像少了一塊東西沒載出來。
+          （補助那一格也是整列寬，同樣的理由。） */
   }
 </style>
 </head>
@@ -226,20 +232,34 @@
     '</div>';
   }
 
+  /* ☢️ 合計必須把【所有付款方式】加回去。
+        第 91 步之前只有現金＋匯款，多一個「補助」而這裡沒改的話，
+        報表會少算那幾百塊，而且畫面上看起來完全正常 ——
+        那是最難發現的一種錯。 */
   function sumsBlock() {
     var d = DATA.days || [];
-    var cash = 0, tr = 0, cn = 0, tn = 0, vn = 0, va = 0, cr = 0;
+    var cash = 0, tr = 0, sb = 0, cn = 0, tn = 0, sn = 0;
+    var vn = 0, va = 0, cr = 0, gt = 0, sv = 0;
     d.forEach(function (x) {
-      cash += x.cash_amt; tr += x.tr_amt; cn += x.cash_n; tn += x.tr_n;
+      cash += x.cash_amt; tr += x.tr_amt; sb += (x.sub_amt || 0);
+      cn += x.cash_n; tn += x.tr_n; sn += (x.sub_n || 0);
       vn += x.void_n; va += x.void_amt; cr += x.credits_sold;
+      gt += (x.gt_amt || 0); sv += (x.sv_amt || 0);
     });
     var h = '<div class="sums">' +
       '<div class="sum"><div class="k">現金</div><div class="v">' + money(cash) + '</div>' +
         '<div class="n">' + cn + ' 筆</div></div>' +
       '<div class="sum"><div class="k">匯款（已入帳）</div><div class="v">' + money(tr) + '</div>' +
-        '<div class="n">' + tn + ' 筆</div></div>' +
-      '<div class="sum big"><div class="k">合計</div><div class="v">' + money(cash + tr) + '</div>' +
-        '<div class="n">' + (cn + tn) + ' 筆　·　賣出 ' + cr + ' 堂</div></div>';
+        '<div class="n">' + tn + ' 筆</div></div>';
+    // ☢️ 補助那一格【整列寬】。放成第三個半格的話右邊會空一塊，
+    //    看起來像有東西沒載出來（同下面桌機那段的理由）。
+    if (sn) {
+      h += '<div class="sum wide"><div class="k">政府補助（已撥）</div><div class="v">' + money(sb) + '</div>' +
+           '<div class="n">' + sn + ' 筆　·　這筆錢跟銀行對帳要分開看</div></div>';
+    }
+    h += '<div class="sum big"><div class="k">合計</div><div class="v">' + money(cash + tr + sb) + '</div>' +
+        '<div class="n">' + (cn + tn + sn) + ' 筆　·　賣出 ' + cr + ' 堂' +
+        '<br>GT 購課 ' + money(gt) + '　·　服務登記 ' + money(sv) + '</div></div>';
     if (vn) {
       h += '<div class="sum bad"><div class="k">這段期間有沖銷</div><div class="v">' + vn +
            ' 筆　' + money(va) + '</div>' +
@@ -248,10 +268,17 @@
     return h + '</div>';
   }
 
+  function methodCls(m) {
+    return m === '現金' ? 'cash' : m === '匯款' ? 'tr' : m === '補助' ? 'sub' : '';
+  }
+
   function rowsBlock() {
     var r = DATA.rows || [];
     if (!r.length) return '<div class="card"><div class="empty">這段期間沒有收款紀錄</div></div>';
     return '<div class="card">' + r.map(function (x) {
+      // ☢️ 服務登記沒有堂數（credits 是 null）。不擋的話這裡會印出
+      //    「+null 堂」—— 而那看起來像資料壞了，不像「本來就沒有」。
+      var cr = (typeof x.credits === 'number' && x.credits) ? '　·　+' + x.credits + ' 堂' : '';
       return '<div class="row' + (x.voided ? ' void' : '') + '">' +
         '<div class="r1">' +
           '<span class="nm">' + esc(x.customer_name) + '</span>' +
@@ -259,30 +286,76 @@
           '<span class="amt">' + money(x.amount) + '</span>' +
         '</div>' +
         '<div class="r2">' + esc(x.pay_date) + '　' + esc(x.pay_time) + '　·　' +
-          esc(x.plan_label) + '　·　+' + x.credits + ' 堂　·　' + esc(x.taken_by || '—') + ' 入的' +
-          '<span class="tag ' + (x.pay_method === '現金' ? 'cash' : 'tr') + '">' + esc(x.pay_method) + '</span>' +
+          esc(x.plan_label) + cr + '　·　' + esc(x.taken_by || '—') + ' 入的' +
+          (x.payer ? '　·　' + esc(x.payer) + ' 付的' : '') +
+          '<span class="tag src">' + esc(x.source || '') + '</span>' +
+          '<span class="tag ' + methodCls(x.pay_method) + '">' + esc(x.pay_method) + '</span>' +
+          // ☢️ 錢收到了但財務還沒最終認列 —— 金額還可能會變，要標出來。
+          (x.fin_pending ? '<span class="tag pend">未認列</span>' : '') +
           (x.voided ? '<span class="tag">已沖銷' + (x.void_reason ? '：' + esc(x.void_reason) : '') + '</span>' : '') +
         '</div>' +
       '</div>';
     }).join('') + '</div>';
   }
 
+  /* 待入帳 ＝ 錢【在路上】：已經記了一筆收款，只是還沒進帳戶。
+     ☢️ 匯款等的是幾天，政府補助等的是幾個月 —— 所以每一列都要標方式，
+        不然「怎麼這筆拖了 60 天」會被當成出事，其實那是正常的撥款週期。 */
   function pendingBlock() {
     var p = DATA.pending || [];
     if (!p.length) return '';
     var sum = p.reduce(function (a, x) { return a + (x.amount || 0); }, 0);
-    return '<div class="h">💰 待入帳的匯款（' + p.length + '）</div>' +
+    return '<div class="h">💰 待入帳（' + p.length + '）</div>' +
       '<div class="card">' + p.map(function (x) {
+        var cr = (typeof x.credits === 'number' && x.credits) ? '　·　+' + x.credits + ' 堂' : '';
         return '<div class="row">' +
           '<div class="r1"><span class="nm">' + esc(x.customer_name) + '</span>' +
             '<span class="tl">' + esc(x.phone_tail) + '</span>' +
             '<span class="amt">' + money(x.amount) + '</span></div>' +
-          '<div class="r2">' + esc(x.made_at) + '　·　+' + x.credits + ' 堂　·　' +
-            esc(x.taken_by || '—') + ' 入的　·　已等 ' + x.waited_days + ' 天</div>' +
+          '<div class="r2">' + esc(x.made_at) + cr + '　·　' +
+            esc(x.taken_by || '—') + ' 入的' +
+            (x.payer ? '　·　' + esc(x.payer) + ' 要付' : '') +
+            '　·　已等 ' + x.waited_days + ' 天' +
+            '<span class="tag src">' + esc(x.source || '') + '</span>' +
+            '<span class="tag ' + methodCls(x.method) + '">' + esc(x.method || '') + '</span></div>' +
         '</div>';
       }).join('') +
-      '<div class="note">☢️ 這些人的<b>堂數已經給了</b>，只差錢還沒確認進帳戶，合計 ' + money(sum) +
-      '。<b>不受上面的日期影響</b> —— 拖最久的那幾筆才是最該看到的。</div>' +
+      '<div class="note">☢️ <b>東西已經給出去了</b>（GT 是堂數、服務登記是課已經上完），' +
+      '只差錢還沒確認進帳戶，合計 ' + money(sum) +
+      '。<b>不受上面的日期影響</b> —— 拖最久的那幾筆才是最該看到的。' +
+      '<br>匯款正常是幾天內到；<b>政府補助（Usports、動滋券）等幾個月是正常的</b>，別把它當成呆帳。</div>' +
+    '</div>';
+  }
+
+  /* 應收未收 ＝ 錢【還沒開始走】：課上完了，但一列收款都還沒登記。
+     ☢️ 這跟「待入帳」是兩件事，不能合成一塊 ——
+        一個是「錢在路上」，一個是「還沒跟人收」，處理方式完全不同。
+     ☢️ 沒有這一塊的話，報表只會說「這個月收了 107,850」，
+        那個沒收到的洞【不會出現在任何一個畫面上】。 */
+  function unpaidBlock() {
+    var u = DATA.unpaid || [];
+    if (!u.length) return '';
+    var sum = u.reduce(function (a, x) { return a + (x.gap_amount || 0); }, 0);
+    return '<div class="h">🔴 應收未收（' + u.length + '）</div>' +
+      '<div class="card">' +
+      '<div class="sums"><div class="sum bad"><div class="k">課上完了，錢還沒收</div>' +
+        '<div class="v">' + u.length + ' 堂　' + money(sum) + '</div>' +
+        '<div class="n">這些【沒有】算在上面的合計裡</div></div></div>' +
+      u.map(function (x) {
+        return '<div class="row">' +
+          '<div class="r1"><span class="nm">' + esc(x.customer_name) + '</span>' +
+            '<span class="tl">' + esc(x.phone_tail) + '</span>' +
+            '<span class="amt">' + money(x.gap_amount) + '</span></div>' +
+          '<div class="r2">' + esc(x.done_at) + '　·　' + esc(x.kind) +
+            (x.coach_name ? '　·　' + esc(x.coach_name) : '') +
+            '　·　已過 ' + x.waited_days + ' 天' +
+            (x.paid_amount ? '　·　該收 ' + money(x.due_amount) +
+                             '、已記 ' + money(x.paid_amount) : '') +
+          '</div>' +
+        '</div>';
+      }).join('') +
+      '<div class="note">收到之後在<b>服務登記</b>那一頁按「記收款」，這裡就會消失。' +
+      '<br>只看單堂 —— 扣預收與體驗課本來就不在這一堂收錢。</div>' +
     '</div>';
   }
 
@@ -341,9 +414,10 @@
   function downloadBlock() {
     var k = (DATA.credits || []).length;
     return '<div class="h">下載</div><div class="card">' +
-      '<button type="button" class="btn" id="dl">下載 Excel（5 個工作表）</button>' +
+      '<button type="button" class="btn" id="dl">下載 Excel（6 個工作表）</button>' +
       '<div class="note">收款明細 ' + (DATA.rows||[]).length + ' 筆　·　每日合計 ' +
-        (DATA.days||[]).length + ' 天　·　待入帳 ' + (DATA.pending||[]).length + ' 筆　·　堂數異動 ' + k +
+        (DATA.days||[]).length + ' 天　·　待入帳 ' + (DATA.pending||[]).length +
+        ' 筆　·　應收未收 ' + (DATA.unpaid||[]).length + ' 筆　·　堂數異動 ' + k +
         ' 筆　·　分享課程 ' + SHARES.length + ' 筆' +
         '<br>堂數異動（上課扣堂、調整）只放在 Excel 裡，畫面上不列 —— 那部分通常有上百筆。' +
         '<br>資料時間：' + esc(DATA.made_at) + '</div>' +
@@ -359,7 +433,8 @@
     elMain.innerHTML =
       pickerBlock() +
       (DATA ? (sumsBlock() + '<div class="h">收款明細</div>' + rowsBlock() +
-               sharesBlock() + pendingBlock() + planCheckBlock() + downloadBlock())
+               pendingBlock() + unpaidBlock() +
+               sharesBlock() + planCheckBlock() + downloadBlock())
             : '<div class="card"><div class="empty">讀取中…</div></div>');
     wire();
   }
@@ -457,31 +532,46 @@
     try {
       var sheets = [
         { name:'收款明細',
-          cols:[{t:'收款日',w:11},{t:'時間',w:7},{t:'客人',w:15},{t:'末三碼',w:8},
-                {t:'方案',w:14},{t:'堂數',w:7,num:true},{t:'金額',w:11,money:true},
-                {t:'付款方式',w:10},{t:'經手教練',w:11},{t:'登記時間',w:13},
+          cols:[{t:'收款日',w:11},{t:'時間',w:7},{t:'來源',w:10},{t:'客人',w:15},{t:'末三碼',w:8},
+                {t:'方案／課別',w:20},{t:'堂數',w:7,num:true},{t:'金額',w:11,money:true},
+                {t:'付款方式',w:10},{t:'付款人',w:11},{t:'經手',w:11},{t:'登記時間',w:13},
+                {t:'未認列',w:8},
                 {t:'已沖銷',w:8},{t:'沖銷原因',w:22},{t:'沖銷人',w:10},{t:'沖銷時間',w:13}],
           rows:(DATA.rows||[]).map(function (x) {
-            return [x.pay_date, x.pay_time, x.customer_name, x.phone_tail,
-                    x.plan_label, x.credits, x.amount, x.pay_method, x.taken_by, x.made_at,
+            return [x.pay_date, x.pay_time, x.source, x.customer_name, x.phone_tail,
+                    x.plan_label, x.credits, x.amount, x.pay_method, x.payer,
+                    x.taken_by, x.made_at, x.fin_pending ? '是' : '',
                     x.voided ? '是' : '', x.void_reason, x.voided_by, x.voided_at];
           }) },
         { name:'每日合計',
           cols:[{t:'日期',w:12},{t:'現金筆數',w:10,num:true},{t:'現金金額',w:12,money:true},
                 {t:'匯款筆數',w:10,num:true},{t:'匯款金額',w:12,money:true},
-                {t:'合計金額',w:12,money:true},{t:'賣出堂數',w:10,num:true},
+                {t:'補助筆數',w:10,num:true},{t:'補助金額',w:12,money:true},
+                {t:'合計金額',w:12,money:true},
+                {t:'其中GT購課',w:12,money:true},{t:'其中服務登記',w:13,money:true},
+                {t:'賣出堂數',w:10,num:true},
                 {t:'沖銷筆數',w:10,num:true},{t:'沖銷金額',w:12,money:true}],
           rows:(DATA.days||[]).map(function (x) {
             return [x.pay_date, x.cash_n, x.cash_amt, x.tr_n, x.tr_amt,
-                    x.net_amt, x.credits_sold, x.void_n, x.void_amt];
+                    x.sub_n, x.sub_amt, x.net_amt, x.gt_amt, x.sv_amt,
+                    x.credits_sold, x.void_n, x.void_amt];
           }) },
-        { name:'待入帳匯款',
-          cols:[{t:'登記時間',w:14},{t:'客人',w:15},{t:'末三碼',w:8},
-                {t:'堂數',w:7,num:true},{t:'金額',w:11,money:true},
-                {t:'經手教練',w:11},{t:'已等幾天',w:10,num:true}],
+        { name:'待入帳',
+          cols:[{t:'登記時間',w:14},{t:'來源',w:10},{t:'客人',w:15},{t:'末三碼',w:8},
+                {t:'堂數',w:7,num:true},{t:'金額',w:11,money:true},{t:'方式',w:9},
+                {t:'付款人',w:11},{t:'經手',w:11},{t:'已等幾天',w:10,num:true}],
           rows:(DATA.pending||[]).map(function (x) {
-            return [x.made_at, x.customer_name, x.phone_tail, x.credits, x.amount,
-                    x.taken_by, x.waited_days];
+            return [x.made_at, x.source, x.customer_name, x.phone_tail, x.credits, x.amount,
+                    x.method, x.payer, x.taken_by, x.waited_days];
+          }) },
+        { name:'應收未收',
+          cols:[{t:'上課日',w:12},{t:'上課時間',w:13},{t:'客人',w:15},{t:'末三碼',w:8},
+                {t:'課別',w:14},{t:'教練',w:12},
+                {t:'該收',w:11,money:true},{t:'已記收款',w:11,money:true},
+                {t:'還差',w:11,money:true},{t:'已過幾天',w:10,num:true}],
+          rows:(DATA.unpaid||[]).map(function (x) {
+            return [x.on_date, x.done_at, x.customer_name, x.phone_tail, x.kind,
+                    x.coach_name, x.due_amount, x.paid_amount, x.gap_amount, x.waited_days];
           }) },
         { name:'堂數異動',
           cols:[{t:'日期',w:12},{t:'時間',w:7},{t:'客人',w:15},{t:'末三碼',w:8},
@@ -505,10 +595,10 @@
 
       var blob = window.FFF_XLSX.build(sheets);
       var ok = window.FFF_XLSX.save(blob, fileName());
-      btn.disabled = false; btn.textContent = '下載 Excel（5 個工作表）';
+      btn.disabled = false; btn.textContent = '下載 Excel（6 個工作表）';
       toast(ok ? '已產生：' + fileName() : '存檔失敗，請改用電腦試試', !ok);
     } catch (e) {
-      btn.disabled = false; btn.textContent = '下載 Excel（5 個工作表）';
+      btn.disabled = false; btn.textContent = '下載 Excel（6 個工作表）';
       toast('產生失敗：' + (e && e.message || e), true);
     }
   }
