@@ -130,6 +130,111 @@
   .tag.pen{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
 
   .note{font-size:11.5px;color:var(--dim);margin-top:8px}
+  /* ══ 收款（第 90 步）════════════════════════════════════════════
+     ☢️ 「該付」對扣預收和體驗課是 0 —— 錢不是在這一堂收的，
+        是購課的時候就收了。硬要在這裡再記一次，收入會被算兩遍。
+     ☢️ 一筆可以有多個付款人：Usports 那種「客人付 14,500、政府付 500」。 */
+  function payLine(x) {
+    var p = PAYS[x.id];
+    if (!p) return '';
+    var gap = p.due_amount - p.paid_amount;
+    var bits = [];
+    if (p.due_amount > 0) bits.push('該付 ' + money(p.due_amount));
+    if (p.paid_amount > 0) bits.push('已記 ' + money(p.paid_amount));
+    if (p.pending_amount > 0) bits.push('<b>待入帳 ' + money(p.pending_amount) + '</b>');
+    var tag = gap > 0 ? '<span class="paytag no">還差 ' + money(gap) + '</span>'
+            : p.pending_amount > 0 ? '<span class="paytag wait">錢還沒到</span>'
+            : p.paid_amount > 0 ? '<span class="paytag ok">已收齊</span>' : '';
+    if (!bits.length && !tag) return '';
+    return '<div class="r2">' + bits.join('　·　') + (bits.length && tag ? '　' : '') + tag + '</div>';
+  }
+
+  function payBox(x) {
+    var p = PAYS[x.id] || { due_amount:0, paid_amount:0 };
+    var gap = Math.max(0, p.due_amount - p.paid_amount);
+    var ms = [['cash','現金'], ['transfer','匯款'], ['subsidy','補助'], ['other','其他']];
+    return '<div class="paybox">' +
+      '<div class="f"><label>收款方式</label><div class="pills">' +
+        ms.map(function (m) {
+          return '<button type="button" class="pill' + (PAYF.method === m[0] ? ' on' : '') +
+            '" data-paym="' + m[0] + '">' + m[1] + '</button>';
+        }).join('') + '</div></div>' +
+      '<div class="row2">' +
+        '<div class="f"><label>金額</label><input id="payAmt" type="number" min="1" step="1" ' +
+          'value="' + esc(PAYF.amount !== '' ? PAYF.amount : (gap || '')) + '"></div>' +
+        '<div class="f"><label>到帳了嗎</label><div class="pills">' +
+          '<button type="button" class="pill' + (PAYF.paid ? ' on' : '') + '" data-payin="1">已到帳</button>' +
+          '<button type="button" class="pill' + (!PAYF.paid ? ' on' : '') + '" data-payin="0">還沒</button>' +
+        '</div></div>' +
+      '</div>' +
+      (PAYF.method === 'subsidy'
+        ? '<div class="f"><label>付款人</label><input id="payWho" type="text" ' +
+          'value="' + esc(PAYF.payer) + '" placeholder="例：Usports">' +
+          '<div class="hint">☢️ 補助一定要寫是誰付的 —— 不然不知道這筆錢要跟誰要。</div></div>' : '') +
+      (p.due_amount === 0
+        ? '<div class="f"><label>原因（必填）</label><input id="payNote" type="text" ' +
+          'value="' + esc(PAYF.note) + '" placeholder="例：上次付款未找零，這次補收">' +
+          '<div class="hint">☢️ 這一堂是扣預收或體驗課，錢應該在購課時就收了。要記收款請寫原因。</div></div>'
+        : '<div class="f"><label>備註（選填）</label><input id="payNote" type="text" value="' + esc(PAYF.note) + '"></div>') +
+      '<div class="acts">' +
+        '<button type="button" data-paycancel="1">取消</button>' +
+        '<button type="button" class="go" data-paygo="' + esc(x.id) + '">記下這筆收款</button>' +
+      '</div></div>';
+  }
+
+  // ☢️ 按方式或到帳的 pill 會整頁重畫 —— 不先把輸入框的值收起來，
+  //    使用者剛打好的金額和備註會憑空消失。（第 48 步同一個坑）
+  function keepPayInputs() {
+    var a = document.getElementById('payAmt');
+    var w = document.getElementById('payWho');
+    var n = document.getElementById('payNote');
+    if (a) PAYF.amount = a.value;
+    if (w) PAYF.payer = w.value;
+    if (n) PAYF.note = n.value;
+  }
+
+  function openPay(id) {
+    PAYOPEN = id;
+    var p = PAYS[id] || { due_amount:0, paid_amount:0 };
+    PAYF = { method:'cash', amount:'', paid:true, payer:'', note:'' };
+    render();
+    var a = document.getElementById('payAmt'); if (a) a.focus();
+  }
+
+  function submitPay(id) {
+    if (PAYBUSY) return;
+    var amt = Number((document.getElementById('payAmt') || {}).value || 0);
+    var who = ((document.getElementById('payWho') || {}).value || '').trim();
+    var nt  = ((document.getElementById('payNote') || {}).value || '').trim();
+    if (!(amt > 0)) { toast('金額要大於 0', true); return; }
+    PAYBUSY = true;
+    DB.rpc('add_service_payment', { p_service:id, p_method:PAYF.method, p_amount:Math.round(amt),
+                                    p_paid:!!PAYF.paid, p_payer:who || null, p_note:nt || null })
+      .then(function (r) {
+        PAYBUSY = false;
+        if (r.error) throw new Error(r.error.message);
+        var d = r.data || {};
+        if (d.ok === false) throw new Error(d.msg || d.why || '記不起來');
+        PAYOPEN = null;
+        toast(d.gap > 0 ? ('記好了，還差 ' + money(d.gap)) : '記好了，這筆收齊了');
+        return load();
+      })
+      .catch(function (e) { PAYBUSY = false; toast(String(e && e.message || e), true); });
+  }
+
+  /* 還沒收齊專區。☢️ 跟「待確認」同一個道理：
+     被 20 筆上限藏起來的錢，等於沒有人會去收。 */
+  function unpaidBlock() {
+    if (!UNPAID.length) return '';
+    var sum = UNPAID.reduce(function (a, x) {
+      var p = PAYS[x.id] || {};
+      return a + Math.max(0, (p.due_amount || 0) - (p.paid_amount || 0)) + (p.pending_amount || 0);
+    }, 0);
+    return '<div class="h pay">還沒收齊（' + UNPAID.length + '）· 合計 ' + money(sum) + '</div>' +
+      '<div class="card pay">' + UNPAID.map(rowHtml).join('') +
+      '<div class="note">☢️ 這一區<b>不受「最近 20 筆」限制</b> —— 錢被清單長度藏起來，就等於沒有人會去收。</div></div>';
+  }
+
   /* 待確認專區。☢️ 這一區【不受 20 筆上限影響】—— 沒認列的紀錄不會進薪資，
      被清單長度藏起來的話，那筆錢就永遠沒有人去處理。 */
   .h.pend{color:var(--warn)}
@@ -137,6 +242,24 @@
   .card.pend .note{color:var(--warn)}
   .loaderr{background:var(--err-bg);border:1px solid var(--err-line);color:var(--err);
     border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.6;margin-top:8px}
+
+  /* 第 90 步：收款。☢️ 前綴 pay- —— 動手前在整份檔案搜過，沒有撞名。 */
+  .h.pay{color:var(--err)}
+  .card.pay{border-color:var(--err-line);border-left:4px solid var(--err)}
+  .card.pay .note{color:var(--err)}
+  .paytag{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;
+    border:1px solid var(--line);background:var(--surface2);color:var(--ink2);margin-left:5px}
+  .paytag.ok{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok)}
+  .paytag.wait{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
+  .paytag.no{background:var(--err-bg);border-color:var(--err-line);color:var(--err)}
+  .paybox{margin-top:8px;border:1px solid var(--line);background:var(--surface2);
+    border-radius:10px;padding:10px}
+  .paybox .f{margin-bottom:8px}
+  .paybox .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .paybox .acts{display:flex;gap:6px;margin-top:8px}
+  .paybox .acts button{flex:1;font-family:inherit;font-size:13px;font-weight:800;padding:9px;
+    border-radius:8px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink2)}
+  .paybox .acts button.go{background:var(--ok);border-color:var(--ok);color:#fff}
   .empty{text-align:center;color:var(--faint);font-size:13px;padding:16px 4px}
   .gate{padding:56px 20px;text-align:center}
   .gate .g1{font-size:17px;font-weight:800;color:var(--ink)}
@@ -186,6 +309,10 @@
   var DB = null, ME = null, BUSY = false;
   var PRICES = { PT: [], PGT: [], CORP: [] };
   var COACHES = [], LIST = [], STAFF = [], PEND = [], LOAD_ERR = '';
+  // 第 90 步：收款。PAYS 是 service_id → 收款彙總；UNPAID 是「還沒收齊」那一區。
+  var PAYS = {}, UNPAID = [];
+  var PAYOPEN = null, PAYBUSY = false;
+  var PAYF = { method:'cash', amount:'', paid:true, payer:'', note:'' };
   var SVC_COLS = 'id,service_type,done_date,done_time,customer_name,company_name,headcount,' +
                  'billed_hours,revenue_amount,travel_fee,perf_amount,total_amount,' +
                  'fin_status,voided,void_reason,coach_names,created_by_name,note,manual_note';
@@ -518,6 +645,8 @@
         (x.fin_status !== 'final' && !x.voided && x.note ? '<br>' + esc(x.note) : '') +
         (x.fin_status !== 'final' && !x.voided && x.manual_note ? '<br>' + esc(x.manual_note) : '') +
       '</div>' +
+      payLine(x) +
+      (PAYOPEN === x.id ? payBox(x) : '') +
       (ME && ME.can_finance
         ? (x.voided
             // ☢️ 作廢在畫面上原本是【單行道】。2026-08-21 真的被誤按了一次
@@ -526,7 +655,9 @@
             ? '<div class="r3"><button type="button" data-undo="' + esc(x.id) + '">還原</button></div>'
             : '<div class="r3">' +
               (fin ? '' : '<button type="button" class="go" data-fin="' + esc(x.id) + '">最終認列</button>') +
-              '<button type="button" data-void="' + esc(x.id) + '">作廢</button></div>')
+              '<button type="button" data-void="' + esc(x.id) + '">作廢</button>' +
+              (PAYOPEN === x.id ? '' : '<button type="button" data-pay="' + esc(x.id) + '">記收款</button>') +
+              '</div>')
         : '') +
     '</div>';
   }
@@ -557,7 +688,7 @@
 
   function render() {
     elGate.hidden = true; elMain.hidden = false;
-    elMain.innerHTML = typeBlock() + formBlock() + pendBlock() + listBlock();
+    elMain.innerHTML = typeBlock() + formBlock() + unpaidBlock() + pendBlock() + listBlock();
     wire();
   }
 
@@ -656,6 +787,21 @@
     });
     each('[data-undo]', function (b) {
       b.onclick = function () { restoreOne(b.getAttribute('data-undo')); };
+    });
+    each('[data-pay]', function (b) {
+      b.onclick = function () { openPay(b.getAttribute('data-pay')); };
+    });
+    each('[data-paym]', function (b) {
+      b.onclick = function () { keepPayInputs(); PAYF.method = b.getAttribute('data-paym'); render(); };
+    });
+    each('[data-payin]', function (b) {
+      b.onclick = function () { keepPayInputs(); PAYF.paid = b.getAttribute('data-payin') === '1'; render(); };
+    });
+    each('[data-paycancel]', function (b) {
+      b.onclick = function () { PAYOPEN = null; render(); };
+    });
+    each('[data-paygo]', function (b) {
+      b.onclick = function () { submitPay(b.getAttribute('data-paygo')); };
     });
   }
 
@@ -857,6 +1003,14 @@
           if (r.error) LOAD_ERR = r.error.message;   // ☢️ 錯誤不吞：空清單和讀不到長得一樣
         }, function (e) { LIST = []; LOAD_ERR = String(e && e.message || e); }),
       // 待確認自己撈一次，不受上面那 20 筆的限制
+      // 收款彙總。☢️ 這一支【不設上限】—— 還沒收齊的錢被清單長度藏起來，
+      //    就等於沒有人會去收。第 86 步的「待確認」踩過同一個坑。
+      DB.from('staff_service_pay').select('service_id,due_amount,paid_amount,in_amount,pending_amount,n_payments,methods')
+        .then(function (r) {
+          PAYS = {};
+          (r.data || []).forEach(function (x) { PAYS[x.service_id] = x; });
+          if (r.error) LOAD_ERR = r.error.message;
+        }, function (e) { PAYS = {}; LOAD_ERR = String(e && e.message || e); }),
       DB.from('staff_services').select(SVC_COLS)
         .neq('fin_status', 'final').eq('voided', false)
         .order('done_date', { ascending: false })
@@ -868,7 +1022,27 @@
         }, function (e) { PEND = []; LOAD_ERR = String(e && e.message || e); })
     ]).then(function () {
       if (!F.done) F.done = nowLocal();
-      render();
+      // ☢️ 「還沒收齊」不能從上面那 20 筆裡挑 —— 那正好會漏掉
+      //    「三週前那筆企業包班匯款」，而那是這一整步要解決的問題。
+      //    所以獨立查一次：先從收款彙總挑出有缺口的 id，再去撈那幾筆的明細。
+      //    ☢️ 這一段【不設上限】。錢被清單長度藏起來，就等於沒有人會去收。
+      //    「該收的還沒記完」是漏收，「記了但還沒到帳」是錢還在路上 —— 兩種都要追。
+      var ids = Object.keys(PAYS).filter(function (k) {
+        var p = PAYS[k];
+        return (p.due_amount - p.paid_amount) > 0 || p.pending_amount > 0;
+      });
+      UNPAID = [];
+      if (!ids.length) { render(); return; }
+      return DB.from('staff_services').select(SVC_COLS)
+        .in('id', ids).eq('voided', false)
+        .order('done_date', { ascending: false })
+        .order('done_time', { ascending: false })
+        .limit(200)
+        .then(function (r) {
+          UNPAID = r.data || [];
+          if (r.error) LOAD_ERR = r.error.message;
+          render();
+        }, function (e) { LOAD_ERR = String(e && e.message || e); render(); });
     });
   }
 
