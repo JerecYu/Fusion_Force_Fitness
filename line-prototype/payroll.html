@@ -44,6 +44,10 @@
     line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:44px}
 
   .top{background:var(--ink);color:#fff;padding:13px 13px;display:flex;align-items:center;gap:6px}
+  /* ☢️ 標題那一塊沒有 min-width:0 的話【不會縮】—— flex 項目的最小尺寸
+     預設是內容寬度，所以標題會把右邊的功能鈕擠出畫面外，
+     而且擠出去的部分【沒有捲軸、看不到也點不到】。 */
+  .top>div:first-child{min-width:0}
   .who{font-size:16px;font-weight:800;letter-spacing:.03em}
   .sub{font-size:11px;color:#A9C6D4;margin-top:1px}
   .sp{flex:1}
@@ -168,6 +172,14 @@
     background:var(--surface);border:1px solid var(--line);color:var(--ink2)}
   .mc-w.stop{background:var(--err-bg);border-color:var(--err-line);color:var(--err);font-weight:700}
   .mc-w+.mc-w{margin-top:5px}
+  /* 點得下去的那幾條。☢️ 整塊都是連結，不是只有小字 ——
+     手機上要點得到，一個 40px 的小標籤太難按。 */
+  .mc-link{display:block;text-decoration:none}
+  .mc-link:active{filter:brightness(.96)}
+  .mc-do{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;
+    font-size:11.5px;font-weight:800;white-space:nowrap;
+    background:var(--ink);color:#fff}
+  .mc-w.stop .mc-do{background:var(--err)}
   .mc-go{width:100%;margin-top:10px;background:var(--ink);color:#fff;border:0;border-radius:11px;
     padding:13px;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer}
   .mc-go:disabled{opacity:.45}
@@ -221,7 +233,7 @@
     <div class="sub" id="whoSub">辨識中…</div>
   </div>
   <div class="sp"></div>
-  <a class="iconbtn" href="staff-tools.html">後台<span class="ar"></span></a>
+  <a class="iconbtn" href="staff-tools.html">後台</a>
   <button type="button" class="iconbtn" id="reload">重新整理</button>
 </div>
 
@@ -591,6 +603,23 @@
     '</div>';
   }
 
+  /* 檢查結果的一條。☢️ 有 go 就整塊變成連結 —— 擋住月結的那句話
+     正好是最需要馬上處理的那句話，讓人自己想「這該去哪一頁」是多餘的。
+     ☢️ 但【沒有頁可以去的就不給連結】：「這個月還沒過完」不是問題；
+        「待補扣」目前沒有任何一頁列得出那幾筆 —— 連到看不到它們的頁面，
+        比不給連結更糟（人點過去、找不到、以為是自己不會用）。
+     ☢️ 相容舊格式：以前 blocks/warns 是一串【字】，現在是物件。
+        已結的月份會把當時的 warns 存進快照，兩種都要看得懂。 */
+  function chkRow(x, stop) {
+    var obj = x && typeof x === 'object';
+    var msg = obj ? (x.msg || '') : String(x == null ? '' : x);
+    var go  = obj ? x.go : null;
+    var body = (stop ? '☢️ ' : '') + esc(msg);
+    if (!go) return '<div class="mc-w' + (stop ? ' stop' : '') + '">' + body + '</div>';
+    return '<a class="mc-w mc-link' + (stop ? ' stop' : '') + '" href="' + esc(go) + '">' +
+      body + '<span class="mc-do">去處理</span></a>';
+  }
+
   function openBlock() {
     var c = REP.check || {};
     var blocks = c.blocks || [], warns = c.warns || [];
@@ -598,12 +627,8 @@
     return '<div class="mc-box live">' +
       '<div class="mc-t">' + esc(REP.ym) + ' 還沒結算' +
         '<small>下面的數字是現在重算的，一改設定就會跟著變</small></div>' +
-      blocks.map(function (b) {
-        return '<div class="mc-w stop">☢️ ' + esc(b) + '</div>';
-      }).join('') +
-      warns.map(function (w) {
-        return '<div class="mc-w">' + esc(w) + '</div>';
-      }).join('') +
+      blocks.map(function (b) { return chkRow(b, true); }).join('') +
+      warns.map(function (w) { return chkRow(w, false); }).join('') +
       (MCFORM === 'close' ? closeForm()
         : '<button type="button" class="mc-go' + (warns.length && can ? ' warnish' : '') + '"' +
           (can ? '' : ' disabled') + ' data-mcclose="1">' +

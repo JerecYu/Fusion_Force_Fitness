@@ -47,6 +47,10 @@
     line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:44px}
 
   .top{background:var(--ink);color:#fff;padding:13px 13px;display:flex;align-items:center;gap:6px}
+  /* ☢️ 標題那一塊沒有 min-width:0 的話【不會縮】—— flex 項目的最小尺寸
+     預設是內容寬度，所以標題會把右邊的功能鈕擠出畫面外，
+     而且擠出去的部分【沒有捲軸、看不到也點不到】。 */
+  .top>div:first-child{min-width:0}
   .who{font-size:16px;font-weight:800;letter-spacing:.03em}
   .sub{font-size:11px;color:#A9C6D4;margin-top:1px}
   .sp{flex:1}
@@ -176,8 +180,8 @@
     <div class="sub" id="whoSub">辨識中…</div>
   </div>
   <div class="sp"></div>
-  <a class="iconbtn" href="staff-tools.html">後台<span class="ar"></span></a>
-  <a class="iconbtn" href="report.html">對帳<span class="ar"></span></a>
+  <a class="iconbtn" href="staff-tools.html">後台</a>
+  <a class="iconbtn" href="report.html">對帳</a>
   <button type="button" class="iconbtn" id="reload">重新整理</button>
 </div>
 
