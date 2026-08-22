@@ -104,6 +104,9 @@
   .tag.sub{background:#EDE8F8;border-color:#D3C7EA;color:#573B94}
   .tag.src{background:var(--surface2);border-color:var(--line);color:var(--faint)}
   .tag.pend{background:var(--err-bg);border-color:var(--err-line);color:var(--err)}
+  /* 待入帳那一列的教練。☢️ 這格是「要找誰問」，所以要比 .src 顯眼 ——
+     .src 用 --faint 是因為它只是分類，教練是【要行動的資訊】。 */
+  .tag.coach{background:#E8EFF3;border-color:#C6D9E3;color:#1C4257}
   .row.void{opacity:.62}
   .row.void .amt{text-decoration:line-through;color:var(--err)}
 
@@ -321,6 +324,12 @@
             esc(x.taken_by || '—') + ' 入的' +
             (x.payer ? '　·　' + esc(x.payer) + ' 要付' : '') +
             '　·　已等 ' + x.waited_days + ' 天' +
+            // ☢️ 催款要找的是【教練】，不是當初在櫃檯按下去的那個人。
+            //    GT 購課帶的是客人的歸屬教練、服務登記帶的是實際授課的教練
+            //    （代課的時候兩者不一樣，見 db/77）。
+            //    ☢️ 沒有歸屬教練的也要說出來 —— 空白會被當成「還沒載完」。
+            '<span class="tag coach">' +
+              (x.coach ? '教練 ' + esc(x.coach) : '沒有歸屬教練') + '</span>' +
             '<span class="tag src">' + esc(x.source || '') + '</span>' +
             '<span class="tag ' + methodCls(x.method) + '">' + esc(x.method || '') + '</span></div>' +
         '</div>';
@@ -328,7 +337,9 @@
       '<div class="note">☢️ <b>東西已經給出去了</b>（GT 是堂數、服務登記是課已經上完），' +
       '只差錢還沒確認進帳戶，合計 ' + money(sum) +
       '。<b>不受上面的日期影響</b> —— 拖最久的那幾筆才是最該看到的。' +
-      '<br>匯款正常是幾天內到；<b>政府補助（Usports、動滋券）等幾個月是正常的</b>，別把它當成呆帳。</div>' +
+      '<br>匯款正常是幾天內到；<b>政府補助（Usports、動滋券）等幾個月是正常的</b>，別把它當成呆帳。' +
+      '<br>☢️ 教練那一格：<b>GT 購課</b>是這位客人的<b>歸屬教練</b>；' +
+      '<b>服務登記</b>是<b>那一堂實際上課的教練</b> —— 代課的時候兩個不一樣。</div>' +
     '</div>';
   }
 
