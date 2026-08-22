@@ -259,6 +259,32 @@
   .xfp i{display:block;font-style:normal;font-size:11px;color:var(--warn);margin-top:2px}
 
   /* ══ 待入帳 ═══════════════════════════════════════════════ */
+  /* 封存堂數提示（db/78）。☢️ 類別名一律 lgh- 開頭 ——
+     .lg / .lgb / .lgh 已經被封存等候區用掉了，動手前搜過確定沒撞名。 */
+  .lgh-r{display:flex;align-items:flex-start;gap:10px;padding:10px 0;
+    border-bottom:1px dashed var(--line);flex-wrap:wrap}
+  .lgh-r:last-of-type{border-bottom:0}
+  .lgh-r.done{opacity:.6}
+  .lgh-l{flex:1;min-width:0}
+  .lgh-l b{font-size:14px;font-weight:800}
+  .lgh-l span{font-size:11.5px;color:var(--faint);letter-spacing:.06em;margin-left:5px}
+  .lgh-l i{display:block;font-style:normal;font-size:11.5px;color:var(--dim);margin-top:2px}
+  .lgh-b{display:inline-block;font-style:normal;font-size:10.5px;font-weight:800;
+    margin-left:6px;padding:1px 7px;border-radius:999px;
+    background:var(--err-bg);border:1px solid var(--err-line);color:var(--err)}
+  /* ☢️ 低信心那幾筆要看起來就不一樣 —— 轉錯人是把別人的堂數送出去。
+     用 #8F5017 不是 var(--warn)：後者壓在淺橘上量出來只有 3.8:1。 */
+  .lgh-r.weak{background:var(--warn-bg);border-radius:9px;padding:10px;margin:4px 0}
+  .lgh-w{display:block;font-style:normal;text-decoration:none;font-size:11.5px;
+    color:#8F5017;margin-top:4px}
+  .lgh-go{flex:0 0 auto;background:var(--ink);color:#fff;border:0;border-radius:9px;
+    padding:9px 13px;font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
+  .lgh-go:disabled{opacity:.5}
+  .lgh-res{flex-basis:100%}
+  .lgh-tag{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 7px;
+    border-radius:999px;margin-left:5px;
+    background:var(--warn-bg);border:1px solid var(--warn-line);color:#8F5017}
+
   .up{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
   .up:last-of-type{border-bottom:0}
   .upl{flex:1;min-width:0}
@@ -464,6 +490,8 @@
   var XF = { from: null, plans: [], plan: null, to: null, busy: false };
   var SIGNUPS = [];
   var UNPAID = [], PRODUCTS = [], OVER = [];
+  // 封存堂數的提示（db/78）。☢️ 只是【提示】—— 轉給誰永遠是人按的。
+  var LGHINT = [];
   var RECENT = [];          // 最近的購課（只有 owner 看得到，也是沖銷的入口）
   var HITS = [];
 
@@ -712,7 +740,14 @@
       DB.from('staff_overbooked')
         .select('session_id,session_date,start_time,title,coach_name,capacity,people,booking_rows,over_by')
         .then(function (r) { OVER = (!r.error && r.data) ? r.data : []; },
-              function () { OVER = []; })
+              function () { OVER = []; }),
+
+      // 可能有沒認領的封存堂數（db/78）。正常情況這是空的。
+      DB.from('staff_legacy_hint')
+        .select('legacy_id,legacy_name,credits,product,source,customer_id,customer_name,' +
+                'nickname,phone_tail,bound,now_balance,confidence')
+        .then(function (r) { LGHINT = (!r.error && r.data) ? r.data : []; },
+              function () { LGHINT = []; })
     ]);
   }
 
@@ -734,6 +769,50 @@
            '<div class="card">' + rows +
            '<div class="hint" style="margin-top:8px">☢️ 這些人的<b>堂數已經給了</b>，只差錢還沒確認進帳戶。' +
            '按「錢到了」＝確認入帳，不會改動堂數。</div></div>';
+  }
+
+  /* 可能有沒認領的封存堂數（db/78）。
+     ☢️☢️ 這一塊存在的理由：張詩佩 2026-08-22 綁定 LINE，系統開了一筆
+        全新的空白資料，她看到 0 堂，半夜傳訊息來問。她的 12 堂一直都在
+        封存區 —— 只是【沒有任何地方告訴任何人這件事】。
+        認領介面早就有了，但它只有在【有人主動去搜那個名字】時才會動，
+        而【沒有人會去搜一個自己不知道存在的名字】。
+     ☢️ 被動原則（Jerec 2026-08-23）：系統只負責【講出來】，
+        不負責【給出去】。不自動認領、不主動聯絡客人、
+        客人自己的畫面也看不到這個提示。
+     ☢️ 已經綁定的排最前面 —— 那些人現在打開手機就看到 0 堂，
+        是下一個會傳訊息來問的人。 */
+  function hintBlock() {
+    if (!LGHINT.length) return '';
+    var nB = LGHINT.filter(function (h) { return h.bound; }).length;
+    var rows = LGHINT.map(function (h) {
+      var weak = h.confidence !== 'exact';
+      return '<div class="lgh-r' + (weak ? ' weak' : '') + '">' +
+        '<div class="lgh-l">' +
+          '<b>' + esc(h.customer_name) +
+            (h.nickname ? '（' + esc(h.nickname) + '）' : '') + '</b> ' +
+          '<span>' + esc(h.phone_tail || '—') + '</span>' +
+          (h.bound ? '<em class="lgh-b">已綁定，現在看到 ' + h.now_balance + ' 堂</em>' : '') +
+          '<i>封存區「<b>' + esc(h.legacy_name) + '</b>」' + h.credits + ' 堂' +
+            '　·　' + esc(h.source) + '</i>' +
+          (weak ? '<u class="lgh-w">☢️ 只有英文暱稱一樣，中文姓名不同 —— ' +
+                  '實測這種幾乎都是<b>不同人</b>。要轉之前先確認。</u>' : '') +
+        '</div>' +
+        '<button type="button" class="lgh-go" data-hint="' + esc(h.legacy_id) + '" ' +
+          'data-c="' + esc(h.customer_id) + '" data-cn="' + esc(h.customer_name) + '" ' +
+          'data-n="' + h.credits + '">轉入 ' + h.credits + ' 堂</button>' +
+        '<div class="lgh-res"></div>' +
+      '</div>';
+    }).join('');
+    return '<div class="sec hot">📦 可能有沒認領的封存堂數（' + LGHINT.length + '）</div>' +
+      '<div class="card">' + rows +
+      '<div class="hint" style="margin-top:8px">' +
+      (nB ? '☢️ 上面有 <b>' + nB + ' 位已經綁定 LINE</b> —— 他們現在打開手機看到的是 <b>0 堂</b>，' +
+            '是下一個會傳訊息來問的人。<br>' : '') +
+      '☢️ <b>系統只負責講出來，不負責給出去。</b>要不要轉、轉給誰，一律人按 —— ' +
+      '不會自動認領，也不會主動通知客人。<br>' +
+      '☢️ 轉之前<b>先確認是同一個人</b>。轉錯了等於把別人的堂數送出去，' +
+      '而且送出去之後畫面上看起來完全正常。</div></div>';
   }
 
   // 人數超過上限的課。
@@ -1170,6 +1249,7 @@
     // ④ 待處理：正常的時候這幾塊【完全不存在】，出現就是有事要辦
     html += '<div id="overBox">' + overBlock() + '</div>';
     html += '<div id="unpaidBox">' + unpaidBlock() + '</div>';
+    html += '<div id="hintBox">' + hintBlock() + '</div>';
     html += '<div id="stuckBox">' + stuckBlock() + '</div>';
     html += '<div id="recentBox">' + recentBlock() + '</div>';
 
@@ -1185,6 +1265,7 @@
 
     wireGo(elMain);
     wireNotify(elMain);
+    wireHint();
 
     Array.prototype.forEach.call(elMain.querySelectorAll('[data-new]'), function (b) {
       b.onclick = function () {
@@ -1685,6 +1766,47 @@
     }).join('');
   }
 
+  /* 提示區的「轉入」。☢️ 走的是同一支 claim_legacy —— 不另外寫一套，
+     否則兩邊的規則遲早會分家（今天才踩過檔案跟資料庫分家）。 */
+  function wireHint() {
+    var box = document.getElementById('hintBox');
+    if (!box) return;
+    Array.prototype.forEach.call(box.querySelectorAll('[data-hint]'), function (b) {
+      b.onclick = function () {
+        if (b.disabled) return;
+        var wrap = b.closest('.lgh-r'), res = wrap.querySelector('.lgh-res');
+        var nm = b.getAttribute('data-cn'), nn = b.getAttribute('data-n');
+        if (!window.confirm('確定「' + nm + '」就是封存區那個人嗎？\n' +
+              '轉入 ' + nn + ' 堂之後不會自動退回。')) return;
+        b.disabled = true; b.textContent = '轉入中…';
+        DB.rpc('claim_legacy', { p_legacy: b.getAttribute('data-hint'),
+                                 p_customer: b.getAttribute('data-c') })
+          .then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            var d = r.data || {};
+            // ☢️ RPC 成功不等於做成功。
+            if (!d.ok) {
+              var m = { already_claimed:'這一筆已經在 ' + (d.claimed_at||'') + ' 轉出去了。',
+                        not_found:'找不到這筆封存。', no_customer:'找不到這位客人。',
+                        inactive:'這位客人已停用。' }[d.why] || d.why;
+              res.innerHTML = '<div class="res bad">' + esc(m) + '</div>';
+              b.disabled = false; b.textContent = '轉入 ' + nn + ' 堂';
+              return;
+            }
+            // ☢️ 結果留在畫面上，不要重畫把它洗掉。
+            res.innerHTML = '<div class="res ok">已轉入：<b>' + esc(d.name) + '</b>　＋' +
+              d.credits + ' 堂　→　現在剩 <b>' + d.balance + ' 堂</b></div>';
+            wrap.classList.add('done');
+            b.textContent = '已轉入';
+          })
+          .catch(function (e) {
+            res.innerHTML = '<div class="res bad">' + esc(String(e && e.message || e)) + '</div>';
+            b.disabled = false; b.textContent = '轉入 ' + nn + ' 堂';
+          });
+      };
+    });
+  }
+
   function wireLegacy(box) {
     Array.prototype.forEach.call(box.querySelectorAll('[data-lg]'), function (b) {
       b.onclick = function () {
@@ -1785,6 +1907,16 @@
                   Number(c.balance_pt || 0) + ' 堂</span>' +
                 // ☢️ 調整堂數是【財務限定】。一堂等於錢，而且它沒有課次名單背書，
                 //    只有理由 —— 所以跟薪資、對帳同一道牆。
+                // ☢️ 封存提示要跟著搜尋結果走 —— 原本的封存搜尋只在
+                //    【用名字查】的時候才跑（見下面 lq 那一段），
+                //    用手機後三碼查的人永遠看不到。這一格是照 customer_id 對的，
+                //    所以不管怎麼查到這個人都會出現。
+                (function () {
+                  var h = LGHINT.filter(function (x) { return x.customer_id === c.id; });
+                  if (!h.length) return '';
+                  var nn = h.reduce(function (a2, x) { return a2 + Number(x.credits || 0); }, 0);
+                  return '<span class="lgh-tag">封存區可能有 ' + nn + ' 堂</span>';
+                })() +
                 ((ME && ME.can_finance && c.is_active !== false)
                   ? '<button type="button" class="adjb" data-adj="' + esc(c.id) +
                     '" data-n="' + esc(c.name) + '" data-b="' + b + '">調整</button>' : '') +
