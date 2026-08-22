@@ -59,26 +59,30 @@ if (Test-Path $IDS) {
 # ── 六格的座標 ───────────────────────────────────────────────────
 # ☢️ 2500 除以 3 除不盡（833.33）。中間那格給 834，總和才會剛好是 2500。
 #    差一個像素，LINE 會直接拒絕整張選單。
+# ☢️☢️ 2026-08-22：順序換過了（v3 起）。這裡的六個動作【必須】跟
+#    assets/brand/fff-richmenu-staff.png 的六格一致 ——
+#    可點區域綁的是【位置】，不是圖案。
+#    只換圖不改這裡，教練按「私人課」會進團體課訂課頁，而且不會報錯。
 $AREAS = @(
   @{ bounds = @{ x = 0;    y = 0;   width = 833; height = 843 }
-     action = @{ type = 'uri'; label = '團體課預約'; uri = $LIFF + 'GT-booking.html' } },
+     action = @{ type = 'uri'; label = '私人課';   uri = $LIFF + 'PT-booking.html' } },
   @{ bounds = @{ x = 833;  y = 0;   width = 834; height = 843 }
-     action = @{ type = 'uri'; label = '我的預約';   uri = $LIFF + 'GT-booking.html?tab=m' } },
+     action = @{ type = 'uri'; label = '團體課';   uri = $LIFF + 'GT-booking.html' } },
   @{ bounds = @{ x = 1667; y = 0;   width = 833; height = 843 }
-     action = @{ type = 'uri'; label = '私人教練課'; uri = $LIFF + 'PT-booking.html' } },
+     action = @{ type = 'uri'; label = '私人團體'; uri = $LIFF + 'PGT-booking.html' } },
   @{ bounds = @{ x = 0;    y = 843; width = 833; height = 843 }
-     action = @{ type = 'uri'; label = '私人團體班'; uri = $LIFF + 'PGT-booking.html' } },
+     action = @{ type = 'uri'; label = '我的預約'; uri = $LIFF + 'GT-booking.html?tab=m' } },
   @{ bounds = @{ x = 833;  y = 843; width = 834; height = 843 }
-     action = @{ type = 'uri'; label = '價目表';     uri = $LIFF + 'pricing.html' } },
-  # ★ 這一格就是差別所在：客人版是傳訊息，職員版直接進教練入口
+     action = @{ type = 'uri'; label = '價目表';   uri = $LIFF + 'pricing.html' } },
+  # ★ 這一格就是跟客人版的差別：客人是傳訊息給櫃檯，職員直接進教練入口
   @{ bounds = @{ x = 1667; y = 843; width = 833; height = 843 }
-     action = @{ type = 'uri'; label = 'STAFF 入口'; uri = $LIFF + 'staff.html' } }
+     action = @{ type = 'uri'; label = '教練工具'; uri = $LIFF + 'staff.html' } }
 )
 
 $MENU = @{
   size        = @{ width = 2500; height = 1686 }
   selected    = $false          # ☢️ 不能設 true —— 那會把它變成【全部使用者】的預設選單
-  name        = 'FFF 職員選單 v1'
+  name        = 'FFF 職員選單 v5'
   chatBarText = '教練選單'
   areas       = $AREAS
 }
