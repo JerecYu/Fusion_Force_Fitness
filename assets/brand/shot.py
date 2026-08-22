@@ -29,7 +29,7 @@ PHONE = 390
 MIN_RATIO = 4.5
 
 # 前景色（要跟 CSS 的 --ink / --sub 一致；不一致下面的斷言會抓到）
-INK, SUB = '#1E3B4A', '#48646F'
+INK, SUB = '#FFFFFF', '#E4F2F7'
 
 def _lin(c):
     c /= 255
@@ -79,10 +79,16 @@ for row in range(2):
         box = (col * CW + PAD, row * CH + 170, col * CW + PAD + 660, row * CH + 690)
         patch = bg.crop(box)
         px = list(patch.getdata())[::7]           # 抽樣就夠，不必每一點
-        dark = min(px, key=lum)                   # 最不利的那一點
-        ri, rs = ratio(hex2rgb(INK), dark), ratio(hex2rgb(SUB), dark)
+        # ☢️ 最不利的那一點【不一定是最暗的】。
+        #    深字淺底 → 最暗的底最危險；白字深底 → 最亮的底最危險。
+        #    兩端都算，取比較差的那個 —— 這樣不管哪一種配色都問得出真話。
+        #    （v4 只取最暗，換成深藍底之後會全部「通過」，其實是算錯邊。）
+        lo, hi = min(px, key=lum), max(px, key=lum)
+        ri = min(ratio(hex2rgb(INK), lo), ratio(hex2rgb(INK), hi))
+        rs = min(ratio(hex2rgb(SUB), lo), ratio(hex2rgb(SUB), hi))
+        worstpx = lo if ratio(hex2rgb(SUB), lo) < ratio(hex2rgb(SUB), hi) else hi
         tag = '第%d格' % (row * 3 + col + 1)
-        print(f'  {tag} 最深底色 #%02X%02X%02X ｜標題 {ri:.2f}:1 ｜副標 {rs:.2f}:1' % dark)
+        print(f'  {tag} 最不利底色 #%02X%02X%02X ｜標題 {ri:.2f}:1 ｜副標 {rs:.2f}:1' % worstpx)
         assert ri >= MIN_RATIO, f'{tag} 標題對比只有 {ri:.2f}:1'
         assert rs >= MIN_RATIO, f'{tag} 副標對比只有 {rs:.2f}:1'
         worst = rs if worst is None else min(worst, rs)
@@ -93,10 +99,10 @@ im.quantize(colors=256, method=Image.MEDIANCUT,
 size = pathlib.Path(OUT).stat().st_size
 assert size < LIMIT, f'{size/1024:.0f} KB 超過 LINE 的 1 MB 上限'
 
-Image.open(OUT).resize((PHONE, round(H * PHONE / W)), Image.LANCZOS).save('phone-v4.png')
+Image.open(OUT).resize((PHONE, round(H * PHONE / W)), Image.LANCZOS).save('phone-v5.png')
 
 print(f'✓ {OUT}  {im.size}  {size/1024:.0f} KB（上限 1024 KB）')
 print(f'✓ 最差的對比 {worst:.2f}:1（下限 {MIN_RATIO}:1）')
 print(f'✓ 手機上：標題 {148*PHONE/W:.1f}pt　副標 {84*PHONE/W:.1f}pt')
-print('✓ phone-v4.png = 客人手機上的實際大小')
+print('✓ phone-v5.png = 客人手機上的實際大小')
 print('☢️ 六格順序與 v3 相同 —— 已經照 v3 設好動作的話，這一版不用再改 LINE 後台')

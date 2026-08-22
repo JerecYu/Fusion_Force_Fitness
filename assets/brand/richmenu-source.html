@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   ══════════════════════════════════════════════════════════════════
-  LINE 圖文選單底圖的「原始檔」 v4  →  assets/brand/fff-richmenu.png
+  LINE 圖文選單底圖的「原始檔」 v5  →  assets/brand/fff-richmenu.png
   ══════════════════════════════════════════════════════════════════
 
   要改字、改配色、換分格：改這支 HTML，然後 `python3 shot.py`。
@@ -9,8 +9,7 @@
   ☢️ 尺寸不能亂改 —— 2500×1686，六宮格每格 833×843，
      LINE 後台的可點區域是照那個網格切的。
 
-  ☢️☢️ 六格順序與 v3 相同，所以【如果你已經照 v3 設好六個動作，這一版不用再改】。
-       還沒設的話，對應是：
+  ☢️☢️ 六格順序從 v3 起就沒變過，所以【照 v3 設好動作的話，這一版不用再改】：
        A 左上 私人課    → liff.line.me/2011063116-QOxXN30h/PT-booking.html
        B 中上 團體課    → …/GT-booking.html
        C 右上 私人團體  → …/PGT-booking.html
@@ -19,32 +18,26 @@
        F 右下 聯絡我們  → 文字「我想詢問」
      ☢️ 規則 18：LINE 裡的連結一律用 LIFF 網址。
 
-  ── v4 改了什麼（2026-08-22）─────────────────────────────────
-  Jerec：「底圖需要重做，因為沒有具設計感的底色，請混合兩張附圖製作」。
+  ── 版本史（每一版都是被上一版的缺點推出來的）──────────────
+  v2  深藍底白字。字級太小（手機上副標 6.9pt，看不見）→ 加大。
+  v3  Jerec 要「輕盈質感／修復風＋襯線體」→ 翻成淺底深字。
+      ☢️ 但只取了一張 LOGO 的藍→青，整個綠色端沒用到。
+  v4  補上第二張 LOGO 的萊姆綠、底色加漸層、LOGO 斜線當主圖形。
+      ☢️ Jerec：「六宮格底色還是白的」—— 淺底再怎麼加漸層，
+         在手機上仍然是一片白，品牌認不出來。
+  v5  【底色回到 v2 的深藍】，但把 v3/v4 學到的東西全部留下：
+      襯線體、萊姆綠、斜線圖形、算出來的裝飾位置、取樣驗對比。
+      ☢️ 結論：深底不是「不夠輕盈」，是【對比預算大很多】——
+         深底上白字有 5:1 以上，淺底上深字要一直閃避裝飾才勉強 4.7:1。
+         顏色能放得更重，設計反而更自由。
 
-  ☢️ v3 只取了【一張】LOGO 的顏色（藍→青）。品牌其實有兩套：
-       A 藍青版：主色 #2C7EB0，配青 #6FBAC9
-       B 藍綠版：深藍 #00448D、亮青、以及【萊姆綠 #C5D322】
-     v3 整組缺了綠色那一端，所以六格的底色只是六片深淺不同的灰白 ——
-     那不是「淡雅」，那是【沒有顏色】。
-
-  v4 三件事：
-  ① 【色帶補完】深藍 → 中藍 → 亮青 → 萊姆綠，四個端點都來自 LOGO。
-     三組配對各取色帶的一段，所以六格是【同一條漸層上的三個區間】，
-     不是三個各自挑的顏色 —— 這樣才會像同一個品牌。
-  ② 【底色真的有設計】：右下角一片大面積的柔光暈（radial），
-     左上維持乾淨。
-     ☢️ 顏色放在【文字不在的那一側】—— 這是能上色又不犧牲可讀性的唯一方法。
-        整片鋪滿的話，手機縮到 15.6% 之後字會糊在色塊裡。
-  ③ 【緞帶變成真正的圖形】：不再是淡到看不見的水印，
-     改成帶漸層的雙股曲線，取自 LOGO 那兩道交纏的翅膀。
-     一樣兩端都出框（v3 的教訓：兩道並排的 S 會被讀成兩個問號）。
-
-  ☢️ 對比這一版改成【從算出來的圖上真的取樣】：
-     shot.py 會再截一張「把文字藏起來」的圖，
-     在每一格的文字區域裡找【最深的那個背景像素】，拿它去算對比。
-     宣告的色碼可能跟實際算出來的不一樣（漸層、疊色），
-     取樣才問得出真話。
+  ── v5 的配色 ────────────────────────────────────────────────
+  底：v2 那三階深藍（原版），但整組再壓深一點點。
+     ☢️ 壓深的理由是【算出來的】，不是喜好：v2 的最亮那格 #2A7C9E，
+        白字只有 4.70:1，而副標用的淡青 #CFE7EE 只有 3.65:1 ——
+        v2 的註解只驗了白字，副標那一行【從來沒過關】。
+  重點色：亮青 → 萊姆綠（第二張 LOGO 的綠端）。
+     深藍底配萊姆綠是這個品牌自己的顏色，而且在小尺寸下最跳。
 -->
 <html lang="zh-Hant">
 <head>
@@ -58,11 +51,11 @@
     --cyan:#4FB3D9;   /* 兩版共有的亮青 */
     --lime:#C5D322;   /* B 版萊姆綠 */
 
-    --ink:#1E3B4A;    /* 標題：深墨 */
-    --sub:#48646F;    /* 副標：中灰藍 */
-    --hair:rgba(30,59,74,.11);
+    --ink:#FFFFFF;    /* 標題：白 */
+    --sub:#E4F2F7;    /* 副標：極淡青白。☢️ 不能用 v2 的 #CFE7EE —— 那只有 3.65:1 */
+    --hair:rgba(255,255,255,.16);
   }
-  body{width:2500px;height:1686px;background:#FCFDFD;
+  body{width:2500px;height:1686px;background:#0C2433;
     font-family:'Noto Serif CJK TC','Noto Serif TC',serif;
     display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);
     overflow:hidden}
@@ -77,17 +70,14 @@
   /* ☢️ 光暈錨在【右下角外面】，左上（圖示與標題所在）保持乾淨。
         顏色放在文字不在的那一側 —— 這是能上色又不犧牲可讀性的唯一方法。 */
   .p1{background:
-    radial-gradient(115% 88% at 116% 112%,
-      rgba(0,68,141,.34) 0%, rgba(44,126,176,.26) 30%, rgba(79,179,217,.13) 55%, rgba(255,255,255,0) 74%),
-    linear-gradient(142deg,#FEFEFF 0%,#EEF5FA 100%)}
+    radial-gradient(112% 86% at 116% 112%, rgba(197,211,34,.14) 0%, rgba(79,179,217,.16) 34%, rgba(0,0,0,0) 70%),
+    linear-gradient(126deg,#12495F 0%,#1F657F 100%)}
   .p2{background:
-    radial-gradient(115% 88% at 116% 112%,
-      rgba(44,126,176,.30) 0%, rgba(79,179,217,.26) 32%, rgba(111,186,201,.13) 56%, rgba(255,255,255,0) 74%),
-    linear-gradient(142deg,#FEFEFE 0%,#EDF6F8 100%)}
+    radial-gradient(112% 86% at 116% 112%, rgba(197,211,34,.13) 0%, rgba(79,179,217,.14) 34%, rgba(0,0,0,0) 70%),
+    linear-gradient(126deg,#0F3A4E 0%,#175066 100%)}
   .p3{background:
-    radial-gradient(115% 88% at 116% 112%,
-      rgba(79,179,217,.26) 0%, rgba(150,199,150,.24) 30%, rgba(197,211,34,.24) 54%, rgba(255,255,255,0) 74%),
-    linear-gradient(142deg,#FEFEFC 0%,#F3F7E9 100%)}
+    radial-gradient(112% 86% at 116% 112%, rgba(197,211,34,.15) 0%, rgba(79,179,217,.12) 34%, rgba(0,0,0,0) 70%),
+    linear-gradient(126deg,#0C2433 0%,#123244 100%)}
 
   /* ☢️ LOGO 上那組【平行斜線】才是這個品牌最好認的形狀，
         而且它在小尺寸下活得下來 —— v3/v4 早期版本用曲線緞帶，
@@ -101,7 +91,7 @@
         520 高、bottom:-370 → 上緣 843+370-520 = 693，剛好在下面。
         取樣檢查每次都會重驗這件事，喬歪了會當場中斷。 */
   .art{position:absolute;right:-60px;bottom:-370px;width:520px;height:520px;
-    pointer-events:none;opacity:.62}
+    pointer-events:none;opacity:.55}
   .art rect{rx:14}
 
   .ico{width:96px;height:96px;margin-bottom:34px;display:block;flex:0 0 auto}
@@ -115,12 +105,14 @@
     letter-spacing:.05em;line-height:1.3;white-space:nowrap}
 
   /* 每一組的重點色：色帶上的三個區間 */
-  .p1 .ico *{stroke:var(--blue)} .p1 .ico .fill{fill:var(--blue)}
-  .p1 .t::after{background:linear-gradient(90deg,var(--navy),var(--blue))}
-  .p2 .ico *{stroke:var(--cyan)} .p2 .ico .fill{fill:var(--cyan)}
-  .p2 .t::after{background:linear-gradient(90deg,var(--blue),var(--cyan))}
-  .p3 .ico *{stroke:#8FA83C} .p3 .ico .fill{fill:#8FA83C}
-  .p3 .t::after{background:linear-gradient(90deg,var(--cyan),var(--lime))}
+  /* ☢️ 深底上重點色要【亮】才看得見。三組都走青→綠，
+        差別在綠的比重：越常按的越偏青（冷靜），資訊類偏綠（跳）。 */
+  .p1 .ico *{stroke:#7FD0E8} .p1 .ico .fill{fill:#7FD0E8}
+  .p1 .t::after{background:linear-gradient(90deg,#4FB3D9,#8FD0DA)}
+  .p2 .ico *{stroke:#9BDCE4} .p2 .ico .fill{fill:#9BDCE4}
+  .p2 .t::after{background:linear-gradient(90deg,#4FB3D9,#B9D97A)}
+  .p3 .ico *{stroke:#C5D322} .p3 .ico .fill{fill:#C5D322}
+  .p3 .t::after{background:linear-gradient(90deg,#8FD0DA,#C5D322)}
 </style>
 </head>
 <body>
@@ -128,13 +120,13 @@
 <!-- 共用漸層。☢️ 定義一次、六格共用 —— 每格各定義一份會撞 id（id 是整份文件唯一）。 -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
   <linearGradient id="gA" x1="0" y1="1" x2="1" y2="0">
-    <stop offset="0%"  stop-color="#00448D"/><stop offset="55%" stop-color="#2C7EB0"/>
-    <stop offset="100%" stop-color="#4FB3D9"/></linearGradient>
+    <stop offset="0%"  stop-color="#3E9FC8"/><stop offset="55%" stop-color="#6FC6DE"/>
+    <stop offset="100%" stop-color="#A9DCE8"/></linearGradient>
   <linearGradient id="gB" x1="0" y1="1" x2="1" y2="0">
-    <stop offset="0%"  stop-color="#2C7EB0"/><stop offset="55%" stop-color="#4FB3D9"/>
-    <stop offset="100%" stop-color="#8FD0DA"/></linearGradient>
+    <stop offset="0%"  stop-color="#4FB3D9"/><stop offset="55%" stop-color="#8FD0DA"/>
+    <stop offset="100%" stop-color="#C8E39A"/></linearGradient>
   <linearGradient id="gC" x1="0" y1="1" x2="1" y2="0">
-    <stop offset="0%"  stop-color="#4FB3D9"/><stop offset="52%" stop-color="#9CC46B"/>
+    <stop offset="0%"  stop-color="#6FC6DE"/><stop offset="52%" stop-color="#A8CE55"/>
     <stop offset="100%" stop-color="#C5D322"/></linearGradient>
 </defs></svg>
 
