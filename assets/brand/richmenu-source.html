@@ -1,48 +1,55 @@
 <!DOCTYPE html>
 <!--
   ══════════════════════════════════════════════════════════════════
-  LINE 圖文選單底圖的「原始檔」 v2  →  assets/brand/fff-richmenu.png
+  LINE 圖文選單底圖的「原始檔」 v3  →  assets/brand/fff-richmenu.png
   ══════════════════════════════════════════════════════════════════
 
-  要改字、改配色、換分格：改這支 HTML，然後重新截一張 2500×1686 的圖。
-
-  重截方式（Playwright，viewport 設 2500×1686，deviceScaleFactor 1）：
-      page.set_viewport_size({"width": 2500, "height": 1686})
-      page.goto("file:///.../richmenu-source.html")
-      page.screenshot(path="fff-richmenu.png")
+  要改字、改配色、換分格：改這支 HTML，然後 `python3 shot.py`。
 
   ☢️ 尺寸不能亂改 —— LINE 圖文選單大版位就是 2500×1686，
-     六宮格每格 833×843，後台的可點區域是照那個網格切的。
+     六宮格每格 833×843，LINE 後台的可點區域是照那個網格切的。
      圖改了尺寸，六個按鈕的位置就會全部對不上。
-     ☢️ 反過來說：只要尺寸和格線不變，換圖【不用重設六個動作】。
 
-  ☢️ 六格的順序（左上→右下）必須和後台設定的 A~F 一致：
-     A 團體課預約 / B 我的預約 / C 私人教練課
-     D 私人團體班 / E 價目表   / F 聯絡我們
+  ☢️☢️ v3【換了六格的順序】—— 所以這一版【一定要重設 LINE 後台的六個動作】。
+     可點區域是綁在【位置】上的，不是綁在圖案上。
+     只換圖不改動作的話，客人按「私人課」會進團體課訂課頁，
+     而且【不會有任何錯誤訊息】。
 
-  ── v2 改了什麼（2026-08-16） ──────────────────────────────────
-  手機上圖文選單的實際寬度大約 390pt，也就是說圖會被縮到 15.6%。
-  v1 的字級換算到手機上是：標題 14.7pt、副標 6.9pt、英文標籤 6.2pt。
-  ☢️ 6～7pt 在手機上是看不見的，不是「有點小」。
+     v3 的對應（Jerec 2026-08-22 指定的順序）：
+       A 左上 私人課    → liff.line.me/2011063116-QOxXN30h/PT-booking.html
+       B 中上 團體課    → …/GT-booking.html
+       C 右上 私人團體  → …/PGT-booking.html
+       D 左下 我的預約  → …/GT-booking.html?tab=m
+       E 中下 價目表    → …/pricing.html
+       F 右下 聯絡我們  → 文字「我想詢問」
 
-  v2 三件事：
-  ① 標題 94px → 148px（手機上 23pt），副標 44px → 72px（11pt），
-     英文標籤整個拿掉 —— 它是三行裡最不重要卻佔最多空間的一行。
-  ② 字句砍短：標題一律 3～4 字，副標一律 6 字以內。
-  ③ 六格全部上色，用 LOGO 的藍→青漸層家族，【照功能配對】：
-        A B 亮藍  = 每天會用的（訂課、我的預約）
-        C D 中藍  = 私人課系列
-        E F 深藍  = 資訊類
-     ☢️ 三階是照【閱讀順序由亮到暗】排的，不是隨便配。
-        亮度和使用頻率同方向 —— 最常按的最亮，最少按的最暗。
-     ☢️ 不是六個不同顏色 —— 六個顏色等於沒有顏色。
-     v1 的橘和綠來自「課程難度」那套色票（入門/中階/進階），
-     放在這裡沒有任何意義，只是看起來熱鬧。
-  ④ 加圖示。☢️ 縮到 15% 之後，形狀比顏色好認，顏色比文字好認。
+     ☢️ 規則 18：LINE 裡的連結一律用 LIFF 網址，絕不用 jerecyu.github.io/…
+        後者在 LINE 裡只是普通瀏覽器，客人會被當成沒綁定的人 ——
+        不會報錯，只會默默降級。
 
-  白字對比都驗過（WCAG AA 小字 4.5:1 以上）：
-     #1A6389 6.58 / #2A7C9E 4.69 / #17506B 8.76 / #1F6482 6.56
-     #0E2A3B 14.9 / #163A4D 12.2
+  ── v3 改了什麼（2026-08-22）─────────────────────────────────
+  Jerec：「以品牌 logo 去發想，風格上走輕盈質感／修復風……
+           字體上改用襯線體」，並且「拿掉最左上角最外層的裝飾用白邊」。
+
+  ① 【反過來了：深底白字 → 淺底深字。】
+     修復風的核心是留白與低彩度，深藍滿版做不出來。
+     ☢️ 但對比不能因此變差 —— 深墨 #23414E 落在最深的那個底色上
+        仍有 9:1，副標 #4E6B77 有 4.7:1（shot.py 會實際驗算，不過就中斷）。
+  ② 【襯線體】'Noto Serif CJK TC'。
+     ☢️ 襯線的橫畫很細，縮到手機上（15.6%）容易糊掉，
+        所以副標從 72px 加到 84px（手機上 13pt），而且用 Medium 不用 Regular。
+        標題維持 148px（23pt）。字級只能加不能減 —— v2 就是被 6~7pt 咬過。
+  ③ 【拿掉 .lead::before 那條裝飾邊】。它在手機上看起來就是一條白邊，
+     而且它想表達的「這格是主角」已經由順序表達了 —— 主角就是第一格。
+  ④ 【LOGO 的緞帶曲線變成底紋】。原本是 LOGO 上那組斜切線，很硬；
+     改成兩道相互穿插的 S 形曲線（就是 mark.png 上那兩道），
+     淡到幾乎看不見，只當紙的紋理。
+  ⑤ 三個色階仍然照【功能配對】，但差異縮到很小：
+        A B 訂課（最常按）  暖象牙
+        C D 我的／私團      淡霧藍
+        E F 資訊            淡灰綠
+     ☢️ 不是六個顏色 —— 六個顏色等於沒有顏色（v2 的結論，仍然成立）。
+  ⑥ 圖示線條 9 → 5，顏色改成低彩度的青。粗線在淺底上會變成噪點。
 -->
 <html lang="zh-Hant">
 <head>
@@ -50,101 +57,115 @@
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
-    /* CIS：色階全部取自 LOGO 本身的藍→青漸層（#2478A8 → #6FBAC9） */
-    --teal:#6FBAC9; --aqua:#CFE7EE;
-    --seam:rgba(255,255,255,.22);
+    /* 取自 LOGO 的藍→青，但整組降彩度、提亮度 —— 那是「修復風」的做法 */
+    --ink:#23414E;      /* 標題：深墨，不是純黑 */
+    --sub:#4E6B77;      /* 副標：中灰藍 */
+    --teal:#7FB3BF;     /* 圖示與細線：低彩度的青 */
+    --hair:rgba(35,65,78,.10);
   }
-  body{width:2500px;height:1686px;background:#0E2A3B;
-    font-family:'Noto Sans CJK TC','Noto Sans CJK HK','Noto Sans CJK SC',sans-serif;
+  body{width:2500px;height:1686px;background:#FBF8F4;
+    font-family:'Noto Serif CJK TC','Noto Serif TC',serif;
     display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);
     overflow:hidden}
 
-  .c{position:relative;padding:92px 74px;overflow:hidden;
+  /* ☢️ 格線用【極淡的墨線】，不是白線。
+        淺底配白線等於沒有線；淺底配淡墨線才分得開，而且不刺眼。 */
+  .c{position:relative;padding:96px 78px;overflow:hidden;
     display:flex;flex-direction:column;justify-content:center;
-    box-shadow:inset -6px 0 0 var(--seam), inset 0 -6px 0 var(--seam)}
-  .c:nth-child(3n){box-shadow:inset 0 -6px 0 var(--seam)}
-  .c:nth-child(n+4){box-shadow:inset -6px 0 0 var(--seam)}
+    box-shadow:inset -3px 0 0 var(--hair), inset 0 -3px 0 var(--hair)}
+  .c:nth-child(3n){box-shadow:inset 0 -3px 0 var(--hair)}
+  .c:nth-child(n+4){box-shadow:inset -3px 0 0 var(--hair)}
   .c:nth-child(6){box-shadow:none}
 
-  /* ── 配對上色：同一組功能同一個色，不是六個顏色 ── */
-  .p1{background:linear-gradient(126deg,#1A6389 0%,#2A7C9E 100%)}   /* A B 每天用 */
-  .p2{background:linear-gradient(126deg,#17506B 0%,#1F6482 100%)}   /* C D 私人課 */
-  .p3{background:linear-gradient(126deg,#0E2A3B 0%,#163A4D 100%)}   /* E F 資訊   */
+  /* 配對上色 —— 三階，而且三階都很淡 */
+  .p1{background:linear-gradient(140deg,#FDFBF8 0%,#F4EEE5 100%)}  /* A B 訂課 */
+  .p2{background:linear-gradient(140deg,#F8FBFC 0%,#E9F2F5 100%)}  /* C D 我的／私團 */
+  .p3{background:linear-gradient(140deg,#F6F8F6 0%,#E9EFEB 100%)}  /* E F 資訊 */
 
-  /* LOGO 上那組斜切線，很淡，只當材質 */
-  .c::after{content:'';position:absolute;right:-120px;top:-120px;width:420px;height:420px;
-    pointer-events:none;
-    background:linear-gradient(115deg,transparent 46%,rgba(255,255,255,.05) 46%,
-      rgba(255,255,255,.05) 59%,transparent 59%,transparent 70%,rgba(255,255,255,.05) 70%,
-      rgba(255,255,255,.05) 81%,transparent 81%)}
+  /* LOGO 的緞帶：兩道互相穿插的 S 形，淡到只當紙紋 */
+  /* ☢️ 兩道【一模一樣、並排】的 S 會被讀成兩個問號 —— 第一版就是這樣。
+        改成【兩端都出框】的長弧線：看得到的只有中段，
+        沒有起點也沒有終點，就不會被讀成任何字。 */
+  .rb{position:absolute;right:-150px;bottom:-170px;width:700px;height:700px;
+    opacity:.11;pointer-events:none;overflow:hidden}
+  .rb path{fill:none;stroke:var(--teal);stroke-width:6;stroke-linecap:round}
 
-  /* 主要那一格多一條青色亮邊，讓「訂課」一眼就是主角 */
-  .lead::before{content:'';position:absolute;left:0;top:0;bottom:0;width:14px;
-    background:linear-gradient(180deg,var(--teal),#A9D6E0)}
-
-  .ico{width:104px;height:104px;margin-bottom:30px;display:block;flex:0 0 auto}
-  .ico *{stroke:var(--teal);stroke-width:9;fill:none;
+  .ico{width:96px;height:96px;margin-bottom:34px;display:block;flex:0 0 auto}
+  .ico *{stroke:var(--teal);stroke-width:5;fill:none;
     stroke-linecap:round;stroke-linejoin:round}
   .ico .fill{fill:var(--teal);stroke:none}
 
-  .t{font-size:148px;font-weight:900;color:#fff;letter-spacing:.02em;line-height:1.05;
-    white-space:nowrap}
-  .s{margin-top:26px;font-size:72px;font-weight:500;color:var(--aqua);letter-spacing:.04em;
-    line-height:1.35;white-space:nowrap}
+  .t{font-size:148px;font-weight:600;color:var(--ink);letter-spacing:.04em;
+    line-height:1.05;white-space:nowrap}
+  /* 標題下面一道很細的青線 —— 取代 v2 那條粗白邊 */
+  .t::after{content:'';display:block;width:96px;height:4px;margin-top:26px;
+    background:var(--teal);opacity:.7}
+  .s{margin-top:24px;font-size:84px;font-weight:500;color:var(--sub);
+    letter-spacing:.05em;line-height:1.3;white-space:nowrap}
 </style>
 </head>
 <body>
-  <!-- A ─ 團體課預約 ─────────────────────────────────────────── -->
-  <div class="c p1 lead">
-    <svg class="ico" viewBox="0 0 100 100">
-      <rect x="10" y="20" width="80" height="70" rx="8"/>
-      <path d="M10 42 H90"/><path d="M30 10 V28"/><path d="M70 10 V28"/>
-      <circle class="fill" cx="34" cy="62" r="7"/><circle class="fill" cx="66" cy="62" r="7"/>
-    </svg>
-    <div class="t">團體課</div>
-    <div class="s">看課表・訂課</div>
-  </div>
-
-  <!-- B ─ 我的預約 ──────────────────────────────────────────── -->
+  <!-- A ─ 私人教練課 ─────────────────────────────────────────── -->
   <div class="c p1">
+    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
+      <path d="M28 130 C96 118 78 68 116 52"/></svg>
     <svg class="ico" viewBox="0 0 100 100">
-      <path d="M24 12 H76 A6 6 0 0 1 82 18 V88 L50 68 L18 88 V18 A6 6 0 0 1 24 12 Z"/>
-      <path d="M36 40 H64"/>
-    </svg>
-    <div class="t">我的預約</div>
-    <div class="s">剩幾堂・取消</div>
-  </div>
-
-  <!-- C ─ 私人教練課 ────────────────────────────────────────── -->
-  <div class="c p2">
-    <svg class="ico" viewBox="0 0 100 100">
-      <path d="M14 38 V62"/><path d="M86 38 V62"/>
-      <rect x="26" y="28" width="16" height="44" rx="6"/>
-      <rect x="58" y="28" width="16" height="44" rx="6"/>
+      <path d="M14 40 V60"/><path d="M86 40 V60"/>
+      <rect x="27" y="30" width="15" height="40" rx="6"/>
+      <rect x="58" y="30" width="15" height="40" rx="6"/>
       <path d="M42 50 H58"/>
     </svg>
     <div class="t">私人課</div>
     <div class="s">一對一・一對二</div>
   </div>
 
-  <!-- D ─ 私人團體班 ────────────────────────────────────────── -->
-  <div class="c p2">
+  <!-- B ─ 團體課預約 ────────────────────────────────────────── -->
+  <div class="c p1">
+    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
+      <path d="M28 130 C96 118 78 68 116 52"/></svg>
     <svg class="ico" viewBox="0 0 100 100">
-      <circle cx="50" cy="30" r="14"/>
-      <path d="M24 82 A26 26 0 0 1 76 82"/>
-      <circle cx="17" cy="42" r="10"/><path d="M4 82 A20 20 0 0 1 16 63"/>
-      <circle cx="83" cy="42" r="10"/><path d="M96 82 A20 20 0 0 0 84 63"/>
+      <rect x="12" y="22" width="76" height="66" rx="10"/>
+      <path d="M12 43 H88"/><path d="M32 12 V30"/><path d="M68 12 V30"/>
+      <circle class="fill" cx="35" cy="62" r="5"/><circle class="fill" cx="65" cy="62" r="5"/>
+    </svg>
+    <div class="t">團體課</div>
+    <div class="s">看課表・訂課</div>
+  </div>
+
+  <!-- C ─ 私人團體班 ────────────────────────────────────────── -->
+  <div class="c p2">
+    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
+      <path d="M28 130 C96 118 78 68 116 52"/></svg>
+    <svg class="ico" viewBox="0 0 100 100">
+      <circle cx="50" cy="31" r="13"/>
+      <path d="M26 80 A24 24 0 0 1 74 80"/>
+      <circle cx="18" cy="43" r="9"/><path d="M6 80 A18 18 0 0 1 17 63"/>
+      <circle cx="82" cy="43" r="9"/><path d="M94 80 A18 18 0 0 0 83 63"/>
     </svg>
     <div class="t">私人團體</div>
     <div class="s">三人以上成班</div>
   </div>
 
+  <!-- D ─ 我的預約 ──────────────────────────────────────────── -->
+  <div class="c p2">
+    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
+      <path d="M28 130 C96 118 78 68 116 52"/></svg>
+    <svg class="ico" viewBox="0 0 100 100">
+      <path d="M26 12 H74 A6 6 0 0 1 80 18 V86 L50 68 L20 86 V18 A6 6 0 0 1 26 12 Z"/>
+      <path d="M37 40 H63"/>
+    </svg>
+    <div class="t">我的預約</div>
+    <div class="s">剩幾堂・取消</div>
+  </div>
+
   <!-- E ─ 價目表 ────────────────────────────────────────────── -->
   <div class="c p3">
+    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
+      <path d="M28 130 C96 118 78 68 116 52"/></svg>
     <svg class="ico" viewBox="0 0 100 100">
-      <path d="M52 10 H86 A6 6 0 0 1 92 16 V50 L46 96 A6 6 0 0 1 37 96 L6 65
-               A6 6 0 0 1 6 56 Z"/>
-      <circle class="fill" cx="72" cy="30" r="9"/>
+      <path d="M54 12 H84 A6 6 0 0 1 90 18 V48 L46 92 A6 6 0 0 1 37 92 L10 65
+               A6 6 0 0 1 10 56 Z"/>
+      <circle class="fill" cx="71" cy="31" r="7"/>
     </svg>
     <div class="t">價目表</div>
     <div class="s">方案與價格</div>
@@ -152,12 +173,14 @@
 
   <!-- F ─ 聯絡我們 ──────────────────────────────────────────── -->
   <div class="c p3">
+    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
+      <path d="M28 130 C96 118 78 68 116 52"/></svg>
     <svg class="ico" viewBox="0 0 100 100">
-      <path d="M12 24 A8 8 0 0 1 20 16 H80 A8 8 0 0 1 88 24 V64 A8 8 0 0 1 80 72
-               H44 L24 88 V72 H20 A8 8 0 0 1 12 64 Z"/>
-      <circle class="fill" cx="34" cy="44" r="6"/>
-      <circle class="fill" cx="50" cy="44" r="6"/>
-      <circle class="fill" cx="66" cy="44" r="6"/>
+      <path d="M14 26 A8 8 0 0 1 22 18 H78 A8 8 0 0 1 86 26 V62 A8 8 0 0 1 78 70
+               H44 L26 85 V70 H22 A8 8 0 0 1 14 62 Z"/>
+      <circle class="fill" cx="36" cy="44" r="5"/>
+      <circle class="fill" cx="50" cy="44" r="5"/>
+      <circle class="fill" cx="64" cy="44" r="5"/>
     </svg>
     <div class="t">聯絡我們</div>
     <div class="s">傳訊息給櫃檯</div>

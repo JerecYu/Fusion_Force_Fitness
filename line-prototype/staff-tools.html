@@ -424,6 +424,8 @@
          導覽改成內容區的分組磚（navBlock），照【用途】分，
          每一塊底下寫一句「進去做什麼」。
          頂部列只留真正隨時會按的：重新整理、登出。 -->
+    <a class="iconbtn" href="https://jerecyu.github.io/Fusion_Force_Fitness/"
+       target="_blank" rel="noopener">官網</a>
     <button type="button" class="iconbtn" id="reload"><span class="nv-long">重新整理</span><span class="nv-short">重整</span></button>
     <!-- ☢️ 只在瀏覽器裡出現。在 LINE App 裡按了會自動登入回來，等於沒作用。 -->
     <button type="button" class="iconbtn" id="logout" hidden>登出</button>
@@ -827,6 +829,7 @@
         分組的依據是【誰、多久用一次】，不是功能相似度：
           日常 —— 教練每天都會進去（點名核銷、服務登記）
           帳務 —— 只有負責人和財務，一週到一個月一次
+        ☢️ 官網不在磚裡，它在頂部列 —— 那是「離開後台」，不是後台的一個功能。
         ☢️ 帳務那一組【不是把鍵藏起來就算了】——
            真正的牆在資料庫的 is_finance()，這裡只是不要讓人白按。 */
   function navBlock() {
@@ -847,10 +850,8 @@
           '<i>教練這個月的業績、抽成與加給</i></a>' +
         '</div>';
     }
-    h += '<div class="sec">其他</div><div class="navg">' +
-      '<a class="tile wide" href="https://jerecyu.github.io/Fusion_Force_Fitness/" ' +
-        'target="_blank" rel="noopener"><b>官網<span class="ar"></span></b>' +
-        '<i>客人看到的對外頁面（另開分頁）</i></a></div>';
+    // ☢️ 官網不放在這裡 —— 它是「另開分頁離開後台」，跟其他磚的意思不一樣。
+    //    2026-08-22 Jerec 指定放回頂部列。
     return h;
   }
 
@@ -1123,9 +1124,8 @@
     // ① 購課 —— 櫃檯最常做的事，放最上面、框起來
     html +=
       '<div class="lead">' +
-        '<h2>幫學員購課</h2>' +
-        '<div class="lh">打<b>姓名</b>，或<b>手機後三碼</b>　→　按右邊的<b>購課</b>' +
-        '<br>也看得到他剩幾堂、綁定了沒。</div>' +
+        '<h2>幫學員購課兼查詢</h2>' +
+        '<div class="lh">打<b>姓名</b>，或<b>手機後三碼</b>　→　按右邊的<b>購課</b></div>' +
         '<input id="q" type="search" placeholder="例：王小明　或　040" autocomplete="off">' +
         '<div id="hits" style="margin-top:10px"></div>' +
       '</div>';
