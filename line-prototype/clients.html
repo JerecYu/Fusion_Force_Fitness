@@ -92,6 +92,20 @@
     color:var(--faint);letter-spacing:.02em}
   .seg button.on i{color:var(--blue)}
 
+  /* ── 每位教練幾位學員 ──────────────────────────────────────────
+     ☢️ 用【換行】不用橫向捲。第一版寫 overflow-x:auto，390pt 的手機
+        只排得下四顆 —— Peter 和 VC 在畫面外，而手機上【沒有捲軸】，
+        看起來就是「只有三位教練」。這一列存在的理由就是要看到全部的人，
+        看不到全部就等於沒做。五位教練換行也只佔兩列。 */
+  .cf{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+  .cf button{flex:0 0 auto;background:var(--surface);border:1px solid var(--line);
+    border-radius:999px;padding:6px 12px;font-family:inherit;font-size:12.5px;
+    font-weight:800;color:var(--dim);cursor:pointer;line-height:1.5;white-space:nowrap}
+  .cf button b{font-weight:800;margin-left:6px;color:var(--faint);
+    font-variant-numeric:tabular-nums}
+  .cf button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .cf button.on b{color:var(--teal)}
+
   .find{margin-top:9px;position:relative}
   .find input{width:100%;background:var(--surface);border:1px solid var(--line);
     border-radius:11px;padding:11px 34px 11px 12px;font-family:inherit;font-size:14px;
@@ -185,6 +199,7 @@
   var DB = null, ME = null;
   var ROWS = [], COACHES = [];
   var VIEW = 'mine';       // mine ｜ all ｜ none
+  var COACH = null;        // 在「全部」底下只看某一位教練的學員
   var Q = '';              // 搜尋字串
   var EDIT = null;         // 正在改的那位客人 id
   var PICK = [];           // 改完之後【應該有哪幾位】教練的 id
@@ -263,6 +278,8 @@
       if (r.is_active === false && !q) return false;
       if (VIEW === 'mine' && !isMine(r)) return false;
       if (VIEW === 'none' && r.n_coaches > 0) return false;
+      // 「全部」底下再挑一位教練看。其他兩個檢視本身就已經是篩選過的。
+      if (VIEW === 'all' && COACH && (r.coach_ids || []).indexOf(COACH) < 0) return false;
       if (!q) return true;
       return [r.customer_name, r.nickname, r.client_code, r.phone_tail]
         .join(' ').toLowerCase().indexOf(q) >= 0;
@@ -280,6 +297,28 @@
     }
     return '<div class="seg">' + b('mine', '我的學員', mine) +
            b('all', '全部', all) + b('none', '沒有歸屬', none) + '</div>';
+  }
+
+  // ══ 每位教練幾位學員 ═══════════════════════════════════════════
+  // ☢️ 2026-08-22 Jerec 實測回報：「我應該要能夠看到其他教練的客人和數量，
+  //    但頁面上似乎沒顯示」。原本只有三個分頁 —— 「全部 223」看得到所有人，
+  //    卻【看不出這 223 位是怎麼分的】。要知道 VC 帶幾位，只能自己一列一列數。
+  // ☢️ 數字直接寫在鍵上，不用點進去才知道 ——
+  //    「誰帶得多、誰帶得少」是一眼就要看到的事，那正是這一列存在的理由。
+  function coachRow() {
+    if (VIEW !== 'all') return '';
+    var h = COACHES.map(function (c) {
+      var n = ROWS.filter(function (r) {
+        return r.is_active !== false && (r.coach_ids || []).indexOf(c.id) >= 0;
+      }).length;
+      return '<button type="button" data-coach="' + esc(c.id) + '"' +
+        (COACH === c.id ? ' class="on"' : '') + '>' +
+        esc(c.display_name) + '<b>' + n + '</b></button>';
+    }).join('');
+    // ☢️ 「不分教練」也要是一顆鍵，不能只靠「再按一次取消」——
+    //    再按一次是隱藏規則，看不到的規則等於不存在。
+    return '<div class="cf"><button type="button" data-coach=""' +
+      (COACH ? '' : ' class="on"') + '>不分教練</button>' + h + '</div>';
   }
 
   function findBlock() {
@@ -350,16 +389,19 @@
 
   function render() {
     var list = visible();
-    var h = segBlock() + findBlock();
+    var h = segBlock() + coachRow() + findBlock();
+    var pick = COACH ? findCoach(COACH) : null;
     h += '<div class="cnt">' + list.length + ' 位' +
          (VIEW === 'mine' ? '　·　歸屬在你名下的客人' :
-          VIEW === 'none' ? '　·　還沒指定教練的客人' : '　·　全部客人') +
+          VIEW === 'none' ? '　·　還沒指定教練的客人' :
+          pick ? '　·　' + esc(pick.display_name) + ' 的學員' : '　·　全部客人') +
          '　·　照最近上課排序</div>';
     h += '<div style="height:11px"></div>';
     h += list.length ? list.map(rowCard).join('')
        : '<div class="card"><div class="empty">' +
          (Q ? '找不到「' + esc(Q) + '」' :
-          VIEW === 'mine' ? '你名下還沒有學員' : '沒有資料') + '</div></div>';
+          VIEW === 'mine' ? '你名下還沒有學員' :
+          pick ? esc(pick.display_name) + ' 名下還沒有學員' : '沒有資料') + '</div></div>';
     if (ME && ME.can_finance && VIEW === 'none') {
       h += '<div class="hint">☢️ 這裡多半是<b>只上團體課</b>的散客，本來就沒有負責教練 —— ' +
            '不用急著全部指定。真正要處理的是「有在上私人課、卻沒有歸屬」的那幾位。</div>';
@@ -376,7 +418,14 @@
   function wire() {
     Array.prototype.forEach.call(elMain.querySelectorAll('[data-view]'), function (b) {
       b.onclick = function () {
-        VIEW = b.getAttribute('data-view'); EDIT = null; MSG = null; render();
+        // ☢️ 換分頁要把教練篩選一起清掉 —— 不清的話從「全部＋只看 VC」切到
+        //    「我的學員」再切回來，會看到一份被偷偷篩過的「全部」。
+        VIEW = b.getAttribute('data-view'); COACH = null; EDIT = null; MSG = null; render();
+      };
+    });
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-coach]'), function (b) {
+      b.onclick = function () {
+        COACH = b.getAttribute('data-coach') || null; EDIT = null; MSG = null; render();
       };
     });
     var q = document.getElementById('q');
