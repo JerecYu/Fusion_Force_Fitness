@@ -73,6 +73,11 @@
   .f input:focus,.f select:focus,.f textarea:focus{outline:0;border-color:var(--blue);background:#fff}
   .f textarea{min-height:60px;resize:vertical}
   .f .hint{font-size:11px;color:var(--faint);margin-top:3px;line-height:1.5}
+  /* ☢️ 「這位客人沒有卡」不是提示，是一句要看得到的話 ——
+        它代表這一筆【不會扣到任何堂數】。用一般的淡灰色說出來等於沒說。 */
+  .f .hint.warn{background:var(--warn-bg);border:1px solid var(--warn-line);
+    color:#7C420E;border-radius:9px;padding:8px 10px;font-size:11.5px;margin-top:6px}
+  .f .hint.warn b{font-weight:800}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
   .pills{display:flex;gap:6px;flex-wrap:wrap}
   .pill{background:var(--surface2);border:1px solid var(--line);color:var(--ink2);
@@ -226,8 +231,19 @@
     charge: 'single', attended: '', hours: '', area: '', area_kind: '', corpHead: '',
     company: '', tax_id: '', booked_hours: '', approved_headcount: '',
     scope: '', transport: '', approver_id: '', approved_on: '',
-    amount: '', note: '', coaches: []
+    amount: '', note: '', coaches: [],
+    // 第 93 步：扣預收要指定【從哪一張卡扣】
+    plan_id: ''
   };
+
+  /* ══ 這位客人有哪幾張卡 ═══════════════════════════════════════
+     ☢️ CARDS 是【非同步】拿回來的，而 render() 是同步的 ——
+        所以畫面要能處理「還在讀」這個狀態，不能假設拿到了。
+        沒處理的話，選完客人的那一瞬間卡片區是空的，看起來像「沒有卡」，
+        而「沒有卡」在這一頁是一個【有意義的結論】（可以直接登記）。
+     ☢️ CARDS_KEY 記的是「這份卡片是誰的、哪個產品別的」。
+        沒有它的話，換客人之後舊客人的卡還會留在畫面上 —— 而且可以按。 */
+  var CARDS = [], CARDS_KEY = '', CARDS_BUSY = false;
 
   var TYPES = [
     { k:'PT',      t:'私人教練課',   d:'PT · 1~2 人' },
@@ -341,6 +357,68 @@
     return '<div class="f"><label>購買商品人數規格</label><div class="pills">' + out + '</div>' +
       '<div class="hint">人數只算學員，不含教練。' +
       (isPT(F.type) ? 'PT 只有 1 人或 2 人。' : 'PGT 只有 3 到 6 人。') + '</div></div>';
+  }
+
+  /* ══ 扣預收：從哪一張卡扣 ═════════════════════════════════════
+     ☢️ 這一塊是第 93 步的核心。以前選「扣預收」只是把四個字記下來，
+        客人的卡【一堂都沒有少】—— 買十堂、上十堂、系統還是說有十堂。
+     ☢️ 為什麼要人選，不讓系統挑：一個人可能同時有一對一和一對二兩張卡，
+        而兩張的每堂價值不一樣（15,000÷10 vs 20,000÷10）。
+        挑錯 → 業績錯 → 抽成錯 → 薪水錯，而且畫面上完全正常。 */
+  function cardKey() {
+    return (F.customer ? F.customer.id : '') + '/' + (isPT(F.type) ? 'PT' : 'PGT');
+  }
+
+  function loadCards() {
+    var key = cardKey();
+    if (!F.customer || !isCourse(F.type)) { CARDS = []; CARDS_KEY = key; return; }
+    if (CARDS_KEY === key) return;              // 已經是這個人的了，不用再查
+    CARDS_KEY = key; CARDS = []; CARDS_BUSY = true;
+    DB.from('staff_pickable_plans')
+      .select('plan_id,product,headcount,total_credits,remaining,per_credit,basis_status,label')
+      .eq('customer_id', F.customer.id)
+      .eq('product', isPT(F.type) ? 'PT' : 'PGT')
+      .order('opened_at')
+      .then(function (r) {
+        CARDS_BUSY = false;
+        // ☢️ 回來的時候人可能已經換掉了。不比對 key 就會把別人的卡畫上去。
+        if (CARDS_KEY !== key) return;
+        CARDS = (r.error ? [] : (r.data || []));
+        // 剛好一張就先幫他選起來 —— 資料庫仍然要求明確指定，
+        // 這裡只是省掉一次沒有資訊量的點擊。
+        if (CARDS.length === 1) F.plan_id = CARDS[0].plan_id;
+        render();
+      }, function () { CARDS_BUSY = false; });
+  }
+
+  function cardBlock() {
+    if (!isCourse(F.type) || F.charge !== 'plan') return '';
+    if (!F.customer) {
+      return '<div class="f"><label>從哪一張卡扣</label>' +
+        '<div class="hint">先選客人，才知道他有哪幾張卡。</div></div>';
+    }
+    if (CARDS_BUSY) {
+      return '<div class="f"><label>從哪一張卡扣</label>' +
+        '<div class="hint">正在查他的卡…</div></div>';
+    }
+    if (!CARDS.length) {
+      // ☢️ 這是【現況】不是錯誤：私人課的期初餘額還沒匯進來，全店 0 張卡。
+      //    這時候擋下來等於今天就把服務登記整個弄壞。
+      return '<div class="f"><label>從哪一張卡扣</label>' +
+        '<div class="hint warn">☢️ 這位客人在系統裡<b>一張卡都沒有</b>，' +
+        '所以這一筆<b>不會扣到任何堂數</b>。<br>' +
+        '照樣登記得起來（業績、抽成都算），它會進「待補扣」清單，' +
+        '等私人課的期初餘額匯進來之後再回頭補。</div></div>';
+    }
+    var pills = CARDS.map(function (c) {
+      var bad = (c.headcount != null && F.headcount != null && c.headcount !== F.headcount);
+      return '<button type="button" class="pill' + (F.plan_id === c.plan_id ? ' on' : '') +
+        '" data-card="' + esc(c.plan_id) + '"' + (bad ? ' disabled' : '') + '>' +
+        esc(c.label) + (bad ? '（人數不符）' : '') + '</button>';
+    }).join('');
+    return '<div class="f"><label>從哪一張卡扣</label><div class="pills">' + pills + '</div>' +
+      '<div class="hint">☢️ 一張卡扣<b>一堂</b>。' +
+      '人數不符的卡按不下去 —— 一對一和一對二每堂價值不一樣，不能互扣。</div></div>';
   }
 
   function planBlock() {
@@ -494,6 +572,9 @@
       if (!F.customer) return '要選客人';
       if (!F.product_code && F.charge !== 'free' && !Number(F.amount || 0))
         return '要選檯面方案，或自己填業績金額';
+      // ☢️ 有卡卻不選是最危險的一種：登記得起來，但客人的堂數永遠不會減。
+      //    資料庫也會擋（why=pick_plan），這裡只是不要讓人白按一次。
+      if (F.charge === 'plan' && CARDS.length && !F.plan_id) return '要選從哪一張卡扣';
     }
     if (F.type === 'EVENT' && !(Number(F.hours || 0) > 0)) return '要填活動時數';
     if (F.type === 'CORP') {
@@ -509,7 +590,8 @@
       '<div class="f"><label>完成日期與時間</label>' +
       '<input id="fDone" type="datetime-local" value="' + esc(F.done || nowLocal()) + '">' +
       '<div class="hint">☢️ 這一欄決定薪資算在哪個月，不看收款日。填「已經上完」的時間。</div></div>' +
-      customerBlock() + headBlock() + planBlock() + eventBlock() + corpBlock() + coachBlock() +
+      customerBlock() + headBlock() + planBlock() + cardBlock() +
+      eventBlock() + corpBlock() + coachBlock() +
       (isCourse(F.type)
         ? '<div class="f"><label>當日實際出席人數</label>' +
           '<input id="fAtt" type="number" min="0" step="1" value="' + esc(F.attended) + '" ' +
@@ -697,6 +779,10 @@
     elGate.hidden = true; elMain.hidden = false;
     elMain.innerHTML = typeBlock() + formBlock() + unpaidBlock() + pendBlock() + listBlock();
     wire();
+    // ☢️ 放在 render 之後：查卡片是非同步的，查回來會再 render() 一次。
+    //    放在前面的話那一次 render 會被這一次蓋掉。
+    //    loadCards() 自己會擋掉重複查詢（比對 CARDS_KEY），不會迴圈。
+    loadCards();
   }
 
   /* ══ 綁事件 ══════════════════════════════════════════════════ */
@@ -727,6 +813,7 @@
         F.type = k;
         F.headcount = isPT(k) ? 1 : isPGT(k) ? 3 : F.headcount;
         F.product_code = '';
+        F.plan_id = '';            // PT 的卡不能拿去扣 PGT 的課
         F.coaches = F.coaches.slice(0, k === 'EVENT' ? 2 : 1);
         render();
       };
@@ -735,11 +822,25 @@
       b.onclick = function () {
         F.headcount = Number(b.getAttribute('data-head'));
         F.product_code = '';       // 換人數就換方案，舊的代號不再適用
+        // ☢️ 也要把卡清掉。一對一改成一對二之後，原本選的那張卡人數就不符了，
+        //    留著的話會送出一個資料庫一定會擋的組合。
+        F.plan_id = '';
         render();
       };
     });
     each('[data-charge]', function (b) {
-      b.onclick = function () { F.charge = b.getAttribute('data-charge'); render(); };
+      b.onclick = function () {
+        F.charge = b.getAttribute('data-charge');
+        if (F.charge !== 'plan') F.plan_id = '';
+        render();
+      };
+    });
+    each('[data-card]', function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-card');
+        F.plan_id = (F.plan_id === id) ? '' : id;   // 再按一次取消
+        render();
+      };
     });
     each('[data-coach]', function (b) {
       b.onclick = function () {
@@ -772,7 +873,7 @@
       b.onclick = function () { F.area_kind = b.getAttribute('data-akind'); render(); };
     });
 
-    on('unpick', 'onclick', function () { F.customer = null; render(); });
+    on('unpick', 'onclick', function () { F.customer = null; F.plan_id = ''; render(); });
     var q = document.getElementById('q');
     if (q) {
       var timer;
@@ -853,6 +954,7 @@
           F.customer = { id: el.getAttribute('data-pick'),
                          name: el.getAttribute('data-name'),
                          phone_tail: el.getAttribute('data-tail') };
+          F.plan_id = '';          // 換人就換卡
           render();
         };
       });
@@ -881,6 +983,7 @@
       payload.attended_count = F.attended;
       payload.product_code   = F.product_code;
       payload.revenue_amount = F.amount;
+      payload.plan_id        = (F.charge === 'plan') ? F.plan_id : '';
     } else if (F.type === 'EVENT') {
       payload.hours = F.hours;
       payload.area  = F.area;
@@ -907,10 +1010,19 @@
         if (!r.data || r.data.ok === false) {
           throw new Error((r.data && r.data.msg) || '登記不成功');
         }
-        toast('登記好了：客人付 ' + money(r.data.total) + '　業績 ' + money(r.data.perf));
+        // ☢️ 扣了幾堂、還剩幾堂要講出來。這是這一頁唯一會【改變客人餘額】
+        //    的動作，不講的話沒有人知道它到底扣了沒 ——
+        //    而「以為扣了其實沒扣」正是這一步要修的那個洞。
+        var extra = r.data.drew
+          ? '　·　已扣 1 堂，卡剩 ' + r.data.plan_left + ' 堂'
+          : (r.data.no_card ? '　·　☢️ 沒有卡可扣，已列入待補扣' : '');
+        toast('登記好了：客人付 ' + money(r.data.total) + '　業績 ' + money(r.data.perf) + extra);
         // 清掉這一筆的內容，類型和教練留著（通常會連續登記同一種）
         F.customer = null; F.attended = ''; F.note = '';
         F.hours = ''; F.amount = ''; F.scope = ''; F.corpHead = ''; F.done = nowLocal();
+        // ☢️ 卡片快取一定要清。剛剛扣掉一堂，畫面上的「剩 N 堂」已經過期了；
+        //    不清的話下一筆會看到舊數字，而那個數字看起來完全正常。
+        F.plan_id = ''; CARDS = []; CARDS_KEY = '';
         return load();
       })
       .catch(function (e) {

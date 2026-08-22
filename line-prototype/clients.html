@@ -251,7 +251,7 @@
     return Promise.all([
       DB.from('staff_clients_coach')
         .select('customer_id,customer_name,nickname,phone_tail,client_code,is_active,' +
-                'coach_ids,coach_names,n_coaches,balance,last_class_at'),
+                'coach_ids,coach_names,n_coaches,balance,balance_pt,last_class_at'),
       DB.from('employees').select('id,display_name')
         .eq('is_active', true).eq('can_teach', true).order('display_name')
     ]).then(function (rs) {
@@ -355,7 +355,11 @@
         '<span class="cl-c">' + esc(r.client_code || '—') + '</span>' +
       '</div>' +
       '<div class="cl-b">' + coachChips(r) +
-        '<span class="cl-m">' + (r.balance ? '<b>' + r.balance + ' 堂</b>　' : '') +
+        // ☢️ 團課和私人課的堂數【分開寫】，不要加起來。
+        //    兩張卡的每堂價值完全不同，加總出來的「13 堂」不代表任何東西。
+        '<span class="cl-m">' +
+        (r.balance ? '<b>團 ' + r.balance + '</b>　' : '') +
+        (r.balance_pt ? '<b>私 ' + r.balance_pt + '</b>　' : '') +
         '<span' + (a.cold ? ' class="cold"' : '') + '>' + esc(a.txt) + '</span></span>' +
         (ME && ME.can_finance && EDIT !== r.customer_id
           ? '<button type="button" class="edit" data-edit="' + esc(r.customer_id) + '">改</button>' : '') +
