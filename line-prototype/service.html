@@ -134,12 +134,34 @@
   .tag.fin{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok)}
   .tag.pen{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
 
+  /* 第 94 步：整月認列。☢️ 類別名一律 fm- 開頭 —— 動手前搜過整份檔案確定沒撞名。 */
+  .fm-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+    padding:9px 10px;margin-bottom:9px;border-radius:10px;
+    background:var(--surface2);border:1px solid var(--line)}
+  .fm-bar>span{font-size:12.5px;font-weight:700;color:var(--dim)}
+  .fm-bar input{font-family:inherit;font-size:14px;color:var(--ink);background:#fff;
+    border:1px solid var(--line);border-radius:8px;padding:7px 9px;flex:1;min-width:120px}
+  .fm-see{background:var(--ink);color:#fff;border:0;border-radius:8px;padding:9px 13px;
+    font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap}
+  .fm-see:disabled{opacity:.5}
+  .fm-r{width:100%;font-size:13px;color:var(--ink2)}
+  .fm-r b{font-size:14px}
+  /* ☢️ 用 #8F5017 不是 var(--warn) —— 後者壓在 --warn-bg 上量出來只有 3.82:1。 */
+  .fm-left{width:100%;padding:8px 10px;border-radius:9px;font-size:12.5px;
+    background:var(--warn-bg);border:1px solid var(--warn-line);color:#8F5017}
+  .fm-left b{display:block;font-size:13px}
+  .fm-go{width:100%;background:var(--ok);color:#fff;border:0;border-radius:9px;
+    padding:11px;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer}
+  .fm-go:disabled{opacity:.5}
+
   .note{font-size:11.5px;color:var(--dim);margin-top:8px}
   /* 待確認專區。☢️ 這一區【不受 20 筆上限影響】—— 沒認列的紀錄不會進薪資，
      被清單長度藏起來的話，那筆錢就永遠沒有人去處理。 */
   .h.pend{color:var(--warn)}
   .card.pend{border-color:var(--warn-line);border-left:4px solid var(--warn)}
-  .card.pend .note{color:var(--warn)}
+  /* ☢️ var(--warn) 壓在白底上量出來只有 4.32:1，這裡是 11.5px 的一般字（要 4.5:1）。
+     壓深到 #8F5017（6.31:1）。原本就偏淡，順手一起修。 */
+  .card.pend .note{color:#8F5017}
   .loaderr{background:var(--err-bg);border:1px solid var(--err-line);color:var(--err);
     border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.6;margin-top:8px}
 
@@ -212,6 +234,8 @@
   var DB = null, ME = null, BUSY = false;
   var PRICES = { PT: [], PGT: [], CORP: [] };
   var COACHES = [], LIST = [], STAFF = [], PEND = [], LOAD_ERR = '';
+  // 第 94 步：整月認列。FMM＝要處理的月份、FMR＝「先看看」的結果。
+  var FMM = '', FMR = null, FMBUSY = false;
   // 第 90 步：收款。PAYS 是 service_id → 收款彙總；UNPAID 是「還沒收齊」那一區。
   var PAYS = {}, UNPAID = [];
   var PAYOPEN = null, PAYBUSY = false;
@@ -289,6 +313,13 @@
     var s = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Taipei' });
     return s.slice(0, 16).replace(' ', 'T');
   }
+  /* ☢️ 月份一律用【台北時間的今天】算，不是 toISOString()。
+        toISOString() 給的是 UTC —— 每個月 1 號的凌晨 0 點到 8 點之間，
+        它會回上個月，而那正好是「月初來結上個月」最可能發生的時段。 */
+  function twMonth() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' }).slice(0, 7);
+  }
+
 
   /* ══ 試算 ══════════════════════════════════════════════════════
      ☢️ 這裡算的數字【只是給人看的】，送出後以資料庫回傳為準。
@@ -758,8 +789,77 @@
   function pendBlock() {
     if (!PEND.length) return '';
     return '<div class="h pend">待確認（' + PEND.length + '）· 還沒進薪資</div>' +
-      '<div class="card pend">' + PEND.map(rowHtml).join('') +
+      '<div class="card pend">' + finMonthBar() + PEND.map(rowHtml).join('') +
       '<div class="note">☢️ 這些<b>沒有</b>算進任何人的薪資。按「最終認列」才會進去。</div></div>';
+  }
+
+  /* ══ 整月認列（第 94 步）══════════════════════════════════════════
+     ☢️ 這不是「全部照准」。業績金額是 0 的那幾筆會【留下來不動】，
+        而且列出來 —— 那幾筆要一筆一筆看，那才是財務該花時間的地方。
+        做成一顆「全部認列」的鍵，最終認列就變成蓋章，而月結整套機制
+        正好是靠那個檢查才有意義的。
+     ☢️ 一定要先「看看會做什麼」再做。認列之後薪資就跟著變，沒有一鍵還原。
+     ☢️ 這一支是【按月】的，上面那張待確認清單是【全部】的。
+        不是同一個範圍 —— 所以要把「有幾筆不在這個月」寫出來，
+        否則看起來像「按下去就全部清空」。 */
+  function finMonthBar() {
+    if (!(ME && ME.can_finance)) return '';
+    var m = FMM || twMonth();
+    var out = PEND.filter(function (x) {
+      return String(x.done_date || '').slice(0, 7) !== m;
+    }).length;
+    var r = FMR;
+    return '<div class="fm-bar">' +
+      '<span>整月一次認列</span>' +
+      '<input type="month" id="fmM" value="' + esc(m) + '" max="' + esc(twMonth()) + '">' +
+      '<button type="button" class="fm-see" id="fmSee"' + (FMBUSY ? ' disabled' : '') + '>' +
+        (FMBUSY ? '處理中…' : '先看看') + '</button>' +
+      (out ? '<div class="fm-r">☢️ 上面 ' + PEND.length + ' 筆裡有 <b>' + out +
+             '</b> 筆不在 ' + esc(m) + ' —— <b>這個動作不會碰到它們</b>。</div>' : '') +
+      (r ? '<div class="fm-r">' + esc(r.ym) + '：<b>' + esc(r.msg) + '</b>' +
+           (r.n_no_draw ? '　（其中 ' + r.n_no_draw + ' 筆是「扣預收但還沒扣到卡」——' +
+             '那是堂數的問題不是錢的問題，會一起認列）' : '') + '</div>' +
+           (r.skipped || []).map(function (x) {
+             return '<div class="fm-left"><b>留下不動：' + esc(x.when) + '　' +
+               esc(x.coach) + '　' + esc(x.what) + '</b>' + esc(x.why) + '</div>';
+           }).join('') +
+           // ☢️ 只有「先看看」的結果才長出這顆鍵。做完之後那份結果的 n_done
+           //    還是 24，不擋的話畫面會再邀你按一次同一顆鍵。
+           (r.dry_run && r.n_done > 0
+             ? '<button type="button" class="fm-go" id="fmGo"' + (FMBUSY ? ' disabled' : '') +
+               '>確定認列這 ' + r.n_done + ' 筆</button>'
+             : '')
+         : '') +
+      '<div class="note" style="margin-top:0">「先看看」<b>不會動到任何資料</b>。' +
+      '☢️ 認列之後薪資就跟著變，<b>沒有一鍵還原</b>（要一筆一筆作廢重登）。</div>' +
+    '</div>';
+  }
+
+  /* ☢️ 兩趟都叫同一支函式，差別只在 dry_run。分成兩支的話
+        「先看看說 24 筆、真的做卻做了 25 筆」這種事查不出來。 */
+  function finMonth(dry) {
+    if (FMBUSY) return;
+    var m = (document.getElementById('fmM') || {}).value || FMM || twMonth();
+    FMM = m;
+    if (!dry) {
+      if (!FMR || !FMR.n_done) { toast('先按「先看看」', true); return; }
+      if (!window.confirm(m + ' 要認列 ' + FMR.n_done + ' 筆。\n' +
+            '認列之後薪資會跟著變，而且沒有一鍵還原。確定嗎？')) return;
+    }
+    FMBUSY = true; render();
+    DB.rpc('finalize_month', { p_ym: m + '-01', p_dry_run: dry })
+      .then(function (res) {
+        FMBUSY = false;
+        if (res.error) throw new Error(res.error.message);
+        if (!res.data) throw new Error('回來的是空的');
+        FMR = res.data;
+        if (!dry) { toast(FMR.msg); return load(); }
+        render();
+      })
+      .catch(function (e) {
+        FMBUSY = false; FMR = null; render();
+        toast(String(e && e.message || e), true);
+      });
   }
 
   function listBlock() {
@@ -893,6 +993,16 @@
     each('[data-void]', function (b) {
       b.onclick = function () { voidOne(b.getAttribute('data-void')); };
     });
+
+    // ── 整月認列（第 94 步）──────────────────────────────
+    var fmM = document.getElementById('fmM');
+    if (fmM) fmM.onchange = function () {
+      FMM = fmM.value;
+      FMR = null;      // ☢️ 換月份一定要清掉舊結果 —— 不清的話畫面會拿
+      render();        //    八月的「確定認列 24 筆」去做九月。
+    };
+    on('fmSee', 'onclick', function () { finMonth(true); });
+    on('fmGo',  'onclick', function () { finMonth(false); });
     each('[data-undo]', function (b) {
       b.onclick = function () { restoreOne(b.getAttribute('data-undo')); };
     });
