@@ -10,10 +10,16 @@
 
   網址：https://liff.line.me/2011063116-QOxXN30h/payroll.html
 
-  ☢️ 這一頁【不寫任何資料】。只讀 payroll_month(月份) 一支函式。
+  ☢️ 這一頁【改不動任何一塊錢的薪水】。它會寫三種東西 ——
+     結算、重開、記薪水發了沒 —— 但那三件事都不會改變「該發多少」。
      算薪水的工具改得動薪水，就沒有意義了。
 
-  ☢️ 權限的牆在【資料庫】。payroll_month() 第一件事就是 is_finance()，
+  ☢️ 第 94 步起，數字來自 month_report(月份)，不是 payroll_month()。
+     結過的月份它回【結算當下封存的那一份】，沒結過才即時算。
+     這是整個月結的重點：發給教練的那張紙，跟三個月後打開這一頁看到的，
+     必須是同一組數字。
+
+  ☢️ 權限的牆在【資料庫】。month_report() 第一件事就是 is_finance()，
      不是財務的人就算自己打這個網址進來，也是一筆都拿不到。
      前端擋一次只是為了給看得懂的訊息。
 
@@ -147,6 +153,46 @@
     border:1px solid var(--line);background:var(--surface2);color:var(--ink2)}
   .cfg-tag.sup{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn)}
 
+  /* 第 94 步：月結。☢️ 類別名一律 mc- 開頭 —— 動手前搜過整份檔案確定沒撞名。 */
+  .mc-box{border-radius:14px;padding:13px;margin-bottom:12px;border:1px solid var(--line);
+    background:var(--surface)}
+  .mc-box.done{background:var(--ok-bg);border-color:var(--ok-line)}
+  .mc-box.live{background:var(--warn-bg);border-color:var(--warn-line)}
+  .mc-t{font-size:15px;font-weight:800;display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+  .mc-box.done .mc-t{color:var(--ok)}
+  /* ☢️ 同上：var(--warn) 壓在 --warn-bg 上量出來只有 3.82:1。
+     這一行是整塊裡最重要的字，壓深到 #8F5017（5.58:1）。 */
+  .mc-box.live .mc-t{color:#8F5017}
+  .mc-t small{font-weight:600;font-size:11.5px;color:var(--dim)}
+  .mc-w{font-size:12.5px;margin-top:7px;padding:7px 9px;border-radius:9px;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink2)}
+  .mc-w.stop{background:var(--err-bg);border-color:var(--err-line);color:var(--err);font-weight:700}
+  .mc-w+.mc-w{margin-top:5px}
+  .mc-go{width:100%;margin-top:10px;background:var(--ink);color:#fff;border:0;border-radius:11px;
+    padding:13px;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer}
+  .mc-go:disabled{opacity:.45}
+  /* ☢️ 不能直接用 var(--warn) #B4661F —— 白字壓上去只有 4.34:1，
+     而這顆鍵的字是 14.5px 粗體（還構不上「大字」的門檻，要 4.5:1）。
+     壓深到 #8F5017 才夠。實際量的是【算圖後的像素】，不是宣告的色碼。 */
+  .mc-go.warnish{background:#8F5017}
+  .mc-un{background:none;border:1px solid var(--line);color:var(--dim);border-radius:9px;
+    font-family:inherit;font-size:12.5px;font-weight:700;padding:8px 12px;margin-top:9px;cursor:pointer}
+  .mc-f{width:100%;margin-top:9px;padding:10px;background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;display:grid;gap:7px}
+  .mc-f label{font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.06em}
+  .mc-f input,.mc-f select{width:100%;font-family:inherit;font-size:14px;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+  .mc-p{border-top:1px solid var(--line);padding:9px 2px;display:flex;align-items:baseline;
+    gap:7px;flex-wrap:wrap}
+  .mc-p:first-child{border-top:0}
+  .mc-nm{font-size:14px;font-weight:800}
+  .mc-amt{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+  .mc-tag{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:5px;
+    border:1px solid var(--warn-line);background:var(--warn-bg);color:var(--warn)}
+  .mc-tag.paid{border-color:var(--ok-line);background:var(--ok-bg);color:var(--ok)}
+  .mc-x{margin-left:auto;background:none;border:1px solid var(--line);border-radius:8px;
+    color:var(--ink2);font-family:inherit;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer}
+
   .note{font-size:11.5px;color:var(--dim);margin-top:8px}
   .empty{text-align:center;color:var(--faint);font-size:13px;padding:16px 4px}
   .gate{padding:56px 20px;text-align:center}
@@ -199,6 +245,8 @@
   //    設定是「偶爾才動」的東西，薪資是「每個月一定要看」的東西。
   var EMPS = [], GRADES = [], ALLOW = [], CFGFORM = null, CFGBUSY = false;
   var CFGOPEN = false;   // 摺疊區是不是展開的（render 之後要記得還原）
+  // 第 94 步：月結。REP 是 month_report 的整包回傳，DATA 只是它裡面的 payroll。
+  var REP = null, MCFORM = null, MCBUSY = false;
   var elGate = document.getElementById('gate');
   var elMain = document.getElementById('main');
   var elWho  = document.getElementById('who');
@@ -510,6 +558,134 @@
     '</div>';
   }
 
+  /* ══ 月結（第 94 步）══════════════════════════════════════════════
+     ☢️ 這一頁的數字現在是 month_report() 給的，不是 payroll_month()。
+        結過的月份它回【當時封存的那一份】，沒結過才即時算。
+        所以結完之後改設定、作廢紀錄，這一頁的上個月不會跟著變 ——
+        那正是月結存在的理由。 */
+
+  function closedBlock() {
+    var pays = REP.payouts || [];
+    var nPaid = pays.filter(function (p) { return p.paid_on; }).length;
+    return '<div class="mc-box done">' +
+      '<div class="mc-t">✓ ' + esc(REP.ym) + ' 已經結算' +
+        '<small>' + esc(REP.closed_at) + '　' + esc(REP.closed_by || '') +
+        (REP.reopens ? '　·　重開過 ' + REP.reopens + ' 次' : '') + '</small></div>' +
+      (REP.note ? '<div class="mc-w">' + esc(REP.note) + '</div>' : '') +
+      '<div class="mc-w">下面的數字是<b>結算當下封存的</b>。之後不管誰改了什麼，' +
+        '它都不會再變 —— 發給教練的那張紙跟這裡永遠對得起來。' +
+        (pays.length ? '　薪水已發 ' + nPaid + '/' + pays.length + ' 位。' : '') + '</div>' +
+      (MCFORM === 'reopen' ? reopenForm()
+        : '<button type="button" class="mc-un" data-mcreopen="1">重開這個月</button>') +
+    '</div>';
+  }
+
+  function reopenForm() {
+    return '<div class="mc-f">' +
+      '<div><label>為什麼要重開</label>' +
+        '<input type="text" id="mcWhy" placeholder="例：Peter 的鐘點費設定填錯，要重算"></div>' +
+      '<div class="note">☢️ 這是把<b>已經發出去的數字</b>改掉。舊的那一份會整包留在紀錄裡，' +
+        '三個月後查得出原本是多少 —— 但要寫得出為什麼。</div>' +
+      '<button type="button" class="cfg-go" data-mcreopengo="1">確定重開</button>' +
+      '<button type="button" class="cfg-no" data-mccancel="1">取消</button>' +
+    '</div>';
+  }
+
+  function openBlock() {
+    var c = REP.check || {};
+    var blocks = c.blocks || [], warns = c.warns || [];
+    var can = !!c.ok;
+    return '<div class="mc-box live">' +
+      '<div class="mc-t">' + esc(REP.ym) + ' 還沒結算' +
+        '<small>下面的數字是現在重算的，一改設定就會跟著變</small></div>' +
+      blocks.map(function (b) {
+        return '<div class="mc-w stop">☢️ ' + esc(b) + '</div>';
+      }).join('') +
+      warns.map(function (w) {
+        return '<div class="mc-w">' + esc(w) + '</div>';
+      }).join('') +
+      (MCFORM === 'close' ? closeForm()
+        : '<button type="button" class="mc-go' + (warns.length && can ? ' warnish' : '') + '"' +
+          (can ? '' : ' disabled') + ' data-mcclose="1">' +
+          (can ? '結算 ' + esc(REP.ym) + '，把數字鎖起來' : '還不能結算') + '</button>') +
+      (can ? '' : '<div class="note">上面紅色的處理完，這顆鍵就會亮起來。</div>') +
+    '</div>';
+  }
+
+  function closeForm() {
+    return '<div class="mc-f">' +
+      '<div><label>備註（可以留白）</label>' +
+        '<input type="text" id="mcNote" placeholder="例：八月薪資結算"></div>' +
+      '<div class="note">☢️ 結算之後這個月的數字就<b>固定</b>了。要改的話得先「重開這個月」，' +
+        '而且重開要寫原因。</div>' +
+      '<button type="button" class="cfg-go" data-mcclosego="1">確定結算</button>' +
+      '<button type="button" class="cfg-no" data-mccancel="1">取消</button>' +
+    '</div>';
+  }
+
+  function mcBlock() {
+    if (!REP) return '';
+    // ☢️ 系統起點之前的月份不給結。那些數字本來就不完整（見上面的紅框），
+    //    結起來只是把一個錯的數字鎖成「官方版本」。
+    if (MONTH < SYSTEM_START) return '';
+    return REP.closed ? closedBlock() : openBlock();
+  }
+
+  /* ── 薪水發了沒 ────────────────────────────────────────────────
+     ☢️ 只有結算過的月份才出現。沒結算的話「應發多少」還會變，
+        這時候記「發了多少」等於記一個明天就不成立的數字。 */
+  function payoutBlock() {
+    if (!REP || !REP.closed) return '';
+    var rows = (DATA && DATA.rows) || [];
+    if (!rows.length) return '';
+    var byName = {};
+    (REP.payouts || []).forEach(function (p) { byName[p.coach] = p; });
+    var idByName = {};
+    EMPS.forEach(function (e) { idByName[e.display_name] = e.id; });
+
+    return '<div class="h">薪水發了沒</div><div class="card">' +
+      rows.map(function (x) {
+        var p = byName[x.coach_name];
+        var id = idByName[x.coach_name] || '';
+        var due = Math.round(x.total);
+        return '<div class="mc-p">' +
+          '<span class="mc-nm">' + esc(x.coach_name) + '</span>' +
+          '<span class="mc-amt">' + money(due) + '</span>' +
+          (p && p.paid_on
+            ? '<span class="mc-tag paid">' + esc(p.paid_on) + ' 已發 ' +
+              (p.method === 'cash' ? '現金' : '匯款') +
+              (p.amount !== due ? '　實發 ' + money(p.amount) : '') + '</span>'
+            : (p ? '<span class="mc-tag">登記了，還沒發</span>'
+                 : '<span class="mc-tag">還沒登記</span>')) +
+          (id ? '<button type="button" class="mc-x" data-mcpay="' + esc(id) + '">' +
+                (p ? '改' : '登記') + '</button>' : '') +
+          (MCFORM === 'p:' + id ? payForm(id, due, p) : '') +
+        '</div>';
+      }).join('') +
+      '<div class="note">☢️ 應發金額是<b>結算當下封存的</b>那一份。' +
+      '實發可以跟它不一樣（補款、扣款），系統只是<b>記下來</b>，不會回頭改薪資。</div></div>';
+  }
+
+  function payForm(id, due, p) {
+    return '<div class="mc-f">' +
+      '<div><label>實際發多少</label>' +
+        '<input type="number" id="mcAmt" inputmode="numeric" min="0" value="' +
+          esc(p ? p.amount : due) + '"></div>' +
+      '<div><label>發放日（還沒發就留白）</label>' +
+        '<input type="date" id="mcOn" max="' + esc(twToday()) + '" value="' +
+          esc((p && p.paid_on) || '') + '"></div>' +
+      '<div><label>怎麼發的</label><select id="mcHow">' +
+        '<option value="">還沒發</option>' +
+        '<option value="cash"' + (p && p.method === 'cash' ? ' selected' : '') + '>現金</option>' +
+        '<option value="transfer"' + (p && p.method === 'transfer' ? ' selected' : '') + '>匯款</option>' +
+      '</select></div>' +
+      '<div><label>備註（可以留白）</label>' +
+        '<input type="text" id="mcPn" value="' + esc((p && p.note) || '') + '"></div>' +
+      '<button type="button" class="cfg-go" data-mcpaygo="' + esc(id) + '">存起來</button>' +
+      '<button type="button" class="cfg-no" data-mccancel="1">取消</button>' +
+    '</div>';
+  }
+
   function settingsBlock() {
     return '<details class="cfg-box"' + (CFGOPEN ? ' open' : '') + ' id="cfgBox">' +
       '<summary>設定：職級與職務加給<span class="cfg-cap">偶爾才需要動</span>' +
@@ -529,8 +705,8 @@
     elGate.hidden = true; elMain.hidden = false;
     elMain.innerHTML =
       pickerBlock() +
-      (DATA ? (tooEarlyBlock() + sumsBlock() + '<div class="h">每位教練</div>' + coachBlock() +
-               holdBlock() + warnBlock() + settingsBlock() + downloadBlock())
+      (DATA ? (tooEarlyBlock() + mcBlock() + sumsBlock() + '<div class="h">每位教練</div>' + coachBlock() +
+               holdBlock() + warnBlock() + payoutBlock() + settingsBlock() + downloadBlock())
             : '<div class="card"><div class="empty">讀取中…</div></div>');
     wire();
   }
@@ -566,6 +742,18 @@
     on('gsave',  saveGrade);
     on('esave',  endAllow);
     on('asave',  addAllow);
+
+    // ── 月結（第 94 步）────────────────────────────────
+    on('mccancel',   function () { MCFORM = null; render(); });
+    on('mcclose',    function () { MCFORM = 'close';  render(); });
+    on('mcreopen',   function () { MCFORM = 'reopen'; render(); });
+    on('mcclosego',  doClose);
+    on('mcreopengo', doReopen);
+    on('mcpay',      function (id) {
+      MCFORM = (MCFORM === 'p:' + id) ? null : 'p:' + id;
+      render();
+    });
+    on('mcpaygo',    doPay);
 
     var dl = document.getElementById('dl');
     if (dl) dl.onclick = download;
@@ -636,6 +824,59 @@
       }, function (e) { cfgDone(e); });
   }
 
+  /* ══ 月結的三支寫入（第 94 步）══════════════════════════════════
+     ☢️ 全部走 RPC，不直接寫表 —— 這三件事有規則要檢查（能不能結、
+        重開要不要原因、發放日能不能是未來），規則放在資料庫才擋得住
+        任何一條進來的路。
+     ☢️ RPC 成功不等於做成功。這三支都會回 {ok:false, msg}，
+        那是【規則擋下來】，不是錯誤。分不清楚的話畫面會說「已結算」，
+        但資料庫其實什麼都沒做。 */
+
+  function mcDone(err, res, okMsg) {
+    MCBUSY = false;
+    if (err) { toast(String(err.message || err), true); render(); return; }
+    if (res && res.ok === false) { toast(res.msg || '做不了', true); render(); return; }
+    MCFORM = null;
+    toast(okMsg);
+    load();
+  }
+
+  function doClose() {
+    if (MCBUSY) return;
+    var note = ((document.getElementById('mcNote') || {}).value || '').trim();
+    MCBUSY = true;
+    DB.rpc('close_month', { p_ym: MONTH + '-01', p_note: note || null })
+      .then(function (r) { mcDone(r.error, r.data, MONTH + ' 結算完成，數字鎖起來了'); },
+            function (e) { mcDone(e); });
+  }
+
+  function doReopen() {
+    if (MCBUSY) return;
+    var why = ((document.getElementById('mcWhy') || {}).value || '').trim();
+    if (why.length < 4) { toast('重開要寫原因，至少四個字', true); return; }
+    MCBUSY = true;
+    DB.rpc('reopen_month', { p_ym: MONTH + '-01', p_why: why })
+      .then(function (r) { mcDone(r.error, r.data, '已經打開，舊的那份留在紀錄裡'); },
+            function (e) { mcDone(e); });
+  }
+
+  function doPay(coachId) {
+    if (MCBUSY) return;
+    var amt = parseInt((document.getElementById('mcAmt') || {}).value, 10);
+    var on  = (document.getElementById('mcOn')  || {}).value || null;
+    var how = (document.getElementById('mcHow') || {}).value || null;
+    var nt  = ((document.getElementById('mcPn') || {}).value || '').trim();
+    if (!(amt >= 0)) { toast('金額要填', true); return; }
+    // ☢️ 前端先擋一次只是為了少跑一趟。真正的規則在 record_payout 裡。
+    if (on && !how) { toast('已經發了就要選現金或匯款', true); return; }
+    if (!on && how) { toast('選了發放方式就要填發放日', true); return; }
+    MCBUSY = true;
+    DB.rpc('record_payout', { p_ym: MONTH + '-01', p_coach: coachId, p_amount: amt,
+                              p_paid_on: on, p_method: how, p_note: nt || null })
+      .then(function (r) { mcDone(r.error, r.data, on ? '已記下發放' : '已登記，還沒發'); },
+            function (e) { mcDone(e); });
+  }
+
   // 設定資料。☢️ 讀不到【不該擋住薪資報表】—— 那是兩件事。
   function loadConfig() {
     return Promise.all([
@@ -676,14 +917,19 @@
     //    ☢️ 但設定回來之後【一定要再畫一次】—— 只呼叫不重畫的話，
     //       設定區永遠是空的，而且不會有任何錯誤。（實測踩到）
     loadConfig().then(function () { if (DATA) render(); });
-    DB.rpc('payroll_month', { p_month: MONTH + '-01' })
+    /* ☢️ 第 94 步改讀 month_report()，不是 payroll_month()。
+          結過的月份它回【封存的那一份】，沒結過才即時算。
+          直接叫 payroll_month 的話，結完之後改個設定，
+          上個月的薪水就會偷偷跟著變 —— 而且沒有任何地方會說。 */
+    DB.rpc('month_report', { p_ym: MONTH + '-01' })
       .then(function (r) {
         BUSY = false;
         // ☢️ 錯誤和「沒有資料」在 supabase-js 裡都是空的，意思完全相反。（規則 14）
         if (r.error) { gate('err', '算不出薪資', r.error.message || ''); return; }
-        DATA = r.data || null;
+        REP  = r.data || null;
+        DATA = REP ? (REP.payroll || null) : null;
         if (!DATA) { gate('err', '算不出薪資', '回來的是空的'); return; }
-        elSub.textContent = DATA.month + '　薪資';
+        elSub.textContent = DATA.month + '　薪資' + (REP.closed ? '（已結算）' : '');
         render();
       }, function (e) {
         BUSY = false;
