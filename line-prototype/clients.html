@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>我的學員 · FFF</title>
+
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  clients.html — 我的學員 ／ 改教練歸屬（第 93 步之一 · 2026-08-22）
+
+  網址：https://liff.line.me/2011063116-QOxXN30h/clients.html
+
+  起因：Jerec 2026-08-22 ——「客人們有時候會換教練，需要在教練後台中
+        自訂有關既有學員的教練歸屬」＋「順便做『我的學員』清單給教練看」。
+
+  ☢️ 為什麼是【獨立一頁】，不是塞進 staff-tools.html：
+     那一頁已經 1845 行，而 Jerec 前一天才說過「後台開始資訊膨脹」。
+     這一頁是【一天看一次的清單】，跟後台那些「處理一件事」的功能
+     不同類 —— 混在一起會讓兩邊都變難找。
+
+  ☢️ 看得到 ＝ 所有職員；改 ＝ 只有負責人和財務。
+     教練互相改歸屬會變成搶客人。前端不畫按鈕只是不要讓人白按，
+     真正的牆在資料庫的 set_customer_coaches() 第一行 is_finance()。
+
+  ☢️ 一位客人可以掛不只一位教練（155 位裡有 10 位是共同負責）。
+     所以這一頁到處都是【陣列】，不是單一個教練欄位。
+
+  ☢️ 這一頁【不碰堂數、不碰錢】。餘額只是拿來看的。
+  ═══════════════════════════════════════════════════════════════════
+-->
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --ink:#0E2A3B; --ink2:#1C4257; --blue:#2E86AB; --teal:#6FBAC9;
+    --bg:#F4F8FA; --surface:#FFF; --surface2:#EDF4F7;
+    --line:#DCE8EE; --dim:#587589; --faint:#93AEBD;
+    --ok:#2F6B54; --ok-bg:#E4F0EA; --ok-line:#B9D8C8;
+    --warn:#B4661F; --warn-bg:#FBEFE2; --warn-line:#EBC4A0;
+    --err:#A4211A; --err-bg:#FBE9E7; --err-line:#F3C9C5;
+  }
+  body{background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:44px}
+
+  .top{background:var(--ink);color:#fff;padding:13px;display:flex;align-items:center;
+    gap:6px;flex-wrap:wrap;row-gap:9px}
+  .idw{min-width:0;flex:0 1 auto}
+  .nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+    margin-left:auto;justify-content:flex-end}
+  .who{font-size:16px;font-weight:800;letter-spacing:.03em;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sub{font-size:11px;color:#A9C6D4;margin-top:1px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .iconbtn{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:9px;
+    padding:9px 10px;font-family:inherit;font-size:12.5px;font-weight:700;white-space:nowrap;
+    text-decoration:none;display:inline-flex;align-items:center;flex:0 0 auto;line-height:1.5}
+  .ar{display:inline-block;flex:0 0 auto;width:9px;height:9px;
+    border-right:2.6px solid currentColor;border-top:2.6px solid currentColor;
+    border-radius:1.5px;transform:rotate(45deg);
+    font-size:0;line-height:0;vertical-align:middle;margin:0 3px 1px 5px}
+  .ar.back{transform:rotate(-135deg);margin:0 5px 1px 3px}
+
+  .wrap{max-width:520px;margin:0 auto;padding:14px 14px 0}
+  .sec{margin:20px 0 9px;font-size:11px;font-weight:800;letter-spacing:.18em;color:var(--faint)}
+  .sec:first-child{margin-top:4px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:13px 14px;margin-bottom:9px}
+  .empty{text-align:center;color:var(--faint);font-size:13px;padding:26px 10px}
+
+  .gate{text-align:center;padding:60px 20px;color:var(--dim)}
+  .gate .g1{font-size:17px;font-weight:800;color:var(--ink)}
+  .gate.err .g1{color:var(--err)}
+  .gate .g2{font-size:12.5px;margin-top:6px}
+  .btn{margin-top:13px;width:100%;background:var(--ink);color:#fff;border:0;border-radius:11px;
+    padding:13px;font-family:inherit;font-size:14px;font-weight:800;letter-spacing:.04em;cursor:pointer}
+  .btn:disabled{opacity:.5}
+
+  /* ── 三選一 ────────────────────────────────────────────────────
+     ☢️ 用「哪一群人」分，不是用篩選條件疊 —— 教練要的是
+        「我的」，負責人要的是「全部」和「沒人顧的」，三種各按一次就到。 */
+  .seg{display:flex;background:var(--surface2);border:1px solid var(--line);
+    border-radius:11px;padding:3px;gap:3px}
+  .seg button{flex:1;background:transparent;border:0;border-radius:8px;padding:8px 4px;
+    font-family:inherit;font-size:12.5px;font-weight:800;color:var(--dim);cursor:pointer;
+    line-height:1.4;white-space:nowrap}
+  .seg button.on{background:var(--surface);color:var(--ink);
+    box-shadow:0 1px 3px rgba(14,42,59,.13)}
+  .seg button i{display:block;font-style:normal;font-size:10.5px;font-weight:700;
+    color:var(--faint);letter-spacing:.02em}
+  .seg button.on i{color:var(--blue)}
+
+  .find{margin-top:9px;position:relative}
+  .find input{width:100%;background:var(--surface);border:1px solid var(--line);
+    border-radius:11px;padding:11px 34px 11px 12px;font-family:inherit;font-size:14px;
+    color:var(--ink);-webkit-appearance:none}
+  .find input:focus{outline:0;border-color:var(--blue)}
+  .find .clr{position:absolute;right:4px;top:50%;transform:translateY(-50%);
+    background:transparent;border:0;color:var(--faint);font-size:17px;
+    padding:6px 10px;cursor:pointer;line-height:1}
+  .cnt{margin:10px 3px 0;font-size:11.5px;color:var(--dim);letter-spacing:.02em}
+
+  /* ── 一位客人一列 ──────────────────────────────────────────── */
+  .cl{background:var(--surface);border:1px solid var(--line);border-radius:13px;
+    padding:11px 12px;margin-bottom:7px}
+  .cl.off{opacity:.62}
+  .cl-h{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+  .cl-n{font-size:14.5px;font-weight:800}
+  .cl-k{font-size:11.5px;color:var(--dim)}
+  .cl-c{margin-left:auto;font-size:10.5px;color:var(--faint);letter-spacing:.06em;
+    font-variant-numeric:tabular-nums}
+  .cl-b{margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .chip{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;
+    background:var(--surface2);color:var(--ink2);border:1px solid var(--line)}
+  .chip.me{background:#E1EFF5;color:#134E68;border-color:#BBDBE8}
+  .chip.none{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-line)}
+  .cl-m{margin-left:auto;font-size:11px;color:var(--dim);
+    font-variant-numeric:tabular-nums;text-align:right}
+  .cl-m b{font-weight:800;color:var(--ink2)}
+  .cl-m .cold{color:var(--warn)}
+  /* ☢️ 2026-08-22 第一版把「改教練」做成整列寬的按鈕 —— 截圖一看就知道不行：
+        155 位客人就是 155 顆一模一樣的按鈕，清單高度直接變兩倍，
+        而【看名單】才是這一頁九成的用途，改歸屬一個月不到十次。
+        改成右邊一顆小的，卡片維持兩行。 */
+  .edit{flex:0 0 auto;margin-left:8px;background:var(--surface2);color:var(--ink2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 10px;
+    font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;line-height:1.5}
+  .edit:active{background:var(--line)}
+
+  /* ── 改教練 ──────────────────────────────────────────────────── */
+  .ed{margin-top:9px;padding-top:11px;border-top:1px dashed var(--line)}
+  .ed .lb{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--faint);
+    margin-bottom:7px}
+  .pk{display:flex;gap:6px;flex-wrap:wrap}
+  .pk button{background:var(--surface);border:1px solid var(--line);border-radius:999px;
+    padding:7px 13px;font-family:inherit;font-size:12.5px;font-weight:800;
+    color:var(--dim);cursor:pointer;line-height:1.4}
+  .pk button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .ed input{width:100%;margin-top:10px;background:var(--surface);border:1px solid var(--line);
+    border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13.5px;
+    color:var(--ink);-webkit-appearance:none}
+  .ed input:focus{outline:0;border-color:var(--blue)}
+  .ed .two{display:flex;gap:7px;margin-top:10px}
+  .ed .two button{flex:1;border-radius:10px;padding:11px;font-family:inherit;
+    font-size:13px;font-weight:800;cursor:pointer;border:1px solid var(--line)}
+  .ed .save{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .ed .save:disabled{opacity:.5}
+  .ed .cancel{background:var(--surface);color:var(--dim)}
+  .res{margin-top:9px;font-size:12.5px;line-height:1.7;padding:9px 11px;border-radius:10px}
+  .res.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line)}
+  .res.bad{background:var(--err-bg);color:var(--err);border:1px solid var(--err-line)}
+  .hint{font-size:11.5px;color:var(--dim);line-height:1.7;margin:8px 3px 0}
+  .hint b{font-weight:800;color:var(--ink2)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="idw">
+    <div class="who" id="who">我的學員</div>
+    <div class="sub" id="whoSub">辨識中…</div>
+  </div>
+  <div class="nav">
+    <a class="iconbtn" href="staff-tools.html"><span class="ar back"></span>後台</a>
+    <button type="button" class="iconbtn" id="reload">重整</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div id="gate" class="gate"><div class="g1">辨識中…</div><div class="g2">跟資料庫確認你是誰</div></div>
+  <div id="main" hidden></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="liff-auth.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  var DB = null, ME = null;
+  var ROWS = [], COACHES = [];
+  var VIEW = 'mine';       // mine ｜ all ｜ none
+  var Q = '';              // 搜尋字串
+  var EDIT = null;         // 正在改的那位客人 id
+  var PICK = [];           // 改完之後【應該有哪幾位】教練的 id
+  var WHY  = '';           // 換教練的原因（重畫的時候要留住，不然打到一半會被洗掉）
+  var MSG  = null;         // 存檔失敗的訊息，只出現在正在改的那一張卡片裡
+
+  var elGate = document.getElementById('gate');
+  var elMain = document.getElementById('main');
+  var elWho  = document.getElementById('who');
+  var elSub  = document.getElementById('whoSub');
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+  function gate(cls, t1, t2) {
+    elGate.className = 'gate' + (cls ? ' ' + cls : '');
+    elGate.innerHTML = '<div class="g1">' + esc(t1) + '</div><div class="g2">' + esc(t2 || '') + '</div>';
+    elGate.hidden = false; elMain.hidden = true;
+  }
+  function gateLogin(t1, t2, label) {
+    gate('', t1 || '還沒登入', t2 || '你是在瀏覽器裡開的。按下面用 LINE 登入就好。');
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn'; b.textContent = label || '用 LINE 登入';
+    b.style.maxWidth = '280px'; b.style.margin = '16px auto 0'; b.style.display = 'block';
+    b.onclick = function () { b.disabled = true; window.FFF_AUTH.login(); };
+    elGate.appendChild(b);
+  }
+
+  // ══ 日期：只給「多久沒來」，不給完整日期 ═══════════════════════
+  // ☢️ 教練看這一欄是為了決定【要不要打電話】，不是為了查帳。
+  //    「32 天沒來」一眼就有感覺，「07/21」還要自己算。
+  function ago(iso) {
+    if (!iso) return { txt: '沒上過課', cold: true };
+    var d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    if (d <= 0) return { txt: '今天', cold: false };
+    if (d === 1) return { txt: '昨天', cold: false };
+    if (d < 30)  return { txt: d + ' 天前', cold: false };
+    if (d < 365) return { txt: Math.floor(d / 30) + ' 個月沒來', cold: true };
+    return { txt: '一年以上沒來', cold: true };
+  }
+
+  function myId() { return ME ? ME.id : null; }
+  function isMine(r) { return (r.coach_ids || []).indexOf(myId()) >= 0; }
+
+  // ══ 讀資料 ═════════════════════════════════════════════════════
+  function load() {
+    return Promise.all([
+      DB.from('staff_clients_coach')
+        .select('customer_id,customer_name,nickname,phone_tail,client_code,is_active,' +
+                'coach_ids,coach_names,n_coaches,balance,last_class_at'),
+      DB.from('employees').select('id,display_name')
+        .eq('is_active', true).eq('can_teach', true).order('display_name')
+    ]).then(function (rs) {
+      if (rs[0].error) throw new Error(rs[0].error.message);
+      if (rs[1].error) throw new Error(rs[1].error.message);
+      ROWS = rs[0].data || [];
+      COACHES = rs[1].data || [];
+      // ☢️ 排序在【前端】做，不在資料庫。因為「多久沒來」是給人看的順序，
+      //    而且三種檢視共用同一份資料 —— 每換一次檢視就重查一次是浪費。
+      ROWS.sort(function (a, b) {
+        var x = a.last_class_at ? new Date(a.last_class_at).getTime() : -1;
+        var y = b.last_class_at ? new Date(b.last_class_at).getTime() : -1;
+        if (x !== y) return y - x;                       // 最近上課的在上面
+        return String(a.customer_name).localeCompare(String(b.customer_name), 'zh-Hant');
+      });
+    });
+  }
+
+  function visible() {
+    var q = Q.trim().toLowerCase();
+    return ROWS.filter(function (r) {
+      // ☢️ 停用的客人預設【不出現】—— 但搜尋得到。
+      //    完全查不到會讓人以為資料不見了。
+      if (r.is_active === false && !q) return false;
+      if (VIEW === 'mine' && !isMine(r)) return false;
+      if (VIEW === 'none' && r.n_coaches > 0) return false;
+      if (!q) return true;
+      return [r.customer_name, r.nickname, r.client_code, r.phone_tail]
+        .join(' ').toLowerCase().indexOf(q) >= 0;
+    });
+  }
+
+  // ══ 畫面 ═══════════════════════════════════════════════════════
+  function segBlock() {
+    var mine = ROWS.filter(function (r) { return isMine(r) && r.is_active !== false; }).length;
+    var all  = ROWS.filter(function (r) { return r.is_active !== false; }).length;
+    var none = ROWS.filter(function (r) { return r.n_coaches === 0 && r.is_active !== false; }).length;
+    function b(k, t, n) {
+      return '<button type="button" data-view="' + k + '"' +
+        (VIEW === k ? ' class="on"' : '') + '>' + t + '<i>' + n + '</i></button>';
+    }
+    return '<div class="seg">' + b('mine', '我的學員', mine) +
+           b('all', '全部', all) + b('none', '沒有歸屬', none) + '</div>';
+  }
+
+  function findBlock() {
+    return '<div class="find">' +
+      '<input id="q" type="search" inputmode="search" placeholder="找人：姓名、暱稱、編號、手機末三碼" ' +
+      'value="' + esc(Q) + '">' +
+      (Q ? '<button type="button" class="clr" id="qclr" aria-label="清除">×</button>' : '') +
+      '</div>';
+  }
+
+  function coachChips(r) {
+    if (!r.n_coaches) return '<span class="chip none">沒有歸屬</span>';
+    return (r.coach_ids || []).map(function (id, i) {
+      var nm = (r.coach_names || '').split('、')[i] || '';
+      // ☢️ coach_names 是資料庫照 display_name 排序併起來的，coach_ids 是
+      //    照 e.id 聚合的 —— 兩個【順序不保證一樣】。所以名字用查的，不用配的。
+      var c = findCoach(id);
+      return '<span class="chip' + (id === myId() ? ' me' : '') + '">' +
+        esc(c ? c.display_name : (nm || '？')) + '</span>';
+    }).join('');
+  }
+  function findCoach(id) {
+    for (var i = 0; i < COACHES.length; i++) if (COACHES[i].id === id) return COACHES[i];
+    return null;
+  }
+
+  function rowCard(r) {
+    var a = ago(r.last_class_at);
+    var h = '<div class="cl' + (r.is_active === false ? ' off' : '') + '" data-c="' + esc(r.customer_id) + '">' +
+      '<div class="cl-h">' +
+        '<span class="cl-n">' + esc(r.customer_name) + '</span>' +
+        (r.nickname ? '<span class="cl-k">' + esc(r.nickname) + '</span>' : '') +
+        (r.is_active === false ? '<span class="cl-k">（已停用）</span>' : '') +
+        '<span class="cl-c">' + esc(r.client_code || '—') + '</span>' +
+      '</div>' +
+      '<div class="cl-b">' + coachChips(r) +
+        '<span class="cl-m">' + (r.balance ? '<b>' + r.balance + ' 堂</b>　' : '') +
+        '<span' + (a.cold ? ' class="cold"' : '') + '>' + esc(a.txt) + '</span></span>' +
+        (ME && ME.can_finance && EDIT !== r.customer_id
+          ? '<button type="button" class="edit" data-edit="' + esc(r.customer_id) + '">改</button>' : '') +
+      '</div>';
+    if (ME && ME.can_finance && EDIT === r.customer_id) h += editBlock(r);
+    return h + '</div>';
+  }
+
+  // ☢️ 這裡送出的是【改完之後應該有哪幾位】，不是「加一位」。
+  //    整組覆蓋 —— 重按兩次不會做出重複的結果。
+  function editBlock(r) {
+    var had = r.n_coaches > 0;
+    var same = PICK.length === (r.coach_ids || []).length &&
+      PICK.every(function (id) { return (r.coach_ids || []).indexOf(id) >= 0; });
+    return '<div class="ed">' +
+      '<div class="lb">改完之後是誰的（可以複選）</div>' +
+      '<div class="pk">' + COACHES.map(function (c) {
+        return '<button type="button" data-pick="' + esc(c.id) + '"' +
+          (PICK.indexOf(c.id) >= 0 ? ' class="on"' : '') + '>' + esc(c.display_name) + '</button>';
+      }).join('') + '</div>' +
+      (had ? '<input id="why" type="text" placeholder="為什麼換？（必填，例：客人改跟 Peter 上課）" ' +
+             'value="' + esc(WHY) + '">' : '') +
+      '<div class="two">' +
+        '<button type="button" class="cancel" data-cancel="1">取消</button>' +
+        '<button type="button" class="save" data-save="' + esc(r.customer_id) + '"' +
+          (same ? ' disabled' : '') + '>' + (same ? '沒有變動' : '存檔') + '</button>' +
+      '</div>' +
+      (MSG ? '<div class="res ' + MSG.cls + '">' + esc(MSG.txt) + '</div>' : '') +
+      '</div>';
+  }
+
+  function render() {
+    var list = visible();
+    var h = segBlock() + findBlock();
+    h += '<div class="cnt">' + list.length + ' 位' +
+         (VIEW === 'mine' ? '　·　歸屬在你名下的客人' :
+          VIEW === 'none' ? '　·　還沒指定教練的客人' : '　·　全部客人') +
+         '　·　照最近上課排序</div>';
+    h += '<div style="height:11px"></div>';
+    h += list.length ? list.map(rowCard).join('')
+       : '<div class="card"><div class="empty">' +
+         (Q ? '找不到「' + esc(Q) + '」' :
+          VIEW === 'mine' ? '你名下還沒有學員' : '沒有資料') + '</div></div>';
+    if (ME && ME.can_finance && VIEW === 'none') {
+      h += '<div class="hint">☢️ 這裡多半是<b>只上團體課</b>的散客，本來就沒有負責教練 —— ' +
+           '不用急著全部指定。真正要處理的是「有在上私人課、卻沒有歸屬」的那幾位。</div>';
+    }
+    if (ME && !ME.can_finance) {
+      h += '<div class="hint">要改歸屬請找 Jerec 或財務 —— ' +
+           '教練彼此改會變成搶客人，所以這一頁只給你看。</div>';
+    }
+    elMain.innerHTML = h;
+    elGate.hidden = true; elMain.hidden = false;
+    wire();
+  }
+
+  function wire() {
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-view]'), function (b) {
+      b.onclick = function () {
+        VIEW = b.getAttribute('data-view'); EDIT = null; MSG = null; render();
+      };
+    });
+    var q = document.getElementById('q');
+    if (q) {
+      // ☢️ 不要用 onchange —— 手機上要按「完成」才觸發，感覺像壞掉。
+      q.oninput = function () {
+        Q = q.value;
+        var at = q.selectionStart;
+        render();
+        var n = document.getElementById('q');
+        if (n) { n.focus(); try { n.setSelectionRange(at, at); } catch (e) {} }
+      };
+    }
+    var c = document.getElementById('qclr');
+    if (c) c.onclick = function () { Q = ''; render(); };
+
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-edit]'), function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-edit');
+        var r = rowById(id);
+        EDIT = id; PICK = (r.coach_ids || []).slice(); WHY = ''; MSG = null;
+        render();
+      };
+    });
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-pick]'), function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-pick');
+        var i = PICK.indexOf(id);
+        if (i >= 0) PICK.splice(i, 1); else PICK.push(id);
+        keepWhy(); MSG = null; render();
+      };
+    });
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-cancel]'), function (b) {
+      b.onclick = function () { EDIT = null; MSG = null; WHY = ''; render(); };
+    });
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-save]'), function (b) {
+      b.onclick = function () { keepWhy(); save(b.getAttribute('data-save'), b); };
+    });
+  }
+  function keepWhy() {
+    var w = document.getElementById('why');
+    if (w) WHY = w.value;
+  }
+  function rowById(id) {
+    for (var i = 0; i < ROWS.length; i++) if (ROWS[i].customer_id === id) return ROWS[i];
+    return null;
+  }
+
+  function save(id, btn) {
+    var r = rowById(id);
+    if (!r) return;
+    if (r.n_coaches > 0 && WHY.trim().length < 2) {
+      MSG = { cls:'bad', txt:'換教練要寫原因 —— 三個月後要查得出為什麼換' };
+      render(); return;
+    }
+    btn.disabled = true; btn.textContent = '存檔中…';
+    DB.rpc('set_customer_coaches', {
+      p_customer: id, p_coaches: PICK, p_why: WHY.trim() || null
+    }).then(function (res) {
+      if (res.error) throw new Error(res.error.message);
+      var d = res.data || {};
+      if (!d.ok) { MSG = { cls:'bad', txt: d.msg || '存不進去' }; render(); return; }
+      // ☢️ 存完【重新讀一次】，不是自己改記憶體裡那一列。
+      //    別的教練同時也在改的話，自己算的那份會跟資料庫對不上。
+      return load().then(function () {
+        EDIT = null; WHY = '';
+        MSG = null;
+        flash(d.changed
+          ? esc(d.name) + '　→　' + esc(d.now)
+          : esc(d.name) + '　沒有變動');
+        render();
+      });
+    }).catch(function (e) {
+      MSG = { cls:'bad', txt: String(e.message || e) };
+      render();
+    });
+  }
+
+  // 成功訊息放在整頁最上面，因為存完之後那一列可能已經【從清單裡消失】
+  //（例如把客人改成別的教練、而現在正在看「我的學員」）。
+  function flash(html) {
+    var d = document.createElement('div');
+    d.className = 'res ok';
+    d.style.margin = '0 0 10px';
+    d.innerHTML = '✓ 已改好　' + html;
+    setTimeout(function () {
+      elMain.insertBefore(d, elMain.firstChild);
+      d.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }, 0);
+  }
+
+  // ══ 開機 ═══════════════════════════════════════════════════════
+  document.getElementById('reload').onclick = function () { location.reload(); };
+
+  function boot() {
+    if (!window.FFF_AUTH || !window.FFF_AUTH.ready) {
+      gate('err', '身分程式沒載進來', 'liff-auth.js 沒跑起來'); return;
+    }
+    window.FFF_AUTH.ready.then(function () {
+      var st = window.FFF_AUTH.state;
+      if (st === 'browsing') {
+        elSub.textContent = '未登入';
+        if (window.FFF_AUTH.canLogin) { gateLogin(); return; }
+        gate('err', '要從 LINE 裡面開', '請在 LINE 的聊天室點連結，不要複製到瀏覽器'); return;
+      }
+      if (st === 'checking') {
+        elSub.textContent = '重新登入中';
+        gate('', '正在重新登入…', '登入過期了，馬上跳到 LINE 幫你換一張'); return;
+      }
+      if (st === 'error') {
+        elSub.textContent = '辨識失敗';
+        if (window.FFF_AUTH.canLogin) {
+          gateLogin('登入過期了',
+            (window.FFF_AUTH.errorNote || '按下面重新登入就好。') +
+            '（' + (window.FFF_AUTH.error || '') + '）', '重新登入');
+          return;
+        }
+        gate('err', '辨識失敗',
+          (window.FFF_AUTH.errorNote ? window.FFF_AUTH.errorNote + '　' : '') +
+          (window.FFF_AUTH.error || '')); return;
+      }
+      if (!window.fffDB) { gate('err', '資料庫連線沒建立', 'no_fffDB'); return; }
+      DB = window.fffDB;
+
+      DB.auth.getUser().then(function (u) {
+        if (u.error || !u.data || !u.data.user) {
+          gate('err', '拿不到登入身分', (u.error && u.error.message) || 'no_user'); return;
+        }
+        return DB.from('employees')
+          .select('id,display_name,role,is_active,can_finance,can_teach')
+          .eq('auth_user_id', u.data.user.id)
+          .then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            if (!r.data || !r.data.length) {
+              elSub.textContent = '未開通';
+              elGate.className = 'gate err';
+              elGate.innerHTML =
+                '<div class="g1">你的帳號還沒開通</div>' +
+                '<div class="g2">按下面拿到你的登入代號，傳給 Jerec 就可以開通。</div>' +
+                '<a class="btn" style="max-width:280px;margin:16px auto 0;display:block;' +
+                'text-align:center;text-decoration:none" href="staff.html">拿我的登入代號<span class="ar"></span></a>';
+              elGate.hidden = false; elMain.hidden = true;
+              return;
+            }
+            ME = r.data[0];
+            if (ME.is_active === false) {
+              gate('err', ME.display_name + '　已停用', '如果這是誤設，請找 Jerec'); return;
+            }
+            elWho.textContent = ME.display_name;
+            elSub.textContent = ME.can_finance ? '學員與教練歸屬' : '我的學員';
+            // ☢️ 不會教課的人（櫃檯、財務）預設看「全部」——
+            //    給他們一個一定是空的「我的學員」等於給一個壞掉的畫面。
+            if (!ME.can_teach) VIEW = 'all';
+            gate('', '讀取中…', '');
+            return load().then(render, function (e) {
+              gate('err', '讀不到學員清單', String(e.message || e));
+            });
+          });
+      }).catch(function (e) {
+        gate('err', '出事了', String(e.message || e));
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+</body>
+</html>

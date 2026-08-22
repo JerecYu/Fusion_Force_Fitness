@@ -839,6 +839,11 @@
         '<i>團體課出席、扣堂、開課</i></a>' +
       '<a class="tile" href="service.html"><b>服務登記<span class="ar"></span></b>' +
         '<i>私人課、企業包班、外派</i></a>' +
+      // ☢️ 2026-08-22（第 93 步）：整列。教練看「我的學員」，
+      //    負責人和財務在同一頁改歸屬 —— 同一份名單，權限不同而已。
+      '<a class="tile wide" href="clients.html"><b>' +
+        (fin ? '學員與教練' : '我的學員') + '<span class="ar"></span></b>' +
+        '<i>' + (fin ? '誰是誰的、改歸屬、多久沒來' : '你名下的客人、剩幾堂、多久沒來') + '</i></a>' +
       '</div>';
     if (fin) {
       h += '<div class="sec">帳務　·　只有你和財務看得到</div><div class="navg">' +
