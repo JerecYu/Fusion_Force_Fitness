@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>損益表 · FFF</title>
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  損益表 —— 第 95 步 · 2026-08-23
+
+  網址：https://liff.line.me/2011063116-QOxXN30h/pl.html
+
+  ☢️ 這一頁【不寫任何資料】。只讀 pl_report(月份) 一支函式。
+
+  ☢️ 權責制（第 89 步裁決）：收入認在【上完課那天】，不是收到錢那天。
+     所以「這個月收了多少現金」跟這一頁的收入是【兩個不同的數字】——
+     要看現金請去對帳報表。
+
+  ☢️ 每一格都要點得進去看逐筆。第 80 步學過：看不到明細的總數
+     沒有人敢信，也查不出錯。
+
+  ☢️ 結過的月份讀快照，沒結過才即時算 —— 跟薪資報表同一套規矩。
+  ═══════════════════════════════════════════════════════════════════
+-->
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --ink:#0E2A3B; --ink2:#1C4257; --blue:#2E86AB; --teal:#6FBAC9;
+    --bg:#F4F8FA; --surface:#FFF; --surface2:#EDF4F7;
+    --line:#DCE8EE; --dim:#587589; --faint:#93AEBD;
+    --ok:#2F6B54; --ok-bg:#E4F0EA; --ok-line:#B9D8C8;
+    --warn:#B4661F; --warn-bg:#FBEFE2; --warn-line:#EBC4A0;
+    --err:#A4211A; --err-bg:#FBE9E7; --err-line:#F3C9C5;
+  }
+  body{background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    line-height:1.65;-webkit-text-size-adjust:100%;padding-bottom:44px}
+
+  .top{background:var(--ink);color:#fff;padding:13px;display:flex;align-items:center;gap:6px}
+  /* ☢️ 標題那一塊沒有 min-width:0 的話【不會縮】—— 它會把右邊的功能鈕
+     擠出畫面外，而擠出去的部分沒有捲軸、看不到也點不到。 */
+  .top>div:first-child{min-width:0}
+  .who{font-size:16px;font-weight:800;letter-spacing:.03em}
+  .sub{font-size:11px;color:#A9C6D4;margin-top:1px}
+  .sp{flex:1}
+  .who,.sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .iconbtn{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:9px;
+    padding:9px 10px;font-family:inherit;font-size:12.5px;font-weight:700;white-space:nowrap;
+    text-decoration:none;display:inline-flex;align-items:center;flex:0 0 auto;
+    cursor:pointer;line-height:1.5}
+  .iconbtn:active{background:rgba(255,255,255,.25)}
+
+  .wrap{max-width:520px;margin:0 auto;padding:14px 14px 0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:13px;margin-bottom:12px}
+  .h{font-size:12px;font-weight:800;letter-spacing:.1em;color:var(--faint);margin:16px 3px 8px}
+
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .chip{background:var(--surface2);border:1px solid var(--line);color:var(--ink2);
+    border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:700;
+    font-family:inherit;cursor:pointer}
+  .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .dates{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim)}
+  .dates input{flex:1;min-width:0;font-family:inherit;font-size:14px;color:var(--ink);
+    background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:9px 10px}
+
+  /* ── 一行一個數字，點得開 ── */
+  .ln{border-top:1px solid var(--line);padding:11px 2px}
+  .ln:first-child{border-top:0}
+  .ln-h{display:flex;align-items:baseline;gap:8px;cursor:pointer}
+  .ln-h.flat{cursor:default}
+  .ln-k{font-size:14px;font-weight:700}
+  .ln-n{font-size:11.5px;color:var(--faint)}
+  .ln-v{margin-left:auto;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;
+    white-space:nowrap}
+  .ln-ar{display:inline-block;width:7px;height:7px;flex:0 0 auto;
+    border-right:2.2px solid var(--faint);border-bottom:2.2px solid var(--faint);
+    border-radius:1.5px;transform:rotate(45deg);margin-bottom:3px;transition:transform .15s}
+  .ln.open .ln-ar{transform:rotate(-135deg)}
+  .ln-fold{margin-top:8px;border-left:2px solid var(--line);padding-left:9px;
+    max-height:340px;overflow-y:auto}
+  .d{display:flex;align-items:baseline;gap:7px;font-size:11.5px;color:var(--dim);
+    padding:3px 0;border-top:1px dotted var(--line)}
+  .d:first-child{border-top:0}
+  .d-w{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .d-a{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink2);white-space:nowrap}
+
+  .sumline{border-top:2px solid var(--line);margin-top:4px;padding-top:10px}
+  .big{background:var(--ok-bg);border-color:var(--ok-line)}
+  .big .ln-k{font-size:15px;color:var(--ok)}
+  .big .ln-v{font-size:27px;color:var(--ok)}
+  .big.neg{background:var(--err-bg);border-color:var(--err-line)}
+  .big.neg .ln-k,.big.neg .ln-v{color:var(--err)}
+
+  .warnbox{background:var(--err-bg);border:1px solid var(--err-line);border-radius:12px;
+    padding:11px 12px;margin-bottom:12px;font-size:13px;color:var(--err)}
+  .warnbox b{font-weight:800}
+  .warnbox a{color:var(--err);font-weight:800}
+  /* ☢️ #8F5017 不是 var(--warn) —— 後者壓在 --warn-bg 上量出來只有 3.8:1 */
+  .softbox{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:12px;
+    padding:11px 12px;margin-bottom:12px;font-size:12.5px;color:#8F5017}
+  .softbox b{font-weight:800}
+
+  .tag{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px;
+    border:1px solid var(--line);background:var(--surface2);color:var(--ink2);margin-left:6px}
+  .tag.lock{background:var(--ok-bg);border-color:var(--ok-line);color:var(--ok)}
+  .tag.live{background:var(--warn-bg);border-color:var(--warn-line);color:#8F5017}
+
+  .btn{width:100%;background:var(--ink);color:#fff;border:0;border-radius:11px;
+    padding:14px;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer}
+  .btn.ghost{background:none;color:var(--dim);border:1px solid var(--line);
+    font-size:13.5px;padding:11px;margin-top:10px}
+  .note{font-size:11.5px;color:var(--dim);margin-top:8px}
+  .empty{text-align:center;color:var(--faint);font-size:13px;padding:16px 4px}
+  .gate{padding:56px 20px;text-align:center}
+  .gate .g1{font-size:17px;font-weight:800;color:var(--ink)}
+  .gate.err .g1{color:var(--err)}
+  .gate .g2{font-size:12.5px;color:var(--dim);margin-top:6px}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:11px 17px;border-radius:11px;
+    font-size:13px;font-weight:600;max-width:88%;text-align:center;z-index:50}
+  .toast.bad{background:var(--err)}
+  [hidden]{display:none !important}
+
+  @media (min-width:1000px){
+    :root{--col:640px}
+    .top,.wrap{zoom:1.22}
+    .wrap{max-width:var(--col)}
+    .top{padding-inline:max(13px, calc((100% - var(--col)) / 2 + 14px))}
+  }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div>
+    <div class="who" id="who">損益表</div>
+    <div class="sub" id="whoSub">辨識中…</div>
+  </div>
+  <div class="sp"></div>
+  <a class="iconbtn" href="staff-tools.html">後台</a>
+  <a class="iconbtn" href="report.html">對帳</a>
+  <a class="iconbtn" href="payroll.html">薪資</a>
+  <button type="button" class="iconbtn" id="reload">重整</button>
+</div>
+
+<div class="wrap">
+  <div id="gate" class="gate"><div class="g1">辨識中…</div><div class="g2">跟資料庫確認你是誰</div></div>
+  <div id="main" hidden></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="liff-auth.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  var DB = null, ME = null, D = null, BUSY = false, OPEN = {};
+  var elGate = document.getElementById('gate');
+  var elMain = document.getElementById('main');
+  var elWho  = document.getElementById('who');
+  var elSub  = document.getElementById('whoSub');
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function gate(cls, t1, t2) {
+    elGate.className = 'gate' + (cls ? ' ' + cls : '');
+    elGate.innerHTML = '<div class="g1">' + esc(t1) + '</div><div class="g2">' + esc(t2||'') + '</div>';
+    elGate.hidden = false; elMain.hidden = true;
+  }
+  var toastTimer;
+  function toast(msg, bad) {
+    var old = document.querySelector('.toast'); if (old) old.remove();
+    var d = document.createElement('div');
+    d.className = 'toast' + (bad ? ' bad' : ''); d.textContent = msg;
+    document.body.appendChild(d);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ d.remove(); }, bad ? 4200 : 2200);
+  }
+  function money(n) { return 'NT$' + Math.round(Number(n || 0)).toLocaleString('en-US'); }
+
+  /* ☢️ 一律用【台北時間的今天】算月份，不是 toISOString()。
+        toISOString() 給 UTC —— 每個月 1 號的凌晨 0 點到 8 點之間，
+        它會回上個月，而那正好是「月初來看上個月」最可能發生的時段。 */
+  function twToday() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Taipei' }); }
+  function twMonth() { return twToday().slice(0, 7); }
+  function prevMonth(ym) {
+    var y = +ym.slice(0,4), m = +ym.slice(5,7) - 1;
+    if (m === 0) { y -= 1; m = 12; }
+    return y + '-' + (m < 10 ? '0' + m : m);
+  }
+
+  /* ☢️ 新系統的帳從 2026-08 開始（跟薪資報表同一條線）。
+        在那之前只有搬遷進來的課次，硬算會跑出一個【看起來像答案的錯數字】。 */
+  var SYSTEM_START = '2026-08';
+  var MONTH = twMonth();
+
+  var TYPE = { PT:'一對一', PGT:'一對多', PT_OUT:'外派一對一', PGT_OUT:'外派一對多',
+               CORP:'企業包班', EVENT:'活動' };
+  var PROD = { GT:'團體課', PT:'一對一', PGT:'一對多' };
+
+  /* ══ 畫面 ══════════════════════════════════════════════════════ */
+  function pickerBlock() {
+    var cur = twMonth(), prev = prevMonth(cur);
+    var showPrev = prev >= SYSTEM_START;
+    return '<div class="card">' +
+      '<div class="chips">' +
+        '<button type="button" class="chip' + (MONTH===cur?' on':'') + '" data-m="' + cur + '">這個月</button>' +
+        (showPrev ? '<button type="button" class="chip' + (MONTH===prev?' on':'') +
+                    '" data-m="' + prev + '">上個月</button>' : '') +
+      '</div>' +
+      '<div class="dates"><span>月份</span>' +
+        '<input type="month" id="dM" value="' + esc(MONTH) + '" ' +
+          'min="' + esc(SYSTEM_START) + '" max="' + esc(cur) + '">' +
+      '</div>' +
+    '</div>';
+  }
+
+  function tooEarlyBlock() {
+    if (MONTH >= SYSTEM_START) return '';
+    return '<div class="warnbox">☢️ <b>' + esc(MONTH) + ' 在新系統上線之前</b>，' +
+      '這一頁的數字不完整 —— 那時候只有搬遷進來的課次，沒有服務紀錄也沒有支出簿。</div>';
+  }
+
+  /* ☢️ 支出簿是空的 → 「剩多少」一定偏高，而且高得離譜。
+        房租水電沒記進去，這個數字會讓人以為賺很多。要大聲講。 */
+  function expenseWarn() {
+    if (!D.expense_empty) return '';
+    return '<div class="warnbox">☢️ <b>' + esc(D.ym) + ' 的支出簿是空的</b> —— ' +
+      '房租、水電、健保費一筆都還沒記。<br>' +
+      '下面的「剩多少」<b>只扣了教練薪資</b>，實際上一定沒有這麼多。' +
+      '<br><a href="expenses.html">去支出簿補資料</a></div>';
+  }
+
+  /* 有堂數、沒金額的那一塊。
+     ☢️ 決定（Jerec 2026-08-23）：只列堂數，不猜金額。
+        規則第三篇 4：資料不足時維持待確認，不可以拿現在的檯面價回推。 */
+  function waitBlock() {
+    var w = D.income_wait || {};
+    var bits = [];
+    if (w.gt_classes) bits.push('團體課上了 <b>' + w.gt_classes + ' 堂</b>，但系統不知道那幾堂是從哪一張卡扣的 —— <b>算不出金額</b>');
+    if (w.pend_n)     bits.push('還有 <b>' + w.pend_n + ' 筆</b>服務紀錄是「待確認」，金額還沒定案');
+    if (!bits.length) return '';
+    return '<div class="softbox">☢️ <b>下面這些沒有算進收入</b>：<br>· ' +
+      bits.join('<br>· ') +
+      '<br><br>系統<b>不會拿檯面價回推</b>（規則第三篇 4）—— ' +
+      '少一個數字，比多一個沒有人查得出是估的假數字好。</div>';
+  }
+
+  function row(key, note, val, id, lines, fmt) {
+    var open = !!OPEN[id];
+    var has = lines && lines.length;
+    return '<div class="ln' + (open ? ' open' : '') + '">' +
+      '<div class="ln-h' + (has ? '' : ' flat') + '"' + (has ? ' data-fold="' + id + '"' : '') + '>' +
+        '<span class="ln-k">' + key + '</span>' +
+        (note ? '<span class="ln-n">' + note + '</span>' : '') +
+        (has ? '<span class="ln-ar"></span>' : '') +
+        '<span class="ln-v">' + val + '</span>' +
+      '</div>' +
+      (open && has ? '<div class="ln-fold">' + lines.map(fmt).join('') + '</div>' : '') +
+    '</div>';
+  }
+
+  function incomeBlock() {
+    var i = D.income || {}, L = (D.lines || {});
+    return '<div class="h">收入（上完課才算）</div><div class="card">' +
+      row('私人課', (i.pt.n || 0) + ' 堂　含外派與企業包班', money(i.pt.amount),
+          'inc', L.income, function (x) {
+            return '<div class="d"><span class="d-w">' + esc(x.when) + '　' +
+              esc(TYPE[x.what] || x.what) + '　' + esc(x.who) +
+              (x.heads ? '　' + x.heads + ' 人' : '') + '　' + esc(x.coach) +
+              (x.how === 'plan' ? '　扣預收' : '　現場收') + '</span>' +
+              '<span class="d-a">' + money(x.amount) + '</span></div>';
+          }) +
+      row('團體課', (i.gt.n || 0) + ' 堂算得出金額', money(i.gt.amount), 'gt', null, null) +
+      '<div class="sumline">' +
+        row('<b>收入合計</b>', '', '<b>' + money(i.total) + '</b>', 'x', null, null) +
+      '</div>' +
+      '<div class="note">☢️ 這是<b>認列收入</b>：上完一堂算一堂（權責制，第 89 步裁決）。' +
+      '<b>跟這個月收到多少現金是兩回事</b> —— 要看現金請去<a href="report.html">對帳報表</a>。</div>' +
+    '</div>';
+  }
+
+  function costBlock() {
+    var c = D.cost || {}, L = (D.lines || {});
+    return '<div class="h">支出</div><div class="card">' +
+      row('教練薪資', (c.payroll.n || 0) + ' 位', money(c.payroll.amount),
+          'pay', L.payroll, function (x) {
+            return '<div class="d"><span class="d-w">' + esc(x.coach_name) +
+              '　抽成 ' + money(x.perf) + '　GT ' + money(x.gt) +
+              (x.event ? '　活動 ' + money(x.event) : '') +
+              (x.allowance ? '　加給 ' + money(x.allowance) : '') + '</span>' +
+              '<span class="d-a">' + money(x.total) + '</span></div>';
+          }) +
+      row('營運支出', (c.expense.n || 0) + ' 筆　不含備用金提撥', money(c.expense.amount),
+          'exp', L.expense, function (x) {
+            return '<div class="d"><span class="d-w">' +
+              esc(x.incurred_on || x.spent_on || '') + '　' +
+              esc(x.category_label || x.label || x.category || '') +
+              (x.payee ? '　' + esc(x.payee) : '') + '</span>' +
+              '<span class="d-a">' + money(x.amount) + '</span></div>';
+          }) +
+      '<div class="sumline">' +
+        row('<b>支出合計</b>', '', '<b>' + money(c.total) + '</b>', 'x', null, null) +
+      '</div>' +
+      '<div class="note">☢️ <b>備用金提撥不算支出</b> —— 那是錢從公司一個口袋進另一個口袋，' +
+      '錢還在公司手上（第 92 步）。真正的支出是備用金被花掉的時候。</div>' +
+    '</div>';
+  }
+
+  function netBlock() {
+    var n = Number(D.net || 0);
+    return '<div class="card big' + (n < 0 ? ' neg' : '') + '">' +
+      '<div class="ln"><div class="ln-h flat">' +
+        '<span class="ln-k">' + esc(D.ym) + ' 剩多少</span>' +
+        '<span class="ln-v">' + money(n) + '</span>' +
+      '</div></div>' +
+      '<div class="note" style="color:inherit;opacity:.85">收入 ' + money((D.income||{}).total) +
+      '　−　支出 ' + money((D.cost||{}).total) + '</div>' +
+    '</div>';
+  }
+
+  /* 負債與應收 —— ☢️ 這兩個【不進上面的加減】。
+     還欠客人的課是負債（我們收了錢還沒把課上完），
+     待入帳是應收（課上完了但錢還沒到）。兩個都不是這個月的損益。 */
+  function sideBlock() {
+    var l = D.liability || {}, r = D.receivable || {}, L = (D.lines || {});
+    var cr = l.credits || {};
+    var parts = Object.keys(cr).map(function (k) {
+      return (PROD[k] || k) + ' ' + cr[k] + ' 堂';
+    }).join('　·　') || '沒有';
+    return '<div class="h">另外兩個數字（不進上面的加減）</div><div class="card">' +
+      row('還欠客人', parts, (l.valued_amount ? money(l.valued_amount) : '—'),
+          'liab', L.liability, function (x) {
+            return '<div class="d"><span class="d-w">' + esc(x.who) +
+              (x.tail ? '　' + esc(x.tail) : '') + '　' + esc(PROD[x.product] || x.product) +
+              '</span><span class="d-a">' + x.credits + ' 堂</span></div>';
+          }) +
+      '<div class="note" style="margin:2px 0 10px">☢️ ' +
+        (l.unvalued_credits > 0
+          ? '這些堂數裡<b>只有 ' + l.valued_credits + ' 堂算得出金額</b>（' +
+            money(l.valued_amount) + '）。<b>另外 ' + l.unvalued_credits +
+            ' 堂是搬遷進來的舊卡，沒有實收金額</b> —— 系統不猜，所以右邊那個數字' +
+            '<b>只是負債的一小部分</b>。'
+          : '全部算得出金額。') +
+      '</div>' +
+      row('還沒收到的錢', (r.n || 0) + ' 筆', money(r.amount),
+          'recv', L.receivable, function (x) {
+            return '<div class="d"><span class="d-w">' + esc(x.made_at) + '　' +
+              esc(x.customer_name) + '　' + esc(x.source || '') +
+              (x.coach ? '　教練 ' + esc(x.coach) : '') +
+              '　已等 ' + x.waited_days + ' 天</span>' +
+              '<span class="d-a">' + money(x.amount) + '</span></div>';
+          }) +
+      '<div class="note">☢️ <b>還欠客人</b>是負債：錢收了、課還沒上完。' +
+      '<b>還沒收到的錢</b>是應收：課上完了、錢還沒到。<br>' +
+      '兩個都不是這個月的損益，但兩個都會影響帳戶裡實際有多少錢。</div>' +
+    '</div>';
+  }
+
+  function stampBlock() {
+    return '<div class="card"><div class="note" style="margin:0">' +
+      (D.closed
+        ? '☢️ ' + esc(D.ym) + ' <b>已經結算</b>，上面的數字是<b>結算當下封存的那一份</b> —— 不會再變。'
+        : '☢️ ' + esc(D.ym) + ' <b>還沒結算</b>，上面的數字是<b>現在重算</b>的，' +
+          '任何紀錄或設定一改就會跟著變。要固定下來請去<a href="payroll.html">薪資報表</a>結算。') +
+      '<br>資料時間 ' + esc(D.made_at || '') + '</div>' +
+      (window.FFF_AUTH.canLogout
+        ? '<button type="button" class="btn ghost" id="logout">登出這台電腦</button>' +
+          '<div class="note">用完<b>公用電腦</b>請按這個。</div>'
+        : '') +
+    '</div>';
+  }
+
+  function render() {
+    elGate.hidden = true; elMain.hidden = false;
+    elMain.innerHTML =
+      pickerBlock() +
+      (D ? (tooEarlyBlock() + expenseWarn() + incomeBlock() + costBlock() +
+            netBlock() + waitBlock() + sideBlock() + stampBlock())
+         : '<div class="card"><div class="empty">讀取中…</div></div>');
+    wire();
+  }
+
+  function wire() {
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-m]'), function (b) {
+      b.onclick = function () { MONTH = b.getAttribute('data-m'); load(); };
+    });
+    var m = document.getElementById('dM');
+    if (m) m.onchange = function () { if (m.value) { MONTH = m.value; load(); } };
+    Array.prototype.forEach.call(elMain.querySelectorAll('[data-fold]'), function (b) {
+      b.onclick = function () {
+        var k = b.getAttribute('data-fold');
+        OPEN[k] = !OPEN[k];
+        render();
+      };
+    });
+    var lo = document.getElementById('logout');
+    if (lo) lo.onclick = function () {
+      lo.textContent = '登出中…'; lo.disabled = true; window.FFF_AUTH.logout();
+    };
+  }
+
+  /* ══ 讀資料 ══════════════════════════════════════════════════ */
+  function load() {
+    if (BUSY) return;
+    BUSY = true;
+    render();
+    DB.rpc('pl_report', { p_ym: MONTH + '-01' })
+      .then(function (r) {
+        BUSY = false;
+        // ☢️ 錯誤和「沒有資料」在 supabase-js 裡都是空的，意思完全相反。（規則 14）
+        if (r.error) { gate('err', '算不出損益', r.error.message || ''); return; }
+        D = r.data || null;
+        if (!D) { gate('err', '算不出損益', '回來的是空的'); return; }
+        elSub.textContent = D.ym + '　損益' + (D.closed ? '（已結算）' : '');
+        render();
+      }, function (e) {
+        BUSY = false;
+        gate('err', '算不出損益', String(e && e.message || e));
+      });
+  }
+
+  /* ══ 開場 ══════════════════════════════════════════════════════ */
+  function boot() {
+    if (!window.FFF_AUTH || !window.FFF_AUTH.ready) {
+      gate('err', '身分程式沒載進來', 'liff-auth.js 沒跑起來'); return;
+    }
+    window.FFF_AUTH.ready.then(function () {
+      var st = window.FFF_AUTH.state;
+      if (st === 'browsing') {
+        elSub.textContent = '未登入';
+        gate('err', '要先登入', '請從教練登入頁進來（staff.html）'); return;
+      }
+      if (st === 'checking') {
+        elSub.textContent = '重新登入中';
+        gate('', '正在重新登入…', '登入過期了，馬上跳到 LINE 幫你換一張'); return;
+      }
+      if (st === 'error') {
+        elSub.textContent = '辨識失敗';
+        if (window.FFF_AUTH.canLogin) {
+          gate('', '登入過期了',
+               (window.FFF_AUTH.errorNote || '按下面重新登入就好。') +
+               '（' + (window.FFF_AUTH.error || '') + '）');
+          var rb = document.createElement('button');
+          rb.type = 'button'; rb.className = 'btn';
+          rb.style.cssText = 'max-width:280px;margin:18px auto 0';
+          rb.textContent = '重新登入';
+          rb.onclick = function () {
+            rb.textContent = '正在開啟 LINE 登入…'; rb.disabled = true;
+            if (!window.FFF_AUTH.login()) {
+              rb.textContent = '開不起來，請改從 LINE 裡面開'; rb.disabled = false;
+            }
+          };
+          elGate.appendChild(rb);
+          return;
+        }
+        gate('err', '辨識失敗',
+             (window.FFF_AUTH.errorNote ? window.FFF_AUTH.errorNote + '　' : '') +
+             (window.FFF_AUTH.error || '')); return;
+      }
+      if (!window.fffDB) { gate('err', '資料庫連線沒建立', 'no_fffDB'); return; }
+      DB = window.fffDB;
+
+      DB.auth.getUser().then(function (u) {
+        if (u.error || !u.data || !u.data.user) {
+          gate('err', '拿不到登入身分', (u.error && u.error.message) || 'no_user'); return;
+        }
+        return DB.from('employees')
+          .select('id,display_name,role,is_active,can_finance')
+          .eq('auth_user_id', u.data.user.id)
+          .then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            if (!r.data || !r.data.length) {
+              elSub.textContent = '未開通';
+              gate('err', '你的帳號還沒開通', '先開 staff.html 把登入代號給 Jerec'); return;
+            }
+            ME = r.data[0];
+            if (ME.is_active === false) {
+              gate('err', ME.display_name + '　已停用', '如果這是誤設，請找 Jerec'); return;
+            }
+            // ☢️ 這裡擋一次只是為了給看得懂的訊息。真正的牆在資料庫。
+            if (!ME.can_finance) {
+              elSub.textContent = '沒有權限';
+              gate('err', '損益表只有負責人和財務看得到',
+                   '如果你需要看，請找 Jerec 開權限'); return;
+            }
+            elWho.textContent = ME.display_name;
+            elSub.textContent = '損益表';
+            return load();
+          }, function (e) {
+            gate('err', '查不到員工名單', String(e && e.message || e));
+          });
+      });
+    });
+  }
+
+  document.getElementById('reload').onclick = function () { if (DB) load(); };
+  window.FFF_AUTH.onResume = function () { if (DB && ME) load(); };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+</body>
+</html>
