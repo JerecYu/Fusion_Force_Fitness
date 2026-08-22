@@ -290,6 +290,11 @@
   /* 選中的那一顆要一眼看得出來 —— 這是動到錢的地方 */
   .buyb.on{background:var(--ink);border-color:var(--ink);color:#fff}
   .buyc{grid-column:1 / -1;margin-top:3px}
+  /* 品項分組標題。☢️ 團體課 400 元和私人課 20,000 元排在同一串裡，
+     眼睛會滑過去 —— 而按錯的代價是一筆五位數的帳。 */
+  .bgrp{grid-column:1 / -1;margin:9px 0 -1px;font-size:10.5px;font-weight:800;
+    letter-spacing:.16em;color:var(--faint)}
+  .bgrp:first-of-type{margin-top:4px}
   .buysum{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px;
     font-size:12.5px;line-height:1.7;color:var(--ink2)}
   .warn2{color:#7C420E;font-size:11.5px}
@@ -679,8 +684,14 @@
   function loadPurchaseBits() {
     // ☢️ 這兩個讀不到不該擋住整個後台 —— 綁定診斷跟購課是兩件事。
     return Promise.all([
-      DB.from('products').select('code,label,credits,price,sort_order')
-        .eq('product','GT').eq('is_active', true).order('sort_order')
+      // ☢️ 2026-08-22（第 93 步之三）：條件從 product='GT' 改成 sellable。
+      //    原本寫死只賣團體課，所以【私人課的卡開不出來】——
+      //    db/68 讓「扣預收」扣得動了，卻沒有卡可以扣。
+      //    ☢️ 不能只是把 GT 那個條件拿掉：那樣單堂品項（PT 單堂、PGT 單堂、
+      //       企業包班費率）也會冒出來，而單堂的錢【已經在服務登記那側收了】——
+      //       在這裡再賣一次就是同一筆收入記兩遍。sellable 是資料庫裡的明確旗標。
+      DB.from('products').select('code,label,credits,price,sort_order,product,headcount')
+        .eq('sellable', true).eq('is_active', true).order('product').order('sort_order')
         .then(function (r) { PRODUCTS = (!r.error && r.data) ? r.data : []; },
               function () { PRODUCTS = []; }),
       (ME && ME.role === 'owner'
@@ -799,18 +810,29 @@
   //    一鍵直接入帳太快了 —— 這是動到錢的地方，跟點名不一樣。
   function buyPanel(c) {
     if (!PRODUCTS.length) return '<div class="hint">讀不到方案，重新整理看看。</div>';
+    // ☢️ 分組。品項從兩個變成四個之後，團體課 400 元和私人課 20,000 元
+    //    排在同一串裡，眼睛會滑過去 —— 而按錯的代價是一筆五位數的帳。
+    var last = '';
+    var body = PRODUCTS.map(function (p) {
+      var head = '';
+      if (p.product !== last) {
+        last = p.product;
+        head = '<div class="bgrp">' +
+          (p.product === 'GT' ? '團體課' : p.product === 'PT' ? '私人課' : esc(p.product)) +
+          '</div>';
+      }
+      return head +
+        '<div class="brl"><b>' + esc(p.label) + '</b><i>＋' + p.credits + ' 堂</i></div>' +
+        ['cash','transfer'].map(function (m) {
+          return '<button type="button" class="buyb" data-buy="' + esc(c.id) + '" ' +
+            'data-code="' + esc(p.code) + '" data-m="' + m + '" ' +
+            'data-label="' + esc(p.label) + '" data-price="' + p.price + '" ' +
+            'data-credits="' + p.credits + '">NT$' + money(p.price) + '</button>';
+        }).join('');
+    }).join('');
     return '<div class="buy" data-for="' + esc(c.id) + '">' +
       '<span></span><span class="bhd">現金</span><span class="bhd">匯款</span>' +
-      PRODUCTS.map(function (p) {
-        return '<div class="brl"><b>' + esc(p.label) + '</b><i>＋' + p.credits + ' 堂</i></div>' +
-          ['cash','transfer'].map(function (m) {
-            return '<button type="button" class="buyb" data-buy="' + esc(c.id) + '" ' +
-              'data-code="' + esc(p.code) + '" data-m="' + m + '" ' +
-              'data-label="' + esc(p.label) + '" data-price="' + p.price + '" ' +
-              'data-credits="' + p.credits + '">NT$' + money(p.price) + '</button>';
-          }).join('');
-      }).join('') +
-      '<div class="buyc" hidden></div></div>';
+      body + '<div class="buyc" hidden></div></div>';
   }
 
   /* ══ 畫面 ══════════════════════════════════════════════════
@@ -1015,7 +1037,9 @@
       box.innerHTML = d.map(function (c) {
         return '<div class="xfhit" data-xfpick="' + esc(c.id) + '" data-nm="' + esc(c.name) +
           '" data-tl="' + esc(c.phone_tail || '') + '"><b>' + esc(c.name) + '</b>' +
-          '<span>' + esc(c.phone_tail || '') + '</span><i>剩 ' +
+          // ☢️ 標明是團體課。私人課的卡開始存在之後，
+          //    一個沒有前綴的「剩 8 堂」會被當成全部的堂數。
+          '<span>' + esc(c.phone_tail || '') + '</span><i>團 ' +
           (c.balance == null ? '—' : c.balance) + ' 堂</i></div>';
       }).join('');
       Array.prototype.forEach.call(box.querySelectorAll('[data-xfpick]'), function (el) {
@@ -1476,24 +1500,38 @@
           box.innerHTML = '<div class="res bad">' + esc(m) + '</div>';
           return;
         }
+        // ☢️ 一定要講清楚是【哪一種】堂數。買了私人課卻寫「現在剩 12 堂」，
+        //    櫃檯會以為那是團課 —— 兩種堂數在系統裡是完全分開的兩本帳。
+        var kind = d.product === 'GT' ? '團體課'
+                 : d.product === 'PT' ? ('私人課' + (d.headcount === 2 ? '（一對二）' : '（一對一）'))
+                 : (d.product || '');
         box.innerHTML = '<div class="res ok">' +
           esc(d.name) + '　＋' + d.credits + ' 堂　·　NT$' + d.price +
-          '<br>現在剩 <b>' + d.balance + ' 堂</b>' +
+          '<br>' + esc(kind) + '現在剩 <b>' + d.balance + ' 堂</b>' +
           (d.pending ? '<br>☢️ 已列入<b>待入帳</b>，錢到了記得回來確認。' : '') +
           '</div>';
-        toast(d.name + '　＋' + d.credits + ' 堂　·　現在剩 ' + d.balance + ' 堂');
+        toast(d.name + '　＋' + d.credits + ' 堂　·　' + kind + '剩 ' + d.balance + ' 堂');
 
         // ☢️ 不要整頁重畫。第一版就是這樣，結果剛按完的那句「＋1 堂、現在剩 7 堂」
         //    連同搜尋結果一起被洗掉 —— 教練會不確定自己到底有沒有按成功。
         //    只更新兩塊：這一列的餘額、上面的待入帳清單。
         var row = document.querySelector('#buy-' + customerId);
         var hit = row && row.previousElementSibling;
-        var balEl = hit && hit.querySelector('.bal');
+        // ☢️ add_purchase 回的 balance 是【剛買的那個產品別】的餘額。
+        //    以前只賣團體課，所以直接寫進 .bal 沒問題；
+        //    現在買一張私人課的卡也會回一個數字 ——
+        //    寫進團課那一格的話，畫面會顯示「團課剩 10 堂」而那是私人課的堂數。
+        var isGT = (d.product === 'GT');
+        var balEl = hit && hit.querySelector(isGT ? '.bal' : '.balpt');
         if (balEl) {
-          balEl.textContent = '剩 ' + d.balance + ' 堂';
-          balEl.classList.toggle('low', Number(d.balance) <= 0);
+          balEl.textContent = (isGT ? '團 ' : '私 ') + d.balance + ' 堂';
+          balEl.hidden = false;
+          if (isGT) balEl.classList.toggle('low', Number(d.balance) <= 0);
         }
-        HITS.forEach(function (x) { if (x.id === customerId) x.balance = d.balance; });
+        HITS.forEach(function (x) {
+          if (x.id !== customerId) return;
+          if (isGT) x.balance = d.balance; else x.balance_pt = d.balance;
+        });
 
         if (!d.pending) return;                       // 現金：待入帳沒變，不用重讀
         return loadPurchaseBits().then(function () {
@@ -1685,7 +1723,7 @@
 
   function search(v, box) {
     var digits = /^\d+$/.test(v);
-    var COLS = 'id,name,nickname,phone_tail,balance,bound,is_active';
+    var COLS = 'id,name,nickname,phone_tail,balance,balance_pt,bound,is_active';
 
     // ☢️ 姓名和暱稱各查一次再合併，【不用】PostgREST 的 or() ——
     //    or() 是把條件塞進網址的字串，客人名字裡只要有逗號或括號就會把它拆壞。
@@ -1738,7 +1776,13 @@
               '<span class="hm">' +
                 '<span class="tl">' + esc(c.phone_tail) + '</span>' +
                 '<span class="bd ' + (c.bound ? 'y">已綁定' : 'n">未綁定') + '</span>' +
-                '<span class="bal' + (b <= 0 ? ' low' : '') + '">剩 ' + b + ' 堂</span>' +
+                // ☢️ 團課和私人課【分兩格寫】，不要加起來 ——
+                //    一堂團課 333 元、一堂私人課 1,500～2,000 元，
+                //    加總出來的那個數字不代表任何東西。
+                //    私人課 0 堂的人不畫（223 位裡目前每一位都是 0）。
+                '<span class="bal' + (b <= 0 ? ' low' : '') + '">團 ' + b + ' 堂</span>' +
+                '<span class="bal balpt"' + (Number(c.balance_pt) ? '' : ' hidden') + '>私 ' +
+                  Number(c.balance_pt || 0) + ' 堂</span>' +
                 // ☢️ 調整堂數是【財務限定】。一堂等於錢，而且它沒有課次名單背書，
                 //    只有理由 —— 所以跟薪資、對帳同一道牆。
                 ((ME && ME.can_finance && c.is_active !== false)
