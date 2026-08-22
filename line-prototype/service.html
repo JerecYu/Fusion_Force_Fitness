@@ -158,6 +158,22 @@
     padding:11px;font-family:inherit;font-size:14px;font-weight:800;cursor:pointer}
   .fm-go:disabled{opacity:.5}
 
+  /* 第 94 步收尾：補金額／改金額。☢️ 類別名一律 amt- 開頭（搜過沒撞名）。
+     ☢️ .amt 已經被用掉了（清單右邊的金額），所以是 amt- 不是 amt。 */
+  .amt-f{margin-top:8px;padding:11px;background:var(--surface2);
+    border:1px solid var(--line);border-radius:10px;display:grid;gap:7px}
+  .amt-hd{font-size:13px;font-weight:800;color:var(--ink)}
+  .amt-warn{padding:8px 10px;border-radius:9px;font-size:12.5px;
+    background:var(--warn-bg);border:1px solid var(--warn-line);color:#8F5017}
+  .amt-f label{font-size:11px;font-weight:700;color:var(--dim);letter-spacing:.06em}
+  .amt-f input{width:100%;font-family:inherit;font-size:14px;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+  .amt-go{background:var(--ok);color:#fff;border:0;border-radius:9px;padding:11px;
+    font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+  .amt-go:disabled{opacity:.5}
+  .amt-no{background:none;border:0;color:var(--dim);font-family:inherit;font-size:12px;
+    cursor:pointer;padding:4px}
+
   .note{font-size:11.5px;color:var(--dim);margin-top:8px}
   /* 待確認專區。☢️ 這一區【不受 20 筆上限影響】—— 沒認列的紀錄不會進薪資，
      被清單長度藏起來的話，那筆錢就永遠沒有人去處理。 */
@@ -243,6 +259,8 @@
   // 第 90 步：收款。PAYS 是 service_id → 收款彙總；UNPAID 是「還沒收齊」那一區。
   var PAYS = {}, UNPAID = [];
   var PAYOPEN = null, PAYBUSY = false;
+  // 第 94 步收尾：改金額。AMTOPEN ＝ 哪一筆的金額表單被打開了。
+  var AMTOPEN = null, AMTBUSY = false;
   var PAYF = { method:'cash', amount:'', paid:true, payer:'', note:'' };
   var SVC_COLS = 'id,service_type,done_date,done_time,customer_name,company_name,headcount,' +
                  'billed_hours,revenue_amount,travel_fee,perf_amount,total_amount,' +
@@ -662,6 +680,7 @@
       '</div>' +
       payLine(x) +
       (PAYOPEN === x.id ? payBox(x) : '') +
+      (AMTOPEN === x.id ? amtBox(x) : '') +
       (ME && ME.can_finance
         ? (x.voided
             // ☢️ 作廢在畫面上原本是【單行道】。2026-08-21 真的被誤按了一次
@@ -669,12 +688,79 @@
             //    它一樣要寫原因，而且作廢的歷史不會被抹掉。
             ? '<div class="r3"><button type="button" data-undo="' + esc(x.id) + '">還原</button></div>'
             : '<div class="r3">' +
-              (fin ? '' : '<button type="button" class="go" data-fin="' + esc(x.id) + '">最終認列</button>') +
+              // ☢️ 業績 0 的不能一鍵認列 —— 0 表示【這一堂不會進任何人的薪資】。
+              //    2026-08-22 踩過：8/21 有一筆流水帳金額欄空白，匯進來就是 0，
+              //    而畫面上按「最終認列」【沒有地方可以填金額】，
+              //    所以只能認列成 0（安靜地少發薪水）或者不認列。兩條都是錯的。
+              (fin ? ''
+                   : (Number(x.perf_amount) > 0
+                      ? '<button type="button" class="go" data-fin="' + esc(x.id) + '">最終認列</button>'
+                      : '<button type="button" class="go" data-amt="' + esc(x.id) + '">填金額後認列</button>')) +
+              // 已經認列的還是要能改 —— 改完會留一列在異動紀錄裡，而且
+              // ☢️ 已經月結的月份改不動（要先重開），那是月結存在的理由。
+              (fin ? '<button type="button" data-amt="' + esc(x.id) + '">改金額</button>' : '') +
               '<button type="button" data-void="' + esc(x.id) + '">作廢</button>' +
               (PAYOPEN === x.id ? '' : '<button type="button" data-pay="' + esc(x.id) + '">記收款</button>') +
               '</div>')
         : '') +
     '</div>';
+  }
+
+  /* ══ 補金額 / 改金額（第 94 步收尾）════════════════════════════
+     ☢️ 還沒認列的走 finalize_service(p_perf)：填完金額直接認列，一步到位。
+        已經認列的走 set_service_perf()：要寫原因，而且會留一列異動紀錄。
+     ☢️ 兩條路都【不能繞過月結】—— 已經結算的月份改不動，
+        要改就先重開。那是月結存在的理由。 */
+  function amtBox(x) {
+    var fin = x.fin_status === 'final';
+    return '<div class="amt-f">' +
+      '<div class="amt-hd">' + (fin ? '改金額' : '填金額後認列') + '</div>' +
+      (Number(x.perf_amount) > 0 ? '' :
+        '<div class="amt-warn">☢️ 這一筆的業績是 <b>0</b> —— 匯進來的時候原始資料就沒有金額。' +
+        '認列成 0 的話，這一堂<b>不會進任何人的薪資</b>。</div>') +
+      '<div><label>業績金額</label>' +
+        '<input type="number" id="amtP" inputmode="numeric" min="0" value="' +
+          esc(Number(x.perf_amount) || '') + '" placeholder="例：1500"></div>' +
+      '<div><label>收入金額（留白＝不動）</label>' +
+        '<input type="number" id="amtR" inputmode="numeric" min="0" value="' +
+          esc(Number(x.revenue_amount) || '') + '"></div>' +
+      (fin ? '<div><label>為什麼要改</label>' +
+             '<input type="text" id="amtW" placeholder="例：流水帳金額欄空白，同卡前兩堂都是 1500"></div>' +
+             '<div class="note">☢️ 這會動到教練的薪水。原因會跟舊金額一起留在異動紀錄裡，' +
+             '三個月後查得出來。</div>'
+           : '<div class="note">填完會<b>直接認列</b>這一筆。</div>') +
+      '<button type="button" class="amt-go" data-amtgo="' + esc(x.id) + '">' +
+        (fin ? '存起來' : '填好了，認列') + '</button>' +
+      '<button type="button" class="amt-no" data-amtno="1">取消</button>' +
+    '</div>';
+  }
+
+  function doAmt(id) {
+    if (AMTBUSY) return;
+    var row = null;
+    PEND.concat(LIST).forEach(function (r) { if (r.id === id && !row) row = r; });
+    var fin = row && row.fin_status === 'final';
+    var p = parseInt((document.getElementById('amtP') || {}).value, 10);
+    var rv = (document.getElementById('amtR') || {}).value;
+    var w = ((document.getElementById('amtW') || {}).value || '').trim();
+    if (!(p >= 0)) { toast('業績金額要填', true); return; }
+    if (fin && w.length < 4) { toast('改已認列的要寫原因，至少四個字', true); return; }
+    AMTBUSY = true;
+    var call = fin
+      ? DB.rpc('set_service_perf', { p_id: id, p_perf: p,
+          p_revenue: rv === '' ? null : parseInt(rv, 10), p_why: w })
+      : DB.rpc('finalize_service', { p_id: id, p_note: null, p_perf: p });
+    call.then(function (r) {
+      AMTBUSY = false;
+      if (r.error) throw new Error(r.error.message);
+      // ☢️ RPC 成功不等於做成功 —— 回 {ok:false} 是【規則擋下來】，不是錯誤。
+      if (r.data && r.data.ok === false) { toast(r.data.msg || '做不了', true); return; }
+      AMTOPEN = null;
+      toast(fin ? '金額已更新' : '已填金額並認列');
+      return load();
+    }).catch(function (e) {
+      AMTBUSY = false; toast(String(e && e.message || e), true);
+    });
   }
 
   /* ══ 收款（第 90 步）════════════════════════════════════════════
@@ -1009,6 +1095,19 @@
     on('fmGo',  'onclick', function () { finMonth(false); });
     each('[data-undo]', function (b) {
       b.onclick = function () { restoreOne(b.getAttribute('data-undo')); };
+    });
+    each('[data-amt]', function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-amt');
+        AMTOPEN = (AMTOPEN === id) ? null : id;
+        render();
+      };
+    });
+    each('[data-amtno]', function (b) {
+      b.onclick = function () { AMTOPEN = null; render(); };
+    });
+    each('[data-amtgo]', function (b) {
+      b.onclick = function () { doAmt(b.getAttribute('data-amtgo')); };
     });
     each('[data-pay]', function (b) {
       b.onclick = function () { openPay(b.getAttribute('data-pay')); };
