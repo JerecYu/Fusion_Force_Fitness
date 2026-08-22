@@ -366,10 +366,17 @@
   .mb-cf{margin-top:4px;font-size:.63rem;letter-spacing:.03em;color:var(--faint)}
   .mb-cf.ok{color:#2F6B54;font-weight:700}
   .bal-note.nc{border-left:3px solid var(--teal)}
-  /* 私人課的卡。☢️ 換一個左邊框顏色就好，不要換成完全不同的卡片樣式 ——
-     它跟團體課那一張是同一件事（我還剩幾堂），只是不同的課。 */
-  .bal.pt{border-left-color:var(--teal);margin-bottom:8px}
-  .bal.pt .bal-n{color:var(--teal)}
+  /* 卡片配色。☢️ 換一個左邊框顏色就好，不要換成完全不同的卡片樣式 ——
+     兩種卡是同一件事（我還剩幾堂），只是不同的課。
+     2026-08-22 Jerec 指定：私人課藍、團體課青。
+     私人課用 .bal 的預設藍，團體課掛 .gt 改成青。
+     ☢️☢️ 團體課那個【數字不能直接用 --teal】—— #6FBAC9 對白底只有 2.20:1，
+        比大字最低的 3:1 還低，那個數字會糊掉，而它是這張卡唯一的資訊。
+        所以拆兩層：左邊 4px 的識別條用淺青（它是圖形，旁邊又寫著「GT 團體課」），
+        數字用同色系壓深的 #2F717E（5.55:1，過 AA）。 */
+  .bal.pt{margin-bottom:8px}
+  .bal.gt{border-left-color:var(--teal)}
+  .bal.gt .bal-n{color:#2F717E}
   .bal-note.pt{margin-top:-2px}
   .mb-x{flex:0 0 auto;font:inherit;font-size:.72rem;font-weight:700;cursor:pointer;
     background:#fff;color:var(--adv);border:1.5px solid var(--adv-s);
@@ -1117,23 +1124,34 @@
     }
 
     const bal = myCredits ? myCredits.balance : null;
-    let html =
-      '<div class="bal"><span class="bal-l">GT 團體課　剩餘堂數</span>' +
-        '<span class="bal-n">' + (bal === null ? '—' : bal) + '</span>' +
-        '<span class="bal-u">堂</span></div>' +
-      (bal !== null && bal <= 0
-        ? '<div class="bal-note">目前沒有剩餘堂數。還是可以預約 —— 到現場再購課就好。</div>' : '');
+    let html = '';
 
-    // ── 私人課的卡（沒有卡的人完全不會看到這一段）────────────────
+    // ── ① 私人課的卡（沒有卡的人完全不會看到這一段）───────────────
     // ☢️ 一張卡一列。不要加總 —— 一對一和一對二的每堂價值不一樣。
     // ☢️ 沒有卡就整段不出現。畫一個「私人課 0 堂」給從來沒買過私人課的人看，
     //    只會讓他以為自己少了什麼東西。
+    // ☢️ 2026-08-22 Jerec 指定放在【團體課上面】。有私人課的人數量少但單價高，
+    //    他們打開這一頁通常就是為了看這個。
     if (myPlans.length) {
       html += myPlans.map(p =>
         '<div class="bal pt"><span class="bal-l">' + esc(p.label) + '</span>' +
           '<span class="bal-n">' + p.remaining + '</span>' +
           '<span class="bal-u">堂</span></div>'
       ).join('');
+    }
+
+    // ── ② 團體課 ───────────────────────────────────────────────
+    html +=
+      '<div class="bal gt"><span class="bal-l">GT 團體課　剩餘堂數</span>' +
+        '<span class="bal-n">' + (bal === null ? '—' : bal) + '</span>' +
+        '<span class="bal-u">堂</span></div>' +
+      (bal !== null && bal <= 0
+        ? '<div class="bal-note">目前沒有剩餘堂數。還是可以預約 —— 到現場再購課就好。</div>' : '');
+
+    // ── ③ 私人課的說明。☢️ 放在所有卡片之後，而且【第一句就自報身分】
+    //    （「私人課的堂數…」）—— 中間隔了一張團體課的卡，
+    //    不自報身分的話讀者會以為它在講上面那一張。
+    if (myPlans.length) {
       const used = myPlans.filter(p => p.last_used_at)
         .sort((x, y) => +new Date(y.last_used_at) - +new Date(x.last_used_at))[0];
       html += '<div class="bal-note pt">私人課的堂數由教練在課後登記，' +
