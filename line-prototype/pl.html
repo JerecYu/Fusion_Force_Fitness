@@ -243,7 +243,8 @@
   function waitBlock() {
     var w = D.income_wait || {};
     var bits = [];
-    if (w.gt_classes) bits.push('團體課上了 <b>' + w.gt_classes + ' 堂</b>，但系統不知道那幾堂是從哪一張卡扣的 —— <b>算不出金額</b>');
+    if (w.gt_classes) bits.push('團體課有 <b>' + w.gt_classes + ' 堂</b>是從<b>搬遷進來的舊卡</b>扣的 —— ' +
+      '那些卡沒有實收金額，所以<b>算不出這幾堂值多少</b>');
     if (w.pend_n)     bits.push('還有 <b>' + w.pend_n + ' 筆</b>服務紀錄是「待確認」，金額還沒定案');
     if (!bits.length) return '';
     return '<div class="softbox">☢️ <b>下面這些沒有算進收入</b>：<br>· ' +
@@ -277,12 +278,19 @@
               (x.how === 'plan' ? '　扣預收' : '　現場收') + '</span>' +
               '<span class="d-a">' + money(x.amount) + '</span></div>';
           }) +
-      row('團體課', (i.gt.n || 0) + ' 堂算得出金額', money(i.gt.amount), 'gt', null, null) +
+      row('團體課', (i.gt.n || 0) + ' 堂算得出金額', money(i.gt.amount),
+          'gt', L.gt, function (x) {
+            return '<div class="d"><span class="d-w">' + esc(x.when) + '　' + esc(x.who) +
+              '　' + x.credits + ' 堂 × ' + money(x.rate) + '</span>' +
+              '<span class="d-a">' + money(x.amount) + '</span></div>';
+          }) +
       '<div class="sumline">' +
         row('<b>收入合計</b>', '', '<b>' + money(i.total) + '</b>', 'x', null, null) +
       '</div>' +
       '<div class="note">☢️ 這是<b>認列收入</b>：上完一堂算一堂（權責制，第 89 步裁決）。' +
-      '<b>跟這個月收到多少現金是兩回事</b> —— 要看現金請去<a href="report.html">對帳報表</a>。</div>' +
+      '<b>跟這個月收到多少現金是兩回事</b> —— 要看現金請去<a href="report.html">對帳報表</a>。<br>' +
+      '☢️ 團課只算得出<b>從新系統賣出去的卡</b>扣掉的那幾堂。' +
+      '搬遷進來的舊卡沒有實收金額，那幾堂列在下面的「沒有算進收入」。</div>' +
     '</div>';
   }
 

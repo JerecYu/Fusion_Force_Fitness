@@ -20,12 +20,20 @@
 --    ☢️ 拿檯面價回推會做出一個看起來很完整、而且永遠沒有人
 --       查得出是估的數字。少一個數字比多一個假數字好。
 --
--- ══☢️☢️ 目前的現實：團課一毛都認不出來 ═══════════════════════
---    八月 117 筆團課扣堂，【沒有一筆掛到方案上】（plan_id 全是 null）。
---    所以就算方案有單價也對不起來 —— 系統不知道這一堂是從哪一張卡扣的。
---    這正是 db/68 幫私人課補好的那個洞，團課那一側還沒補。
---    ☢️ 在補好之前，團課的認列收入會是 0，而 120 堂會出現在
---       「金額待確認」。這不是算錯，是【真的不知道】。
+-- ══☢️☢️ 「這一堂從哪一張卡扣的」要去 plan_draws 查 ═══════════
+--    ☢️ 我第一版查錯地方，結論整個反過來，記在這裡：
+--       我查 credit_ledger.plan_id，看到團課那 117 筆全是 null，
+--       於是判斷「系統根本沒記是從哪張卡扣的，這是結構性的洞」。
+--       ☢️ 錯的。plan_allocate() 一直都有做，只是做在【plan_draws】：
+--       每一次扣堂照 opened_at 先進先出拆到卡上，跨卡時會拆成多列。
+--       credit_ledger.plan_id 只在【人自己指定】時才有值 ——
+--       那是私人課（db/68）才有的動作，團課沒有人在指定。
+--    ☢️ 查錯地方拿到的是 0，而【0 看起來就像「這個月沒有團課收入」】。
+--       實測：117 筆扣堂，plan_draws 裡 117 筆全部找得到。
+--
+--    真正算不出金額的原因是另一件事：104 張 GT 卡裡只有 7 張有實收金額
+--    （那 7 張是新系統賣出去的），其餘 97 張是搬遷進來的舊卡。
+--    所以八月 120 堂裡 6 堂算得出（2,133 元）、114 堂算不出。
 --
 -- ══ 只算已經最終認列的 ═════════════════════════════════════════
 -- ☢️ 待確認的服務紀錄不進收入 —— 跟薪資同一套標準。
@@ -58,7 +66,7 @@ declare
   v_gt_wait  int := 0;      v_pend_n int := 0;  v_pend_amt numeric := 0;
   v_pay      numeric := 0;  v_pay_n  int := 0;
   v_exp      jsonb;         v_exp_amt numeric := 0;  v_exp_n int := 0;
-  v_lines    jsonb;         v_paylines jsonb;  v_explines jsonb;
+  v_lines    jsonb;         v_gtlines jsonb;  v_paylines jsonb;  v_explines jsonb;
   v_liab     jsonb;         v_liab_c jsonb;
   v_recv_amt numeric := 0;  v_recv_n int := 0;  v_recv jsonb;
   v_val_cr   numeric := 0;  v_val_amt numeric := 0;  v_unval_cr numeric := 0;
@@ -115,25 +123,44 @@ begin
      and (sr.done_at at time zone 'Asia/Taipei')::date <= v_to;
 
   -- ══ ② 認列收入：團課那一側 ═════════════════════════════════
-  -- ☢️ 只算【扣得出是哪一張卡、而且那張卡有單價】的。
-  --    目前兩個條件都不成立（扣堂沒有掛 plan_id），所以會是 0。
-  select coalesce(sum((-l.delta) * p.per_credit), 0),
-         coalesce(sum(-l.delta) filter (where p.per_credit is not null), 0)::int
+  -- ☢️ 走 plan_draws，不是 credit_ledger.plan_id（理由見檔頭）。
+  --    只算【從有實收金額的那張卡扣掉】的堂數。
+  select coalesce(sum(d.credits * p.per_credit), 0),
+         coalesce(sum(d.credits), 0)::int
     into v_gt_amt, v_gt_n
-    from public.credit_ledger l
-    join public.plans p on p.id = l.plan_id and p.per_credit is not null
+    from public.plan_draws d
+    join public.credit_ledger l on l.id = d.ledger_id
+    join public.plans p on p.id = d.plan_id and p.per_credit is not null
    where l.product = 'GT' and l.reason = 'class' and l.delta < 0
      and (l.created_at at time zone 'Asia/Taipei')::date >= v_m
      and (l.created_at at time zone 'Asia/Taipei')::date <= v_to;
 
-  -- 算不出金額的那幾堂
-  select coalesce(sum(-l.delta), 0)::int into v_gt_wait
-    from public.credit_ledger l
-    left join public.plans p on p.id = l.plan_id
+  select coalesce(jsonb_agg(x order by x->>'when'), '[]'::jsonb) into v_gtlines
+    from (
+      select jsonb_build_object(
+        'when',   to_char(l.created_at at time zone 'Asia/Taipei','MM/DD HH24:MI'),
+        'who',    c.name,
+        'credits', d.credits,
+        'rate',   round(p.per_credit),
+        'amount', round(d.credits * p.per_credit)) as x
+        from public.plan_draws d
+        join public.credit_ledger l on l.id = d.ledger_id
+        join public.plans p on p.id = d.plan_id and p.per_credit is not null
+        left join public.customers c on c.id = l.customer_id
+       where l.product = 'GT' and l.reason = 'class' and l.delta < 0
+         and (l.created_at at time zone 'Asia/Taipei')::date >= v_m
+         and (l.created_at at time zone 'Asia/Taipei')::date <= v_to
+    ) t;
+
+  -- 從【沒有實收金額的舊卡】扣掉的那幾堂 —— 只列堂數，不猜金額
+  select coalesce(sum(d.credits), 0)::int into v_gt_wait
+    from public.plan_draws d
+    join public.credit_ledger l on l.id = d.ledger_id
+    join public.plans p on p.id = d.plan_id
    where l.product = 'GT' and l.reason = 'class' and l.delta < 0
+     and p.per_credit is null
      and (l.created_at at time zone 'Asia/Taipei')::date >= v_m
-     and (l.created_at at time zone 'Asia/Taipei')::date <= v_to
-     and (l.plan_id is null or p.per_credit is null);
+     and (l.created_at at time zone 'Asia/Taipei')::date <= v_to;
 
   -- ══ ③ 支出：教練薪資 ═══════════════════════════════════════
   select coalesce(sum((x->>'total')::numeric), 0), count(*)
@@ -148,27 +175,21 @@ begin
   v_explines := coalesce(v_exp -> 'rows', '[]'::jsonb);
 
   -- ══ ⑤ 負債：還欠客人幾堂 ═══════════════════════════════════
-  -- ☢️ 堂數用【帳本】算，不用方案算。團課的扣堂沒有掛 plan_id，
-  --    拿方案的 total_credits 減掉「掛得上的扣堂」會少扣一大片 ——
-  --    實測方案那一側算出 853 堂，帳本是 655 堂，差 198 堂。
-  --    帳本是每天都在對帳的那一本（staff_plan_check），它才是真相。
   select coalesce(jsonb_object_agg(product, bal), '{}'::jsonb) into v_liab_c
     from (select l.product, sum(l.delta) as bal
             from public.credit_ledger l
            where (l.created_at at time zone 'Asia/Taipei')::date <= v_to
            group by l.product having sum(l.delta) <> 0) t;
 
-  -- 這些堂數裡算得出金額的（只有帶得到單價的方案才算）
-  select coalesce(sum(q.rem), 0), coalesce(sum(q.rem * q.per_credit), 0)
+  -- 這些堂數裡算得出金額的
+  -- ☢️ 用 plan_state（它本身就是拿 plan_draws 算的），實測跟帳本
+  --    完全對得起來：GT 655＝655、私人課 409＝409。
+  --    ☢️ 不要自己拿 total_credits 減 credit_ledger.plan_id ——
+  --       第一版那樣算出 853 堂，跟帳本差了 198 堂。
+  select coalesce(sum(ps.remaining), 0), coalesce(sum(ps.remaining * ps.per_credit), 0)
     into v_val_cr, v_val_amt
-    from (
-      select p2.id, p2.per_credit,
-             p2.total_credits - coalesce((select -sum(l2.delta) from public.credit_ledger l2
-               where l2.plan_id = p2.id and l2.delta < 0
-                 and (l2.created_at at time zone 'Asia/Taipei')::date <= v_to), 0) as rem
-        from public.plans p2 where p2.per_credit is not null
-    ) q
-   where q.rem > 0;
+    from public.plan_state ps
+   where ps.per_credit is not null and ps.remaining > 0;
 
   -- ☢️ 這裡是【淨額】：有幾位客人上的課比買的多（餘額是負的），
   --    那是真的欠課，不是資料錯（見第 93 步）。把負的也算進去，
@@ -205,8 +226,8 @@ begin
 
     'income', jsonb_build_object(
       'pt',    jsonb_build_object('amount', v_pt_amt, 'n', v_pt_n),
-      'gt',    jsonb_build_object('amount', v_gt_amt, 'n', v_gt_n),
-      'total', v_pt_amt + v_gt_amt),
+      'gt',    jsonb_build_object('amount', round(v_gt_amt), 'n', v_gt_n),
+      'total', round(v_pt_amt + v_gt_amt)),
 
     -- 有堂數、沒金額 —— ☢️ 不進上面任何一個總計
     'income_wait', jsonb_build_object(
@@ -219,7 +240,7 @@ begin
       'expense', jsonb_build_object('amount', v_exp_amt, 'n', v_exp_n),
       'total',   v_pay + v_exp_amt),
 
-    'net', (v_pt_amt + v_gt_amt) - (v_pay + v_exp_amt),
+    'net', round((v_pt_amt + v_gt_amt) - (v_pay + v_exp_amt)),
 
     -- ☢️ 支出簿是空的 → 「剩多少」一定偏高，畫面要大聲講
     'expense_empty', (v_exp_n = 0),
@@ -234,6 +255,7 @@ begin
 
     'lines', jsonb_build_object(
       'income',     v_lines,
+      'gt',         v_gtlines,
       'payroll',    v_paylines,
       'expense',    v_explines,
       'liability',  v_liab,
