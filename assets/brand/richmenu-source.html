@@ -1,55 +1,50 @@
 <!DOCTYPE html>
 <!--
   ══════════════════════════════════════════════════════════════════
-  LINE 圖文選單底圖的「原始檔」 v3  →  assets/brand/fff-richmenu.png
+  LINE 圖文選單底圖的「原始檔」 v4  →  assets/brand/fff-richmenu.png
   ══════════════════════════════════════════════════════════════════
 
   要改字、改配色、換分格：改這支 HTML，然後 `python3 shot.py`。
 
-  ☢️ 尺寸不能亂改 —— LINE 圖文選單大版位就是 2500×1686，
-     六宮格每格 833×843，LINE 後台的可點區域是照那個網格切的。
-     圖改了尺寸，六個按鈕的位置就會全部對不上。
+  ☢️ 尺寸不能亂改 —— 2500×1686，六宮格每格 833×843，
+     LINE 後台的可點區域是照那個網格切的。
 
-  ☢️☢️ v3【換了六格的順序】—— 所以這一版【一定要重設 LINE 後台的六個動作】。
-     可點區域是綁在【位置】上的，不是綁在圖案上。
-     只換圖不改動作的話，客人按「私人課」會進團體課訂課頁，
-     而且【不會有任何錯誤訊息】。
-
-     v3 的對應（Jerec 2026-08-22 指定的順序）：
+  ☢️☢️ 六格順序與 v3 相同，所以【如果你已經照 v3 設好六個動作，這一版不用再改】。
+       還沒設的話，對應是：
        A 左上 私人課    → liff.line.me/2011063116-QOxXN30h/PT-booking.html
        B 中上 團體課    → …/GT-booking.html
        C 右上 私人團體  → …/PGT-booking.html
        D 左下 我的預約  → …/GT-booking.html?tab=m
        E 中下 價目表    → …/pricing.html
        F 右下 聯絡我們  → 文字「我想詢問」
+     ☢️ 規則 18：LINE 裡的連結一律用 LIFF 網址。
 
-     ☢️ 規則 18：LINE 裡的連結一律用 LIFF 網址，絕不用 jerecyu.github.io/…
-        後者在 LINE 裡只是普通瀏覽器，客人會被當成沒綁定的人 ——
-        不會報錯，只會默默降級。
+  ── v4 改了什麼（2026-08-22）─────────────────────────────────
+  Jerec：「底圖需要重做，因為沒有具設計感的底色，請混合兩張附圖製作」。
 
-  ── v3 改了什麼（2026-08-22）─────────────────────────────────
-  Jerec：「以品牌 logo 去發想，風格上走輕盈質感／修復風……
-           字體上改用襯線體」，並且「拿掉最左上角最外層的裝飾用白邊」。
+  ☢️ v3 只取了【一張】LOGO 的顏色（藍→青）。品牌其實有兩套：
+       A 藍青版：主色 #2C7EB0，配青 #6FBAC9
+       B 藍綠版：深藍 #00448D、亮青、以及【萊姆綠 #C5D322】
+     v3 整組缺了綠色那一端，所以六格的底色只是六片深淺不同的灰白 ——
+     那不是「淡雅」，那是【沒有顏色】。
 
-  ① 【反過來了：深底白字 → 淺底深字。】
-     修復風的核心是留白與低彩度，深藍滿版做不出來。
-     ☢️ 但對比不能因此變差 —— 深墨 #23414E 落在最深的那個底色上
-        仍有 9:1，副標 #4E6B77 有 4.7:1（shot.py 會實際驗算，不過就中斷）。
-  ② 【襯線體】'Noto Serif CJK TC'。
-     ☢️ 襯線的橫畫很細，縮到手機上（15.6%）容易糊掉，
-        所以副標從 72px 加到 84px（手機上 13pt），而且用 Medium 不用 Regular。
-        標題維持 148px（23pt）。字級只能加不能減 —— v2 就是被 6~7pt 咬過。
-  ③ 【拿掉 .lead::before 那條裝飾邊】。它在手機上看起來就是一條白邊，
-     而且它想表達的「這格是主角」已經由順序表達了 —— 主角就是第一格。
-  ④ 【LOGO 的緞帶曲線變成底紋】。原本是 LOGO 上那組斜切線，很硬；
-     改成兩道相互穿插的 S 形曲線（就是 mark.png 上那兩道），
-     淡到幾乎看不見，只當紙的紋理。
-  ⑤ 三個色階仍然照【功能配對】，但差異縮到很小：
-        A B 訂課（最常按）  暖象牙
-        C D 我的／私團      淡霧藍
-        E F 資訊            淡灰綠
-     ☢️ 不是六個顏色 —— 六個顏色等於沒有顏色（v2 的結論，仍然成立）。
-  ⑥ 圖示線條 9 → 5，顏色改成低彩度的青。粗線在淺底上會變成噪點。
+  v4 三件事：
+  ① 【色帶補完】深藍 → 中藍 → 亮青 → 萊姆綠，四個端點都來自 LOGO。
+     三組配對各取色帶的一段，所以六格是【同一條漸層上的三個區間】，
+     不是三個各自挑的顏色 —— 這樣才會像同一個品牌。
+  ② 【底色真的有設計】：右下角一片大面積的柔光暈（radial），
+     左上維持乾淨。
+     ☢️ 顏色放在【文字不在的那一側】—— 這是能上色又不犧牲可讀性的唯一方法。
+        整片鋪滿的話，手機縮到 15.6% 之後字會糊在色塊裡。
+  ③ 【緞帶變成真正的圖形】：不再是淡到看不見的水印，
+     改成帶漸層的雙股曲線，取自 LOGO 那兩道交纏的翅膀。
+     一樣兩端都出框（v3 的教訓：兩道並排的 S 會被讀成兩個問號）。
+
+  ☢️ 對比這一版改成【從算出來的圖上真的取樣】：
+     shot.py 會再截一張「把文字藏起來」的圖，
+     在每一格的文字區域裡找【最深的那個背景像素】，拿它去算對比。
+     宣告的色碼可能跟實際算出來的不一樣（漸層、疊色），
+     取樣才問得出真話。
 -->
 <html lang="zh-Hant">
 <head>
@@ -57,19 +52,21 @@
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
-    /* 取自 LOGO 的藍→青，但整組降彩度、提亮度 —— 那是「修復風」的做法 */
-    --ink:#23414E;      /* 標題：深墨，不是純黑 */
-    --sub:#4E6B77;      /* 副標：中灰藍 */
-    --teal:#7FB3BF;     /* 圖示與細線：低彩度的青 */
-    --hair:rgba(35,65,78,.10);
+    /* ── 四個端點全部取自兩張 LOGO ── */
+    --navy:#00448D;   /* B 版深藍   */
+    --blue:#2C7EB0;   /* A 版主藍   */
+    --cyan:#4FB3D9;   /* 兩版共有的亮青 */
+    --lime:#C5D322;   /* B 版萊姆綠 */
+
+    --ink:#1E3B4A;    /* 標題：深墨 */
+    --sub:#48646F;    /* 副標：中灰藍 */
+    --hair:rgba(30,59,74,.11);
   }
-  body{width:2500px;height:1686px;background:#FBF8F4;
+  body{width:2500px;height:1686px;background:#FCFDFD;
     font-family:'Noto Serif CJK TC','Noto Serif TC',serif;
     display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);
     overflow:hidden}
 
-  /* ☢️ 格線用【極淡的墨線】，不是白線。
-        淺底配白線等於沒有線；淺底配淡墨線才分得開，而且不刺眼。 */
   .c{position:relative;padding:96px 78px;overflow:hidden;
     display:flex;flex-direction:column;justify-content:center;
     box-shadow:inset -3px 0 0 var(--hair), inset 0 -3px 0 var(--hair)}
@@ -77,38 +74,73 @@
   .c:nth-child(n+4){box-shadow:inset -3px 0 0 var(--hair)}
   .c:nth-child(6){box-shadow:none}
 
-  /* 配對上色 —— 三階，而且三階都很淡 */
-  .p1{background:linear-gradient(140deg,#FDFBF8 0%,#F4EEE5 100%)}  /* A B 訂課 */
-  .p2{background:linear-gradient(140deg,#F8FBFC 0%,#E9F2F5 100%)}  /* C D 我的／私團 */
-  .p3{background:linear-gradient(140deg,#F6F8F6 0%,#E9EFEB 100%)}  /* E F 資訊 */
+  /* ☢️ 光暈錨在【右下角外面】，左上（圖示與標題所在）保持乾淨。
+        顏色放在文字不在的那一側 —— 這是能上色又不犧牲可讀性的唯一方法。 */
+  .p1{background:
+    radial-gradient(115% 88% at 116% 112%,
+      rgba(0,68,141,.34) 0%, rgba(44,126,176,.26) 30%, rgba(79,179,217,.13) 55%, rgba(255,255,255,0) 74%),
+    linear-gradient(142deg,#FEFEFF 0%,#EEF5FA 100%)}
+  .p2{background:
+    radial-gradient(115% 88% at 116% 112%,
+      rgba(44,126,176,.30) 0%, rgba(79,179,217,.26) 32%, rgba(111,186,201,.13) 56%, rgba(255,255,255,0) 74%),
+    linear-gradient(142deg,#FEFEFE 0%,#EDF6F8 100%)}
+  .p3{background:
+    radial-gradient(115% 88% at 116% 112%,
+      rgba(79,179,217,.26) 0%, rgba(150,199,150,.24) 30%, rgba(197,211,34,.24) 54%, rgba(255,255,255,0) 74%),
+    linear-gradient(142deg,#FEFEFC 0%,#F3F7E9 100%)}
 
-  /* LOGO 的緞帶：兩道互相穿插的 S 形，淡到只當紙紋 */
-  /* ☢️ 兩道【一模一樣、並排】的 S 會被讀成兩個問號 —— 第一版就是這樣。
-        改成【兩端都出框】的長弧線：看得到的只有中段，
-        沒有起點也沒有終點，就不會被讀成任何字。 */
-  .rb{position:absolute;right:-150px;bottom:-170px;width:700px;height:700px;
-    opacity:.11;pointer-events:none;overflow:hidden}
-  .rb path{fill:none;stroke:var(--teal);stroke-width:6;stroke-linecap:round}
+  /* ☢️ LOGO 上那組【平行斜線】才是這個品牌最好認的形狀，
+        而且它在小尺寸下活得下來 —— v3/v4 早期版本用曲線緞帶，
+        縮到手機的 15.6% 之後【整條消失】，等於白畫。
+        直線不會消失，這是選它的唯一理由。
+     ☢️ 斜線壓在副標右端上面，所以顏色一定要【夠淡】。
+        取樣檢查會直接否決太深的版本（副標要 4.5:1）。 */
+  /* ☢️ 位置是【算出來的】，不是眼睛喬的：
+        文字區塊到 y≈660 為止（圖示＋標題＋副標，垂直置中），
+        所以裝飾的【上緣必須低於 690】才不會壓到副標。
+        520 高、bottom:-370 → 上緣 843+370-520 = 693，剛好在下面。
+        取樣檢查每次都會重驗這件事，喬歪了會當場中斷。 */
+  .art{position:absolute;right:-60px;bottom:-370px;width:520px;height:520px;
+    pointer-events:none;opacity:.62}
+  .art rect{rx:14}
 
   .ico{width:96px;height:96px;margin-bottom:34px;display:block;flex:0 0 auto}
-  .ico *{stroke:var(--teal);stroke-width:5;fill:none;
-    stroke-linecap:round;stroke-linejoin:round}
-  .ico .fill{fill:var(--teal);stroke:none}
+  .ico *{stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .ico .fill{stroke:none}
 
   .t{font-size:148px;font-weight:600;color:var(--ink);letter-spacing:.04em;
     line-height:1.05;white-space:nowrap}
-  /* 標題下面一道很細的青線 —— 取代 v2 那條粗白邊 */
-  .t::after{content:'';display:block;width:96px;height:4px;margin-top:26px;
-    background:var(--teal);opacity:.7}
+  .t::after{content:'';display:block;width:104px;height:5px;margin-top:26px;border-radius:3px}
   .s{margin-top:24px;font-size:84px;font-weight:500;color:var(--sub);
     letter-spacing:.05em;line-height:1.3;white-space:nowrap}
+
+  /* 每一組的重點色：色帶上的三個區間 */
+  .p1 .ico *{stroke:var(--blue)} .p1 .ico .fill{fill:var(--blue)}
+  .p1 .t::after{background:linear-gradient(90deg,var(--navy),var(--blue))}
+  .p2 .ico *{stroke:var(--cyan)} .p2 .ico .fill{fill:var(--cyan)}
+  .p2 .t::after{background:linear-gradient(90deg,var(--blue),var(--cyan))}
+  .p3 .ico *{stroke:#8FA83C} .p3 .ico .fill{fill:#8FA83C}
+  .p3 .t::after{background:linear-gradient(90deg,var(--cyan),var(--lime))}
 </style>
 </head>
 <body>
+
+<!-- 共用漸層。☢️ 定義一次、六格共用 —— 每格各定義一份會撞 id（id 是整份文件唯一）。 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gA" x1="0" y1="1" x2="1" y2="0">
+    <stop offset="0%"  stop-color="#00448D"/><stop offset="55%" stop-color="#2C7EB0"/>
+    <stop offset="100%" stop-color="#4FB3D9"/></linearGradient>
+  <linearGradient id="gB" x1="0" y1="1" x2="1" y2="0">
+    <stop offset="0%"  stop-color="#2C7EB0"/><stop offset="55%" stop-color="#4FB3D9"/>
+    <stop offset="100%" stop-color="#8FD0DA"/></linearGradient>
+  <linearGradient id="gC" x1="0" y1="1" x2="1" y2="0">
+    <stop offset="0%"  stop-color="#4FB3D9"/><stop offset="52%" stop-color="#9CC46B"/>
+    <stop offset="100%" stop-color="#C5D322"/></linearGradient>
+</defs></svg>
+
   <!-- A ─ 私人教練課 ─────────────────────────────────────────── -->
   <div class="c p1">
-    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
-      <path d="M28 130 C96 118 78 68 116 52"/></svg>
+    <svg class="art" viewBox="0 0 100 100"><g transform="rotate(-35 50 50)"><rect x="8"  y="24" width="104" height="7.5" fill="url(#gA)"/><rect x="18" y="41" width="94"  height="7.5" fill="url(#gA)"/><rect x="30" y="58" width="82"  height="7.5" fill="url(#gA)"/><rect x="46" y="75" width="66"  height="7.5" fill="url(#gA)"/></g></svg>
     <svg class="ico" viewBox="0 0 100 100">
       <path d="M14 40 V60"/><path d="M86 40 V60"/>
       <rect x="27" y="30" width="15" height="40" rx="6"/>
@@ -121,8 +153,7 @@
 
   <!-- B ─ 團體課預約 ────────────────────────────────────────── -->
   <div class="c p1">
-    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
-      <path d="M28 130 C96 118 78 68 116 52"/></svg>
+    <svg class="art" viewBox="0 0 100 100"><g transform="rotate(-35 50 50)"><rect x="8"  y="24" width="104" height="7.5" fill="url(#gA)"/><rect x="18" y="41" width="94"  height="7.5" fill="url(#gA)"/><rect x="30" y="58" width="82"  height="7.5" fill="url(#gA)"/><rect x="46" y="75" width="66"  height="7.5" fill="url(#gA)"/></g></svg>
     <svg class="ico" viewBox="0 0 100 100">
       <rect x="12" y="22" width="76" height="66" rx="10"/>
       <path d="M12 43 H88"/><path d="M32 12 V30"/><path d="M68 12 V30"/>
@@ -134,8 +165,7 @@
 
   <!-- C ─ 私人團體班 ────────────────────────────────────────── -->
   <div class="c p2">
-    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
-      <path d="M28 130 C96 118 78 68 116 52"/></svg>
+    <svg class="art" viewBox="0 0 100 100"><g transform="rotate(-35 50 50)"><rect x="8"  y="24" width="104" height="7.5" fill="url(#gB)"/><rect x="18" y="41" width="94"  height="7.5" fill="url(#gB)"/><rect x="30" y="58" width="82"  height="7.5" fill="url(#gB)"/><rect x="46" y="75" width="66"  height="7.5" fill="url(#gB)"/></g></svg>
     <svg class="ico" viewBox="0 0 100 100">
       <circle cx="50" cy="31" r="13"/>
       <path d="M26 80 A24 24 0 0 1 74 80"/>
@@ -148,8 +178,7 @@
 
   <!-- D ─ 我的預約 ──────────────────────────────────────────── -->
   <div class="c p2">
-    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
-      <path d="M28 130 C96 118 78 68 116 52"/></svg>
+    <svg class="art" viewBox="0 0 100 100"><g transform="rotate(-35 50 50)"><rect x="8"  y="24" width="104" height="7.5" fill="url(#gB)"/><rect x="18" y="41" width="94"  height="7.5" fill="url(#gB)"/><rect x="30" y="58" width="82"  height="7.5" fill="url(#gB)"/><rect x="46" y="75" width="66"  height="7.5" fill="url(#gB)"/></g></svg>
     <svg class="ico" viewBox="0 0 100 100">
       <path d="M26 12 H74 A6 6 0 0 1 80 18 V86 L50 68 L20 86 V18 A6 6 0 0 1 26 12 Z"/>
       <path d="M37 40 H63"/>
@@ -160,8 +189,7 @@
 
   <!-- E ─ 價目表 ────────────────────────────────────────────── -->
   <div class="c p3">
-    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
-      <path d="M28 130 C96 118 78 68 116 52"/></svg>
+    <svg class="art" viewBox="0 0 100 100"><g transform="rotate(-35 50 50)"><rect x="8"  y="24" width="104" height="7.5" fill="url(#gC)"/><rect x="18" y="41" width="94"  height="7.5" fill="url(#gC)"/><rect x="30" y="58" width="82"  height="7.5" fill="url(#gC)"/><rect x="46" y="75" width="66"  height="7.5" fill="url(#gC)"/></g></svg>
     <svg class="ico" viewBox="0 0 100 100">
       <path d="M54 12 H84 A6 6 0 0 1 90 18 V48 L46 92 A6 6 0 0 1 37 92 L10 65
                A6 6 0 0 1 10 56 Z"/>
@@ -173,8 +201,7 @@
 
   <!-- F ─ 聯絡我們 ──────────────────────────────────────────── -->
   <div class="c p3">
-    <svg class="rb" viewBox="0 0 100 100"><path d="M-24 116 C44 104 26 54 64 38 C100 22 110 -12 96 -30"/>
-      <path d="M28 130 C96 118 78 68 116 52"/></svg>
+    <svg class="art" viewBox="0 0 100 100"><g transform="rotate(-35 50 50)"><rect x="8"  y="24" width="104" height="7.5" fill="url(#gC)"/><rect x="18" y="41" width="94"  height="7.5" fill="url(#gC)"/><rect x="30" y="58" width="82"  height="7.5" fill="url(#gC)"/><rect x="46" y="75" width="66"  height="7.5" fill="url(#gC)"/></g></svg>
     <svg class="ico" viewBox="0 0 100 100">
       <path d="M14 26 A8 8 0 0 1 22 18 H78 A8 8 0 0 1 86 26 V62 A8 8 0 0 1 78 70
                H44 L26 85 V70 H22 A8 8 0 0 1 14 62 Z"/>
