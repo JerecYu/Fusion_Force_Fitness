@@ -608,8 +608,13 @@
      ☢️ 但【沒有頁可以去的就不給連結】：「這個月還沒過完」不是問題；
         「待補扣」目前沒有任何一頁列得出那幾筆 —— 連到看不到它們的頁面，
         比不給連結更糟（人點過去、找不到、以為是自己不會用）。
-     ☢️ 相容舊格式：以前 blocks/warns 是一串【字】，現在是物件。
-        已結的月份會把當時的 warns 存進快照，兩種都要看得懂。 */
+     ☢️☢️ 相容兩種格式，而且【字串是主格式】。
+        2026-08-22 踩過：我把 blocks/warns 從「一串字」改成「一串物件」，
+        資料庫一套用就【立刻對所有還在用舊網頁的人生效】——
+        舊的薪資報表照樣把它當字印，畫面上出現 [object Object]。
+        改回來的做法是【加新欄位，不要改舊欄位】：
+        blocks/warns 永遠是字，連結資訊放在新的 items。
+        所以這裡兩種都要吃得下 —— 已結月份的快照也可能是舊格式。 */
   function chkRow(x, stop) {
     var obj = x && typeof x === 'object';
     var msg = obj ? (x.msg || '') : String(x == null ? '' : x);
@@ -622,15 +627,26 @@
 
   function openBlock() {
     var c = REP.check || {};
-    var blocks = c.blocks || [], warns = c.warns || [];
+    // ☢️ 有 items 就用 items（帶得動連結）；沒有就退回舊的兩個陣列。
+    //    順序要保持「擋的在上、提醒在下」—— items 本來就是這個順序。
+    var items = c.items;
+    var rows;
+    if (items && items.length) {
+      rows = items.map(function (it) { return chkRow(it, it.kind === 'block'); }).join('');
+    } else {
+      rows = (c.blocks || []).map(function (b) { return chkRow(b, true); }).join('') +
+             (c.warns  || []).map(function (w) { return chkRow(w, false); }).join('');
+    }
+    var nWarn = items && items.length
+      ? items.filter(function (it) { return it.kind !== 'block'; }).length
+      : (c.warns || []).length;
     var can = !!c.ok;
     return '<div class="mc-box live">' +
       '<div class="mc-t">' + esc(REP.ym) + ' 還沒結算' +
         '<small>下面的數字是現在重算的，一改設定就會跟著變</small></div>' +
-      blocks.map(function (b) { return chkRow(b, true); }).join('') +
-      warns.map(function (w) { return chkRow(w, false); }).join('') +
+      rows +
       (MCFORM === 'close' ? closeForm()
-        : '<button type="button" class="mc-go' + (warns.length && can ? ' warnish' : '') + '"' +
+        : '<button type="button" class="mc-go' + (nWarn && can ? ' warnish' : '') + '"' +
           (can ? '' : ' disabled') + ' data-mcclose="1">' +
           (can ? '結算 ' + esc(REP.ym) + '，把數字鎖起來' : '還不能結算') + '</button>') +
       (can ? '' : '<div class="note">上面紅色的處理完，這顆鍵就會亮起來。</div>') +
